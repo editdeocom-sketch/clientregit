@@ -139,14 +139,14 @@ export default function DashboardPage() {
         <h1 className="text-2xl font-bold text-white">
           {getGreeting()}, {userName} 👋
         </h1>
-        <p className="text-white/50 mt-1">
+        <div className="text-white/50 mt-1 flex items-center gap-2">
           Here&apos;s what&apos;s happening with your workspace.
           {isDemo && (
-            <Badge variant="glass" className="ml-2 text-xs">
+            <Badge variant="glass" className="text-xs">
               Demo Data
             </Badge>
           )}
-        </p>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
