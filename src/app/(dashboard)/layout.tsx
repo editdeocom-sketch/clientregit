@@ -11,6 +11,7 @@ interface UserProfile {
   full_name: string | null
   email: string
   avatar_url: string | null
+  phone: string | null
 }
 
 export default function DashboardLayout({
@@ -34,22 +35,42 @@ export default function DashboardLayout({
           return
         }
 
-        const { data: profile } = await supabase
+        let { data: profile } = await supabase
           .from("profiles")
-          .select("full_name, email, avatar_url")
+          .select("full_name, email, avatar_url, phone")
           .eq("id", authUser.id)
           .single()
 
+        if (!profile) {
+          const metaName = authUser.user_metadata?.full_name || ""
+          const metaPhone = authUser.user_metadata?.phone || ""
+          await supabase.from("profiles").upsert({
+            id: authUser.id,
+            full_name: metaName,
+            email: authUser.email || "",
+            phone: metaPhone,
+            role: authUser.user_metadata?.role || "editor",
+          }, { onConflict: "id" })
+          profile = {
+            full_name: metaName,
+            email: authUser.email ?? "",
+            avatar_url: null,
+            phone: metaPhone,
+          }
+        }
+
         setUser(profile ?? {
-          full_name: null,
+          full_name: authUser.user_metadata?.full_name ?? null,
           email: authUser.email ?? "",
           avatar_url: null,
+          phone: null,
         })
       } catch {
         setUser({
           full_name: null,
           email: "user@example.com",
           avatar_url: null,
+          phone: null,
         })
       } finally {
         setLoading(false)
@@ -61,15 +82,15 @@ export default function DashboardLayout({
 
   if (loading) {
     return (
-      <div className="flex h-screen bg-[#0B132B]">
-        <Skeleton className="fixed left-0 top-0 h-screen w-72 bg-white/5" />
+      <div className="flex h-screen bg-background">
+        <Skeleton className="fixed left-0 top-0 h-screen w-72 bg-muted" />
         <div className="ml-72 flex-1">
-          <Skeleton className="h-16 w-full bg-white/5" />
+          <Skeleton className="h-16 w-full bg-muted" />
           <div className="p-6 space-y-6">
-            <Skeleton className="h-8 w-64 bg-white/5" />
+            <Skeleton className="h-8 w-64 bg-muted" />
             <div className="grid grid-cols-4 gap-4">
               {Array.from({ length: 4 }).map((_, i) => (
-                <Skeleton key={i} className="h-28 bg-white/5" />
+                <Skeleton key={i} className="h-28 bg-muted" />
               ))}
             </div>
           </div>
@@ -79,7 +100,7 @@ export default function DashboardLayout({
   }
 
   return (
-    <div className="flex h-screen bg-[#0B132B] overflow-hidden">
+    <div className="flex h-screen bg-background overflow-hidden">
       <Sidebar />
       <div className="ml-72 flex-1 flex flex-col overflow-hidden">
         <Topbar
@@ -87,6 +108,7 @@ export default function DashboardLayout({
             full_name: null,
             email: "",
             avatar_url: null,
+            phone: null,
           }}
         />
         <main className="flex-1 overflow-y-auto">

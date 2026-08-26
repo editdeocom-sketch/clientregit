@@ -19,7 +19,7 @@ interface VideoData {
 }
 
 const statusConfig: Record<string, { label: string; className: string }> = {
-  draft: { label: "Draft", className: "bg-white/10 text-white/60 border-0" },
+  draft: { label: "Draft", className: "bg-muted text-muted-foreground border-0" },
   awaiting_review: { label: "Awaiting Review", className: "bg-yellow-500/20 text-yellow-400 border-0" },
   revision_requested: { label: "Revision Requested", className: "bg-orange-500/20 text-orange-400 border-0" },
   approved: { label: "Approved", className: "bg-green-500/20 text-green-400 border-0" },
@@ -65,15 +65,15 @@ export default function VideosPage() {
     <div className="p-6 space-y-6 animate-fade-in">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">Videos</h1>
-          <p className="text-white/50 mt-1">Review and manage all uploaded videos.</p>
+          <h1 className="text-2xl font-bold text-foreground">Videos</h1>
+          <p className="text-muted-foreground mt-1">Review and manage all uploaded videos.</p>
         </div>
       </div>
 
       {videos.length === 0 ? (
         <GlassCard className="p-16 text-center">
-          <VideoIcon className="h-12 w-12 text-white/20 mx-auto mb-3" />
-          <p className="text-white/40 mb-4">No videos yet. Upload your first video to get started.</p>
+          <VideoIcon className="h-12 w-12 text-muted-foreground/30 mx-auto mb-3" />
+          <p className="text-muted-foreground mb-4">No videos yet. Upload your first video to get started.</p>
           <Button variant="glass" size="sm" asChild>
             <Link href="/projects">
               <Plus className="h-4 w-4 mr-2" />
@@ -85,23 +85,23 @@ export default function VideosPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {videos.map((video) => (
             <Link key={video.id} href={`/videos/${video.id}`}>
-              <GlassCard className="p-5 hover:bg-white/10 transition-all cursor-pointer group h-full">
+              <GlassCard className="p-5 hover:bg-muted transition-all cursor-pointer group h-full">
                 <div className="flex items-start gap-4">
-                  <div className="h-16 w-24 rounded-lg bg-white/5 flex items-center justify-center flex-shrink-0 group-hover:bg-white/10 transition-colors">
-                    <Play className="h-6 w-6 text-white/40 group-hover:text-white/70 transition-colors" />
+                  <div className="h-16 w-24 rounded-lg bg-muted flex items-center justify-center flex-shrink-0 group-hover:bg-accent transition-colors">
+                    <Play className="h-6 w-6 text-muted-foreground group-hover:text-foreground transition-colors" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-2">
-                      <h3 className="font-medium text-white truncate">{video.title}</h3>
-                      <ExternalLink className="h-4 w-4 text-white/20 group-hover:text-white/50 flex-shrink-0 mt-0.5 transition-colors" />
+                      <h3 className="font-medium text-foreground truncate">{video.title}</h3>
+                      <ExternalLink className="h-4 w-4 text-muted-foreground/30 group-hover:text-muted-foreground flex-shrink-0 mt-0.5 transition-colors" />
                     </div>
-                    <p className="text-sm text-white/50 mt-1">{video.project}</p>
+                    <p className="text-sm text-muted-foreground mt-1">{video.project}</p>
                     <div className="flex items-center gap-3 mt-3">
                       <Badge className={statusConfig[video.status].className}>
                         {statusConfig[video.status].label}
                       </Badge>
-                      <span className="text-xs text-white/30">v{video.version}</span>
-                      <span className="text-xs text-white/30">{formatDate(video.created_at)}</span>
+                      <span className="text-xs text-muted-foreground/50">v{video.version}</span>
+                      <span className="text-xs text-muted-foreground/50">{formatDate(video.created_at)}</span>
                     </div>
                   </div>
                 </div>

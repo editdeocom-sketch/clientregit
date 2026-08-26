@@ -46,11 +46,26 @@ export default function ClientLayout({
           return
         }
 
-        const { data: profile } = await supabase
+        let { data: profile } = await supabase
           .from("profiles")
           .select("full_name, email, avatar_url")
           .eq("id", authUser.id)
           .single()
+
+        if (!profile) {
+          const metaName = authUser.user_metadata?.full_name || ""
+          await supabase.from("profiles").upsert({
+            id: authUser.id,
+            full_name: metaName,
+            email: authUser.email || "",
+            role: authUser.user_metadata?.role || "client",
+          }, { onConflict: "id" })
+          profile = {
+            full_name: metaName,
+            email: authUser.email ?? "",
+            avatar_url: null,
+          }
+        }
 
         setUser(profile ?? {
           full_name: null,
@@ -69,13 +84,13 @@ export default function ClientLayout({
 
   if (loading) {
     return (
-      <div className="flex h-screen bg-[#0B132B]">
-        <Skeleton className="fixed left-0 top-0 h-screen w-72 bg-white/5" />
+      <div className="flex h-screen bg-background">
+        <Skeleton className="fixed left-0 top-0 h-screen w-72 bg-muted" />
         <div className="ml-72 flex-1">
-          <Skeleton className="h-16 w-full bg-white/5" />
+          <Skeleton className="h-16 w-full bg-muted" />
           <div className="p-6 space-y-6">
-            <Skeleton className="h-8 w-64 bg-white/5" />
-            <Skeleton className="h-64 bg-white/5" />
+            <Skeleton className="h-8 w-64 bg-muted" />
+            <Skeleton className="h-64 bg-muted" />
           </div>
         </div>
       </div>
@@ -83,27 +98,27 @@ export default function ClientLayout({
   }
 
   return (
-    <div className="flex h-screen bg-[#0B132B] overflow-hidden">
+    <div className="flex h-screen bg-background overflow-hidden">
       <aside
         className={cn(
-          "fixed left-0 top-0 z-40 h-screen bg-[#0B132B] border-r border-white/5 transition-all duration-300",
+          "fixed left-0 top-0 z-40 h-screen bg-sidebar border-r border-border transition-all duration-300",
           collapsed ? "w-20" : "w-72"
         )}
       >
         <div className="flex h-full flex-col">
-          <div className="flex h-16 items-center justify-between px-4 border-b border-white/10">
+          <div className="flex h-16 items-center justify-between px-4 border-b border-border">
             {!collapsed && (
               <Link href="/client/dashboard" className="flex items-center">
                 <Logo size="sm" showText={false} />
-                <span className="ml-2 font-semibold text-lg text-white">
-                  Client<span className="text-[#5C7A9B]">Regit</span>
+                <span className="ml-2 font-semibold text-lg text-sidebar-foreground">
+                  Client<span className="text-primary">Regit</span>
                 </span>
               </Link>
             )}
             <Button
               variant="ghost"
               size="icon"
-              className={cn("text-white/60 hover:text-white", collapsed && "mx-auto")}
+              className={cn("text-muted-foreground hover:text-foreground", collapsed && "mx-auto")}
               onClick={() => setCollapsed(!collapsed)}
               aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
             >
@@ -121,8 +136,8 @@ export default function ClientLayout({
                   className={cn(
                     "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
                     isActive
-                      ? "bg-white/10 text-white"
-                      : "text-white/60 hover:bg-white/5 hover:text-white"
+                      ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                      : "text-muted-foreground hover:bg-sidebar-accent/50 hover:text-foreground"
                   )}
                 >
                   <item.icon className="h-5 w-5 flex-shrink-0" />
@@ -132,17 +147,17 @@ export default function ClientLayout({
             })}
           </nav>
 
-          <div className="border-t border-white/10 p-4">
+          <div className="border-t border-border p-4">
             {!collapsed ? (
               <div className="space-y-2">
-                <div className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-white/60">
+                <div className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-muted-foreground">
                   <User className="h-5 w-5 flex-shrink-0" />
                   <span className="truncate">{user?.full_name || user?.email || "Client"}</span>
                 </div>
                 <form action="/api/auth/logout" method="POST">
                   <button
                     type="submit"
-                    className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-white/60 hover:bg-white/5 hover:text-white transition-colors"
+                    className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-sidebar-accent/50 hover:text-foreground transition-colors"
                   >
                     <LogOut className="h-5 w-5 flex-shrink-0" />
                     <span>Logout</span>
@@ -154,7 +169,7 @@ export default function ClientLayout({
                 <form action="/api/auth/logout" method="POST">
                   <button
                     type="submit"
-                    className="rounded-lg p-2 text-white/60 hover:bg-white/5 hover:text-white transition-colors w-full"
+                    className="rounded-lg p-2 text-muted-foreground hover:bg-sidebar-accent/50 hover:text-foreground transition-colors w-full"
                     title="Logout"
                   >
                     <LogOut className="h-5 w-5 mx-auto" />
@@ -167,7 +182,7 @@ export default function ClientLayout({
       </aside>
 
       <div className={cn("flex-1 flex flex-col overflow-hidden transition-all duration-300", collapsed ? "ml-20" : "ml-72")}>
-        <header className="sticky top-0 z-30 h-16 bg-[#0B132B]/80 backdrop-blur-md border-b border-white/10">
+        <header className="sticky top-0 z-30 h-16 bg-background/80 backdrop-blur-md border-b border-border">
           <div className="flex h-full items-center px-6">
             <div className="flex items-center gap-3">
               <Avatar className="h-8 w-8">
@@ -175,8 +190,8 @@ export default function ClientLayout({
                 <AvatarFallback className="text-xs">{getInitials(user?.full_name || user?.email || "C")}</AvatarFallback>
               </Avatar>
               <div>
-                <p className="text-sm font-medium text-white">{user?.full_name || "Client"}</p>
-                <p className="text-xs text-white/50">{user?.email}</p>
+                <p className="text-sm font-medium text-foreground">{user?.full_name || "Client"}</p>
+                <p className="text-xs text-muted-foreground">{user?.email}</p>
               </div>
             </div>
           </div>

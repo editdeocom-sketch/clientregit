@@ -30,12 +30,12 @@ const demoProjects: ProjectData[] = [
 ]
 
 const statusColor: Record<string, string> = {
-  brief: "bg-white/10 text-white/60",
-  editing: "bg-blue-500/20 text-blue-400",
-  review: "bg-yellow-500/20 text-yellow-400",
-  revision: "bg-orange-500/20 text-orange-400",
-  approved: "bg-green-500/20 text-green-400",
-  delivered: "bg-purple-500/20 text-purple-400",
+  brief: "bg-muted text-muted-foreground",
+  editing: "bg-blue-500/20 text-blue-600 dark:text-blue-400",
+  review: "bg-yellow-500/20 text-yellow-600 dark:text-yellow-400",
+  revision: "bg-orange-500/20 text-orange-600 dark:text-orange-400",
+  approved: "bg-green-500/20 text-green-600 dark:text-green-400",
+  delivered: "bg-purple-500/20 text-purple-600 dark:text-purple-400",
 }
 
 const progressGradients: Record<string, string> = {
@@ -107,10 +107,10 @@ export default function ClientDashboardPage() {
   return (
     <div className="p-6 space-y-6 animate-fade-in">
       <div>
-        <h1 className="text-2xl font-bold text-white">
+        <h1 className="text-2xl font-bold text-foreground">
           {getGreeting()}, {userName}
         </h1>
-        <p className="text-white/50 mt-1">
+        <p className="text-muted-foreground mt-1">
           Here&apos;s an overview of your projects.
           {isDemo && (
             <Badge variant="glass" className="ml-2 text-xs">
@@ -122,51 +122,51 @@ export default function ClientDashboardPage() {
 
       <GlassCard className="p-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-white">Your Projects</h2>
+          <h2 className="text-lg font-semibold text-foreground">Your Projects</h2>
         </div>
         {projects.length === 0 ? (
           <div className="text-center py-12">
-            <FolderKanban className="h-12 w-12 text-white/20 mx-auto mb-3" />
-            <p className="text-white/40">No projects assigned to you yet.</p>
+            <FolderKanban className="h-12 w-12 text-muted-foreground/30 mx-auto mb-3" />
+            <p className="text-muted-foreground">No projects assigned to you yet.</p>
           </div>
         ) : (
           <Table>
             <TableHeader>
-              <TableRow className="border-white/10 hover:bg-transparent">
-                <TableHead className="text-white/60">Project Name</TableHead>
-                <TableHead className="text-white/60">Status</TableHead>
-                <TableHead className="text-white/60">Progress</TableHead>
-                <TableHead className="text-white/60 text-right">Deadline</TableHead>
+              <TableRow className="border-border hover:bg-transparent">
+                <TableHead className="text-muted-foreground">Project Name</TableHead>
+                <TableHead className="text-muted-foreground">Status</TableHead>
+                <TableHead className="text-muted-foreground">Progress</TableHead>
+                <TableHead className="text-muted-foreground text-right">Deadline</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {projects.map((project) => (
-                <TableRow key={project.id} className="border-white/5 hover:bg-white/5">
+                <TableRow key={project.id} className="border-border/50 hover:bg-muted/50">
                   <TableCell>
                     <Link
                       href={`/client/projects/${project.id}`}
-                      className="font-medium text-white hover:text-white/80 transition-colors"
+                      className="font-medium text-foreground hover:text-foreground/80 transition-colors"
                     >
                       {project.name}
                     </Link>
                   </TableCell>
                   <TableCell>
-                    <Badge className={`${statusColor[project.status] ?? "bg-white/10 text-white/60"} border-0`}>
+                    <Badge className={`${statusColor[project.status] ?? "bg-muted text-muted-foreground"} border-0`}>
                       {project.status}
                     </Badge>
                   </TableCell>
                   <TableCell>
                     <div className="w-28">
-                      <div className="h-2 rounded-full bg-white/10 overflow-hidden">
+                      <div className="h-2 rounded-full bg-border overflow-hidden">
                         <div
-                          className={`h-full rounded-full bg-gradient-to-r ${progressGradients[project.status] ?? "from-white/30 to-white/50"}`}
+                          className={`h-full rounded-full bg-gradient-to-r ${progressGradients[project.status] ?? "from-muted-foreground/30 to-muted-foreground/50"}`}
                           style={{ width: `${project.progress}%` }}
                         />
                       </div>
-                      <p className="text-[10px] text-white/40 mt-1">{project.progress}%</p>
+                      <p className="text-[10px] text-muted-foreground mt-1">{project.progress}%</p>
                     </div>
                   </TableCell>
-                  <TableCell className="text-white/60 text-sm text-right">
+                  <TableCell className="text-muted-foreground text-sm text-right">
                     {project.deadline ? formatDate(project.deadline) : "\u2014"}
                   </TableCell>
                 </TableRow>

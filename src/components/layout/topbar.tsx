@@ -1,10 +1,10 @@
 "use client"
 
-import { Bell, Moon, Sun, Menu, Search } from "lucide-react"
+import { useEffect, useState } from "react"
+import { Bell, Moon, Sun, Menu, Search, Check } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu"
-import { cn } from "@/lib/utils"
 import { getInitials } from "@/lib/utils"
 import { useTheme } from "next-themes"
 import { useRouter } from "next/navigation"
@@ -14,12 +14,18 @@ interface TopbarProps {
     full_name: string | null
     email: string
     avatar_url: string | null
+    phone?: string | null
   }
 }
 
 export function Topbar({ user }: TopbarProps) {
   const { theme, setTheme } = useTheme()
   const router = useRouter()
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   const handleLogout = async () => {
     const res = await fetch("/api/auth/logout", { method: "POST" })
@@ -30,13 +36,13 @@ export function Topbar({ user }: TopbarProps) {
   }
 
   return (
-    <header className="sticky top-0 z-30 h-16 bg-[#0B132B]/80 backdrop-blur-md border-b border-white/10">
+    <header className="sticky top-0 z-30 h-16 bg-card/80 backdrop-blur-md border-b border-border">
       <div className="flex h-full items-center justify-between px-6">
         <div className="flex items-center gap-4">
           <Button
             variant="ghost"
             size="icon"
-            className="lg:hidden text-white/60 hover:text-white"
+            className="lg:hidden text-muted-foreground hover:text-foreground"
             onClick={() => {
               const sidebar = document.querySelector('aside[class*="fixed"]')
               if (sidebar) {
@@ -48,31 +54,44 @@ export function Topbar({ user }: TopbarProps) {
             <Menu className="h-5 w-5" />
           </Button>
           <div className="relative hidden sm:block">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/40" />
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <input
               type="search"
               placeholder="Search clients, projects..."
-              className="h-9 w-64 rounded-lg bg-white/5 border border-white/10 px-10 py-2 text-sm text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-white/20 focus:border-transparent"
+              className="h-9 w-64 rounded-lg bg-muted px-10 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent border border-border"
             />
           </div>
         </div>
 
         <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-white/60 hover:text-white"
-            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-          >
-            {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-          </Button>
+          {mounted && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-muted-foreground hover:text-foreground"
+              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+            >
+              {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+            </Button>
+          )}
 
-          <Button variant="ghost" size="icon" className="text-white/60 hover:text-white relative">
-            <Bell className="h-5 w-5" />
-            <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-red-500 text-[10px] font-medium flex items-center justify-center">
-              3
-            </span>
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground relative">
+                <Bell className="h-5 w-5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-72 bg-card border-border">
+              <div className="px-3 py-2">
+                <p className="text-sm font-medium text-foreground">Notifications</p>
+              </div>
+              <DropdownMenuSeparator className="border-border" />
+              <div className="px-3 py-6 text-center">
+                <Check className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+                <p className="text-sm text-muted-foreground">No new notifications</p>
+              </div>
+            </DropdownMenuContent>
+          </DropdownMenu>
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -83,13 +102,13 @@ export function Topbar({ user }: TopbarProps) {
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56 bg-[#0B132B] border-white/10">
+            <DropdownMenuContent align="end" className="w-56 bg-card border-border">
               <div className="px-2 py-1">
-                <p className="text-sm font-medium text-white">{user.full_name || "User"}</p>
-                <p className="text-xs text-white/50 truncate">{user.email}</p>
+                <p className="text-sm font-medium text-foreground">{user.full_name || "User"}</p>
+                <p className="text-xs text-muted-foreground truncate">{user.email}</p>
               </div>
-              <DropdownMenuSeparator className="border-white/10" />
-              <DropdownMenuItem onClick={handleLogout} className="text-white hover:bg-white/10">
+              <DropdownMenuSeparator className="border-border" />
+              <DropdownMenuItem onClick={handleLogout} className="text-foreground hover:bg-muted">
                 Log out
               </DropdownMenuItem>
             </DropdownMenuContent>

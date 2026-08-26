@@ -20,20 +20,20 @@ const legalLinks = [
 
 export function MarketingFooter() {
   return (
-    <footer className="border-t border-white/10 py-16 px-6 bg-[#0B132B]">
+    <footer className="border-t border-border py-16 px-6 bg-card">
       <div className="mx-auto max-w-6xl">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
           <div>
             <Link href="/" className="inline-block mb-3">
               <Logo size="sm" />
             </Link>
-            <p className="text-sm text-white/40">
+            <p className="text-sm text-muted-foreground">
               Manage clients. Deliver better work.
             </p>
           </div>
 
           <div>
-            <h4 className="text-sm font-semibold uppercase tracking-wider text-white/60 mb-4">
+            <h4 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-4">
               Product
             </h4>
             <ul className="space-y-3">
@@ -41,7 +41,7 @@ export function MarketingFooter() {
                 <li key={link.label}>
                   <Link
                     href={link.href}
-                    className="text-sm text-white/40 hover:text-white transition-colors duration-200"
+                    className="text-sm text-muted-foreground hover:text-foreground transition-colors duration-200"
                   >
                     {link.label}
                   </Link>
@@ -51,7 +51,7 @@ export function MarketingFooter() {
           </div>
 
           <div>
-            <h4 className="text-sm font-semibold uppercase tracking-wider text-white/60 mb-4">
+            <h4 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-4">
               Resources
             </h4>
             <ul className="space-y-3">
@@ -59,7 +59,7 @@ export function MarketingFooter() {
                 <li key={link.label}>
                   <Link
                     href={link.href}
-                    className="text-sm text-white/40 hover:text-white transition-colors duration-200"
+                    className="text-sm text-muted-foreground hover:text-foreground transition-colors duration-200"
                   >
                     {link.label}
                   </Link>
@@ -69,7 +69,7 @@ export function MarketingFooter() {
           </div>
 
           <div>
-            <h4 className="text-sm font-semibold uppercase tracking-wider text-white/60 mb-4">
+            <h4 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-4">
               Legal
             </h4>
             <ul className="space-y-3">
@@ -77,7 +77,7 @@ export function MarketingFooter() {
                 <li key={link.label}>
                   <Link
                     href={link.href}
-                    className="text-sm text-white/40 hover:text-white transition-colors duration-200"
+                    className="text-sm text-muted-foreground hover:text-foreground transition-colors duration-200"
                   >
                     {link.label}
                   </Link>
@@ -87,8 +87,8 @@ export function MarketingFooter() {
           </div>
         </div>
 
-        <div className="mt-12 pt-8 border-t border-white/10 text-center">
-          <p className="text-xs text-white/30">
+        <div className="mt-12 pt-8 border-t border-border text-center">
+          <p className="text-xs text-muted-foreground">
             &copy; 2026 ClientRegit. All rights reserved.
           </p>
         </div>

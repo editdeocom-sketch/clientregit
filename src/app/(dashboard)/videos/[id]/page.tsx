@@ -96,11 +96,11 @@ export default function VideoReviewPage({ params }: { params: { id: string } }) 
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0e1a] p-6 lg:p-8">
+    <div className="min-h-screen bg-background p-6 lg:p-8">
       <div className="mx-auto max-w-7xl space-y-6">
         <Link
           href="/videos"
-          className="inline-flex items-center gap-2 text-sm text-slate-400 transition-colors hover:text-white"
+          className="inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
         >
           <ArrowLeft className="h-4 w-4" />
           Back to Videos
@@ -108,12 +108,12 @@ export default function VideoReviewPage({ params }: { params: { id: string } }) 
 
         <GlassCard className="overflow-hidden p-0">
           <div
-            className="relative flex aspect-video w-full cursor-pointer items-center justify-center bg-gradient-to-br from-[#0f1629] to-[#0a0e1a]"
+            className="relative flex aspect-video w-full cursor-pointer items-center justify-center bg-gradient-to-br from-card to-background"
             onClick={() => setIsPlaying(!isPlaying)}
           >
             <div className="flex flex-col items-center gap-4">
-              <div className="flex h-24 w-24 items-center justify-center rounded-full bg-white/5 ring-1 ring-white/10">
-                <Video className="h-12 w-12 text-slate-400" />
+              <div className="flex h-24 w-24 items-center justify-center rounded-full bg-muted ring-1 ring-border">
+                <Video className="h-12 w-12 text-muted-foreground" />
               </div>
               <button className="flex h-16 w-16 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg shadow-blue-600/30 transition-all hover:scale-105 hover:bg-blue-500">
                 {isPlaying ? <Pause className="h-7 w-7" /> : <Play className="ml-1 h-7 w-7" />}
@@ -123,7 +123,7 @@ export default function VideoReviewPage({ params }: { params: { id: string } }) 
 
           <div className="space-y-3 px-6 py-4">
             <div
-              className="group relative h-2 w-full cursor-pointer rounded-full bg-white/10"
+              className="group relative h-2 w-full cursor-pointer rounded-full bg-muted"
               onClick={handleTimelineClick}
             >
               <div
@@ -136,7 +136,7 @@ export default function VideoReviewPage({ params }: { params: { id: string } }) 
               />
             </div>
 
-            <div className="flex items-center justify-between text-xs text-slate-400">
+            <div className="flex items-center justify-between text-xs text-muted-foreground">
               <span className="font-mono">{formatVideoTime(currentTime)}</span>
               <span className="font-mono">{formatVideoTime(videoData.duration)}</span>
             </div>
@@ -145,7 +145,7 @@ export default function VideoReviewPage({ params }: { params: { id: string } }) 
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-10 w-10 rounded-full text-slate-400 hover:text-white"
+                className="h-10 w-10 rounded-full text-muted-foreground hover:text-foreground"
                 onClick={() => setCurrentTime(Math.max(0, currentTime - 10))}
               >
                 <SkipBack className="h-5 w-5" />
@@ -153,7 +153,7 @@ export default function VideoReviewPage({ params }: { params: { id: string } }) 
               <Button
                 variant="ghost"
                 size="icon"
-                className="flex h-12 w-12 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20"
+                className="flex h-12 w-12 items-center justify-center rounded-full bg-muted text-foreground hover:bg-muted/80"
                 onClick={() => setIsPlaying(!isPlaying)}
               >
                 {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="ml-0.5 h-5 w-5" />}
@@ -161,7 +161,7 @@ export default function VideoReviewPage({ params }: { params: { id: string } }) 
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-10 w-10 rounded-full text-slate-400 hover:text-white"
+                className="h-10 w-10 rounded-full text-muted-foreground hover:text-foreground"
                 onClick={() => setCurrentTime(Math.min(videoData.duration, currentTime + 10))}
               >
                 <SkipForward className="h-5 w-5" />
@@ -173,9 +173,9 @@ export default function VideoReviewPage({ params }: { params: { id: string } }) 
         <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
           <GlassCard className="space-y-4 p-5">
             <div className="flex items-center gap-2">
-              <MessageSquare className="h-5 w-5 text-slate-400" />
-              <h2 className="text-lg font-semibold text-white">Comments</h2>
-              <Badge variant="secondary" className="bg-white/10 text-slate-300">
+              <MessageSquare className="h-5 w-5 text-muted-foreground" />
+              <h2 className="text-lg font-semibold text-foreground">Comments</h2>
+              <Badge variant="secondary" className="bg-muted text-muted-foreground">
                 {comments.length}
               </Badge>
             </div>
@@ -186,29 +186,29 @@ export default function VideoReviewPage({ params }: { params: { id: string } }) 
                 .map((c) => (
                   <div
                     key={c.id}
-                    className="flex items-start gap-3 rounded-lg bg-white/[0.03] p-3 ring-1 ring-white/5 transition-colors hover:bg-white/[0.06]"
+                    className="flex items-start gap-3 rounded-lg bg-muted/30 p-3 ring-1 ring-border/50 transition-colors hover:bg-muted/50"
                   >
                     <button
-                      className="flex shrink-0 items-center gap-1 rounded-full bg-blue-600/20 px-2.5 py-1 text-xs font-medium text-blue-400 transition-colors hover:bg-blue-600/30"
+                      className="flex shrink-0 items-center gap-1 rounded-full bg-blue-600/20 px-2.5 py-1 text-xs font-medium text-blue-600 dark:text-blue-400 transition-colors hover:bg-blue-600/30"
                       onClick={() => setCurrentTime(c.timestamp)}
                     >
                       <Clock className="h-3 w-3" />
                       {formatVideoTime(c.timestamp)}
                     </button>
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm text-slate-200">{c.comment}</p>
-                      <p className="mt-1 text-xs text-slate-500">{c.user}</p>
+                      <p className="text-sm text-foreground">{c.comment}</p>
+                      <p className="mt-1 text-xs text-muted-foreground">{c.user}</p>
                     </div>
                   </div>
                 ))}
             </div>
 
-            <div className="flex items-center gap-2 border-t border-white/5 pt-4">
+            <div className="flex items-center gap-2 border-t border-border/50 pt-4">
               <Input
                 value={newComment}
                 onChange={(e) => setNewComment(e.target.value)}
                 placeholder={`Add a comment at ${formatVideoTime(currentTime)}...`}
-                className="flex-1 border-white/10 bg-white/5 text-white placeholder:text-slate-500 focus-visible:ring-blue-600"
+                className="flex-1 border-border bg-muted text-foreground placeholder:text-muted-foreground focus-visible:ring-blue-600"
                 onKeyDown={(e) => e.key === "Enter" && handleAddComment()}
               />
               <Button
@@ -223,19 +223,19 @@ export default function VideoReviewPage({ params }: { params: { id: string } }) 
           </GlassCard>
 
           <GlassCard className="space-y-5 p-5">
-            <h2 className="text-lg font-semibold text-white">Video Info</h2>
+            <h2 className="text-lg font-semibold text-foreground">Video Info</h2>
 
             <div className="space-y-3">
               <div>
-                <p className="text-xs text-slate-500">Status</p>
+                <p className="text-xs text-muted-foreground">Status</p>
                 <Badge
                   variant="secondary"
                   className={`mt-1 ${
                     status === "approved"
-                      ? "bg-emerald-500/20 text-emerald-400"
+                      ? "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400"
                       : status === "revision_requested"
-                        ? "bg-red-500/20 text-red-400"
-                        : "bg-yellow-500/20 text-yellow-400"
+                        ? "bg-red-500/20 text-red-600 dark:text-red-400"
+                        : "bg-yellow-500/20 text-yellow-600 dark:text-yellow-400"
                   }`}
                 >
                   {status === "approved"
@@ -247,25 +247,25 @@ export default function VideoReviewPage({ params }: { params: { id: string } }) 
               </div>
 
               <div>
-                <p className="text-xs text-slate-500">Project</p>
-                <p className="text-sm font-medium text-white">{videoData.project}</p>
+                <p className="text-xs text-muted-foreground">Project</p>
+                <p className="text-sm font-medium text-foreground">{videoData.project}</p>
               </div>
 
               <div>
-                <p className="text-xs text-slate-500">Version</p>
-                <p className="text-sm font-medium text-white">Version {videoData.version}</p>
+                <p className="text-xs text-muted-foreground">Version</p>
+                <p className="text-sm font-medium text-foreground">Version {videoData.version}</p>
               </div>
 
               <div>
-                <p className="text-xs text-slate-500">Uploaded</p>
-                <p className="text-sm font-medium text-white">{videoData.uploadedAt}</p>
+                <p className="text-xs text-muted-foreground">Uploaded</p>
+                <p className="text-sm font-medium text-foreground">{videoData.uploadedAt}</p>
               </div>
             </div>
 
             <div className="space-y-3 pt-2">
               <Button
                 variant="outline"
-                className="w-full border-white/10 bg-transparent text-white hover:bg-white/5"
+                className="w-full border-border bg-transparent text-foreground hover:bg-muted"
                 onClick={() => setRevisionOpen(true)}
               >
                 <X className="mr-2 h-4 w-4" />
@@ -284,10 +284,10 @@ export default function VideoReviewPage({ params }: { params: { id: string } }) 
       </div>
 
       <Dialog open={approvalOpen} onOpenChange={setApprovalOpen}>
-        <DialogContent className="border-white/10 bg-[#111827] text-white">
+        <DialogContent className="border-border bg-card text-foreground">
           <DialogHeader>
             <DialogTitle>Approve this video?</DialogTitle>
-            <DialogDescription className="text-slate-400">
+            <DialogDescription className="text-muted-foreground">
               Are you sure you want to approve this video? This action is final and will mark the
               video as approved for delivery.
             </DialogDescription>
@@ -296,7 +296,7 @@ export default function VideoReviewPage({ params }: { params: { id: string } }) 
             <Button
               variant="ghost"
               onClick={() => setApprovalOpen(false)}
-              className="text-slate-400 hover:text-white"
+              className="text-muted-foreground hover:text-foreground"
             >
               Cancel
             </Button>
@@ -309,10 +309,10 @@ export default function VideoReviewPage({ params }: { params: { id: string } }) 
       </Dialog>
 
       <Dialog open={revisionOpen} onOpenChange={setRevisionOpen}>
-        <DialogContent className="border-white/10 bg-[#111827] text-white">
+        <DialogContent className="border-border bg-card text-foreground">
           <DialogHeader>
             <DialogTitle>Request Changes</DialogTitle>
-            <DialogDescription className="text-slate-400">
+            <DialogDescription className="text-muted-foreground">
               What needs to be changed?
             </DialogDescription>
           </DialogHeader>
@@ -320,7 +320,7 @@ export default function VideoReviewPage({ params }: { params: { id: string } }) 
             value={revisionText}
             onChange={(e) => setRevisionText(e.target.value)}
             placeholder="Describe the changes needed..."
-            className="min-h-[120px] border-white/10 bg-white/5 text-white placeholder:text-slate-500 focus-visible:ring-blue-600"
+            className="min-h-[120px] border-border bg-muted text-foreground placeholder:text-muted-foreground focus-visible:ring-blue-600"
           />
           <DialogFooter>
             <Button
@@ -329,7 +329,7 @@ export default function VideoReviewPage({ params }: { params: { id: string } }) 
                 setRevisionOpen(false)
                 setRevisionText("")
               }}
-              className="text-slate-400 hover:text-white"
+              className="text-muted-foreground hover:text-foreground"
             >
               Cancel
             </Button>

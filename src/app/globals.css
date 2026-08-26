@@ -1,6 +1,34 @@
 @import "tailwindcss";
 
+/* ── Light theme (default) ── */
 :root {
+  --background: #F8FAFC;
+  --foreground: #0B132B;
+  --card: #FFFFFF;
+  --card-foreground: #0B132B;
+  --popover: #FFFFFF;
+  --popover-foreground: #0B132B;
+  --primary: #3A506B;
+  --primary-foreground: #FFFFFF;
+  --secondary: #E2E8F0;
+  --secondary-foreground: #0B132B;
+  --muted: #F1F5F9;
+  --muted-foreground: #64748B;
+  --accent: #E2E8F0;
+  --accent-foreground: #0B132B;
+  --destructive: #EF4444;
+  --destructive-foreground: #FFFFFF;
+  --border: #CBD5E1;
+  --input: #E2E8F0;
+  --ring: #3A506B;
+  --radius: 0.75rem;
+  --sidebar: #FFFFFF;
+  --sidebar-foreground: #0B132B;
+  --sidebar-border: #E2E8F0;
+}
+
+/* ── Dark theme ── */
+.dark {
   --background: #0B132B;
   --foreground: #FFFFFF;
   --card: #141E3A;
@@ -20,7 +48,9 @@
   --border: #2A3F5E;
   --input: #2A3F5E;
   --ring: #3A506B;
-  --radius: 0.75rem;
+  --sidebar: #0B132B;
+  --sidebar-foreground: #FFFFFF;
+  --sidebar-border: #1E2D4A;
 }
 
 @theme inline {
@@ -43,6 +73,9 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-border: var(--sidebar-border);
   --radius: var(--radius);
   --font-sans: var(--font-inter);
 }
@@ -184,6 +217,11 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
+.dark .glass {
+  background: rgba(58, 80, 107, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
 .glass-strong {
   background: rgba(58, 80, 107, 0.4);
   backdrop-filter: blur(24px);
@@ -191,10 +229,20 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.15);
 }
 
+.dark .glass-strong {
+  background: rgba(58, 80, 107, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
 .glass-subtle {
   background: rgba(58, 80, 107, 0.1);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.dark .glass-subtle {
+  background: rgba(58, 80, 107, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.05);
 }
 

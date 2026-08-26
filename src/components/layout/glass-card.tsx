@@ -11,9 +11,9 @@ export function GlassCard({
   ...props
 }: GlassCardProps) {
   const variants = {
-    default: "bg-white/5 backdrop-blur-md border border-white/10",
-    strong: "bg-white/10 backdrop-blur-lg border border-white/20",
-    subtle: "bg-white/3 backdrop-blur-sm border border-white/5",
+    default: "bg-card/80 backdrop-blur-md border border-border",
+    strong: "bg-card backdrop-blur-lg border border-border",
+    subtle: "bg-card/50 backdrop-blur-sm border border-border/50",
   }
 
   return (

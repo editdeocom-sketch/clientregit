@@ -10,6 +10,7 @@ import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PasswordInput } from "@/components/ui/password-input";
 
 function LoginForm() {
   const router = useRouter();
@@ -40,12 +41,12 @@ function LoginForm() {
   }
 
   return (
-    <div className="w-full max-w-md bg-[#141E3A]/60 backdrop-blur-lg border border-white/10 rounded-2xl p-8">
+    <div className="w-full max-w-md bg-card/60 backdrop-blur-lg border border-border rounded-2xl p-8">
       <div className="flex flex-col items-center mb-8">
         <div className="mb-2">
           <Logo size="md" />
         </div>
-        <p className="text-sm text-white/50">Sign in to your account</p>
+        <p className="text-sm text-muted-foreground">Sign in to your account</p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-5">
@@ -59,7 +60,7 @@ function LoginForm() {
             onChange={(e) => setEmail(e.target.value)}
             required
             autoComplete="email"
-            className="bg-white/5 border-white/10 text-white placeholder:text-white/30"
+            className="bg-muted border-border text-foreground placeholder:text-muted-foreground"
           />
         </div>
 
@@ -68,27 +69,26 @@ function LoginForm() {
             <Label htmlFor="password">Password</Label>
             <Link
               href="/forgot-password"
-              className="text-xs text-white/50 hover:text-white/80 transition-colors"
+              className="text-xs text-muted-foreground hover:text-foreground transition-colors"
             >
               Forgot password?
             </Link>
           </div>
-          <Input
+          <PasswordInput
             id="password"
-            type="password"
             placeholder="••••••••"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
             autoComplete="current-password"
-            className="bg-white/5 border-white/10 text-white placeholder:text-white/30"
+            className="bg-muted border-border text-foreground placeholder:text-muted-foreground"
           />
         </div>
 
         <Button
           type="submit"
           disabled={loading}
-          className="w-full bg-white text-[#0B132B] hover:bg-white/90 h-11"
+          className="w-full bg-primary text-primary-foreground hover:bg-primary/90 h-11"
         >
           {loading ? (
             <Loader2 className="h-4 w-4 animate-spin" />
@@ -98,11 +98,11 @@ function LoginForm() {
         </Button>
       </form>
 
-      <p className="mt-6 text-center text-sm text-white/50">
+      <p className="mt-6 text-center text-sm text-muted-foreground">
         Don&apos;t have an account?{" "}
         <Link
           href="/signup"
-          className="font-medium text-white hover:text-white/80 transition-colors"
+          className="font-medium text-foreground hover:text-foreground/80 transition-colors"
         >
           Sign up
         </Link>
@@ -113,11 +113,11 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#0B132B] px-4">
+    <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <Suspense
         fallback={
           <div className="w-full max-w-md flex items-center justify-center p-8">
-            <Loader2 className="h-8 w-8 animate-spin text-white/50" />
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
           </div>
         }
       >

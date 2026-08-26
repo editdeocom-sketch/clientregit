@@ -4,35 +4,69 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader2, CheckCircle2, XCircle } from "lucide-react";
 import { Logo } from "@/components/layout/logo";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PasswordInput } from "@/components/ui/password-input";
+import { cn } from "@/lib/utils";
 
 type UserRole = "editor" | "client";
+
+function validatePassword(pw: string): { valid: boolean; errors: string[] } {
+  const errors: string[] = [];
+  if (pw.length < 6) errors.push("At least 6 characters");
+  if (pw.length > 10) errors.push("Max 10 characters");
+  if (!/[A-Z]/.test(pw)) errors.push("At least one uppercase letter");
+  if (!/[a-z]/.test(pw)) errors.push("At least one lowercase letter");
+  if (!/[0-9]/.test(pw)) errors.push("At least one number");
+  if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?`~]/.test(pw)) errors.push("At least one symbol");
+  return { valid: errors.length === 0, errors };
+}
+
+function PasswordRequirement({ met, text }: { met: boolean; text: string }) {
+  return (
+    <div className="flex items-center gap-1.5 text-xs">
+      {met ? (
+        <CheckCircle2 className="h-3 w-3 text-green-600 dark:text-green-400 shrink-0" />
+      ) : (
+        <XCircle className="h-3 w-3 text-muted-foreground/50 shrink-0" />
+      )}
+      <span className={cn("transition-colors", met ? "text-green-600 dark:text-green-400" : "text-muted-foreground")}>
+        {text}
+      </span>
+    </div>
+  );
+}
 
 export default function SignupPage() {
   const router = useRouter();
 
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [role, setRole] = useState<UserRole>("editor");
   const [loading, setLoading] = useState(false);
 
+  const pwValidation = validatePassword(password);
+  const passwordsMatch = password.length > 0 && password === confirmPassword;
+  const passwordsMismatch = confirmPassword.length > 0 && password !== confirmPassword;
+  const canSubmit = fullName && email && password && confirmPassword && pwValidation.valid && passwordsMatch && !loading;
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
-    if (password !== confirmPassword) {
-      toast.error("Passwords do not match");
+    if (!pwValidation.valid) {
+      toast.error("Password does not meet requirements.");
       return;
     }
 
-    if (password.length < 6) {
-      toast.error("Password must be at least 6 characters");
+    if (password !== confirmPassword) {
+      toast.error("Passwords do not match.");
       return;
     }
 
@@ -44,6 +78,7 @@ export default function SignupPage() {
       email,
       password,
       options: {
+        emailRedirectTo: `${window.location.origin}/auth/callback`,
         data: {
           full_name: fullName,
           role,
@@ -62,6 +97,7 @@ export default function SignupPage() {
         id: data.user.id,
         full_name: fullName,
         email,
+        phone,
         role,
       });
 
@@ -77,13 +113,13 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#0B132B] px-4">
-      <div className="w-full max-w-md bg-[#141E3A]/60 backdrop-blur-lg border border-white/10 rounded-2xl p-8">
+    <div className="flex min-h-screen items-center justify-center bg-background px-4 py-8">
+      <div className="w-full max-w-md bg-card/60 backdrop-blur-lg border border-border rounded-2xl p-8">
         <div className="flex flex-col items-center mb-8">
           <div className="mb-2">
             <Logo size="md" />
           </div>
-          <p className="text-sm text-white/50">Create your account</p>
+          <p className="text-sm text-muted-foreground">Create your account</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5">
@@ -97,7 +133,7 @@ export default function SignupPage() {
               onChange={(e) => setFullName(e.target.value)}
               required
               autoComplete="name"
-              className="bg-white/5 border-white/10 text-white placeholder:text-white/30"
+              className="bg-muted border-border text-foreground placeholder:text-muted-foreground"
             />
           </div>
 
@@ -111,36 +147,71 @@ export default function SignupPage() {
               onChange={(e) => setEmail(e.target.value)}
               required
               autoComplete="email"
-              className="bg-white/5 border-white/10 text-white placeholder:text-white/30"
+              className="bg-muted border-border text-foreground placeholder:text-muted-foreground"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="phone">Phone Number</Label>
+            <Input
+              id="phone"
+              type="tel"
+              placeholder="+91 98765 43210"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              autoComplete="tel"
+              className="bg-muted border-border text-foreground placeholder:text-muted-foreground"
             />
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="password">Password</Label>
-            <Input
+            <PasswordInput
               id="password"
-              type="password"
               placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
               autoComplete="new-password"
-              className="bg-white/5 border-white/10 text-white placeholder:text-white/30"
+              className="bg-muted border-border text-foreground placeholder:text-muted-foreground"
             />
+            {password.length > 0 && (
+              <div className="space-y-1 mt-2">
+                <PasswordRequirement met={password.length >= 6 && password.length <= 10} text="6-10 characters" />
+                <PasswordRequirement met={/[A-Z]/.test(password)} text="One uppercase letter" />
+                <PasswordRequirement met={/[a-z]/.test(password)} text="One lowercase letter" />
+                <PasswordRequirement met={/[0-9]/.test(password)} text="One number" />
+                <PasswordRequirement met={/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?`~]/.test(password)} text="One symbol" />
+              </div>
+            )}
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="confirmPassword">Confirm Password</Label>
-            <Input
+            <PasswordInput
               id="confirmPassword"
-              type="password"
               placeholder="••••••••"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               required
               autoComplete="new-password"
-              className="bg-white/5 border-white/10 text-white placeholder:text-white/30"
+              className="bg-muted border-border text-foreground placeholder:text-muted-foreground"
             />
+            {confirmPassword.length > 0 && (
+              <div className="flex items-center gap-1.5 text-xs mt-1">
+                {passwordsMatch ? (
+                  <>
+                    <CheckCircle2 className="h-3 w-3 text-green-400" />
+                    <span className="text-green-400">Passwords match</span>
+                  </>
+                ) : (
+                  <>
+                    <XCircle className="h-3 w-3 text-red-400" />
+                    <span className="text-red-400">Passwords do not match</span>
+                  </>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -149,12 +220,12 @@ export default function SignupPage() {
               id="role"
               value={role}
               onChange={(e) => setRole(e.target.value as UserRole)}
-              className="flex h-10 w-full rounded-md border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:ring-2 focus:ring-white/20 focus:ring-offset-0"
+              className="flex h-10 w-full rounded-md border border-border bg-muted px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring focus:ring-offset-0"
             >
-              <option value="editor" className="bg-[#141E3A]">
+              <option value="editor">
                 Video Editor
               </option>
-              <option value="client" className="bg-[#141E3A]">
+              <option value="client">
                 Client
               </option>
             </select>
@@ -162,8 +233,8 @@ export default function SignupPage() {
 
           <Button
             type="submit"
-            disabled={loading}
-            className="w-full bg-white text-[#0B132B] hover:bg-white/90 h-11"
+            disabled={!canSubmit}
+            className="w-full bg-primary text-primary-foreground hover:bg-primary/90 h-11"
           >
             {loading ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -173,11 +244,11 @@ export default function SignupPage() {
           </Button>
         </form>
 
-        <p className="mt-6 text-center text-sm text-white/50">
+        <p className="mt-6 text-center text-sm text-muted-foreground">
           Already have an account?{" "}
           <Link
             href="/login"
-            className="font-medium text-white hover:text-white/80 transition-colors"
+            className="font-medium text-foreground hover:text-foreground/80 transition-colors"
           >
             Sign in
           </Link>

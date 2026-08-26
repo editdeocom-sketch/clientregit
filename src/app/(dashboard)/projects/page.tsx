@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/dialog"
 import { FolderKanban, Plus, Search } from "lucide-react"
 import { formatINR, formatDate } from "@/lib/utils"
+import { toast } from "sonner"
 
 interface ProjectData {
   id: string
@@ -39,7 +40,7 @@ interface ProjectData {
 }
 
 const statusColors: Record<string, string> = {
-  brief: "bg-white/10 text-white/60",
+  brief: "bg-muted text-muted-foreground",
   editing: "bg-blue-500/20 text-blue-400",
   review: "bg-yellow-500/20 text-yellow-400",
   revision: "bg-orange-500/20 text-orange-400",
@@ -76,37 +77,6 @@ export default function ProjectsPage() {
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
-    async function loadProjects() {
-      try {
-        const supabase = createClient()
-        const { data: { user } } = await supabase.auth.getUser()
-        if (!user) return
-
-        const { data } = await supabase
-          .from("projects")
-          .select("*, clients(name)")
-          .eq("editor_id", user.id)
-          .order("created_at", { ascending: false })
-
-        if (data) {
-          setProjects(
-            data.map((p: any) => ({
-              id: p.id,
-              name: p.name,
-              client: p.clients?.name ?? "Unknown",
-              status: p.status,
-              progress: p.progress ?? 0,
-              deadline: p.deadline,
-              budget: p.budget,
-              description: p.description,
-            }))
-          )
-        }
-      } catch {
-        setProjects([])
-      }
-    }
-
     loadProjects()
   }, [])
 
@@ -126,22 +96,77 @@ export default function ProjectsPage() {
     setFiltered(result)
   }, [search, statusFilter, projects])
 
+  async function loadProjects() {
+    try {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      const { data } = await supabase
+        .from("projects")
+        .select("*, clients(name)")
+        .eq("editor_id", user.id)
+        .order("created_at", { ascending: false })
+
+      if (data) {
+        setProjects(
+          data.map((p: any) => ({
+            id: p.id,
+            name: p.name,
+            client: p.clients?.name ?? "Unknown",
+            status: p.status,
+            progress: p.progress ?? 0,
+            deadline: p.deadline,
+            budget: p.budget,
+            description: p.description,
+          }))
+        )
+      }
+    } catch {
+      setProjects([])
+    }
+  }
+
   async function handleSave() {
     setSaving(true)
     try {
-      const newProject: ProjectData = {
-        id: Date.now().toString(),
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        toast.error("You must be logged in.")
+        return
+      }
+
+      const { data: clientData } = await supabase
+        .from("clients")
+        .select("id")
+        .eq("editor_id", user.id)
+        .ilike("name", form.client)
+        .single()
+
+      if (!clientData) {
+        toast.error("Client not found. Please add the client first.")
+        return
+      }
+
+      const { error } = await supabase.from("projects").insert({
         name: form.name,
-        client: form.client,
+        client_id: clientData.id,
+        editor_id: user.id,
         status: form.status,
         progress: form.progress,
         deadline: form.deadline || null,
         budget: form.budget ? Number(form.budget) : null,
         description: form.description || null,
-      }
-      setProjects((prev) => [newProject, ...prev])
+      })
+      if (error) throw error
+
+      toast.success("Project created successfully!")
       setDialogOpen(false)
       setForm(emptyForm)
+      await loadProjects()
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to create project.")
     } finally {
       setSaving(false)
     }
@@ -153,10 +178,10 @@ export default function ProjectsPage() {
     <div className="p-6 space-y-6 animate-fade-in">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">Projects</h1>
-          <p className="text-white/50 mt-1">Track and manage all your projects.</p>
+          <h1 className="text-2xl font-bold text-foreground">Projects</h1>
+          <p className="text-muted-foreground mt-1">Track and manage all your projects.</p>
         </div>
-        <Button onClick={() => { setForm(emptyForm); setDialogOpen(true) }} className="bg-gradient-to-r from-[#3A506B] to-[#5C7A9B] hover:from-[#4A607B] hover:to-[#6C8AAB] text-white">
+        <Button onClick={() => { setForm(emptyForm); setDialogOpen(true) }}>
           <Plus className="h-4 w-4 mr-2" />
           Add Project
         </Button>
@@ -164,23 +189,23 @@ export default function ProjectsPage() {
 
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/40" />
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             placeholder="Search projects..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-10 bg-white/5 border-white/10 text-white placeholder:text-white/40"
+            className="pl-10"
           />
         </div>
-        <div className="flex gap-1 p-1 rounded-lg bg-white/5 border border-white/10">
+        <div className="flex gap-1 p-1 rounded-lg bg-muted border border-border">
           {statuses.map((s) => (
             <button
               key={s}
               onClick={() => setStatusFilter(s)}
               className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
                 statusFilter === s
-                  ? "bg-white/15 text-white"
-                  : "text-white/50 hover:text-white/70"
+                  ? "bg-background text-foreground"
+                  : "text-muted-foreground hover:text-foreground"
               }`}
             >
               {s === "all" ? "All" : s.charAt(0).toUpperCase() + s.slice(1)}
@@ -192,8 +217,8 @@ export default function ProjectsPage() {
       <GlassCard className="overflow-hidden">
         {filtered.length === 0 ? (
           <div className="text-center py-16">
-            <FolderKanban className="h-12 w-12 text-white/20 mx-auto mb-3" />
-            <p className="text-white/40 mb-4">
+            <FolderKanban className="h-12 w-12 text-muted-foreground mx-auto mb-3 opacity-40" />
+            <p className="text-muted-foreground mb-4">
               {search || statusFilter !== "all"
                 ? "No projects match your filters."
                 : "No projects yet. Create your first project to get started."}
@@ -201,7 +226,7 @@ export default function ProjectsPage() {
             {!search && statusFilter === "all" && (
               <Button
                 onClick={() => { setForm(emptyForm); setDialogOpen(true) }}
-                variant="glass"
+                variant="ghost"
                 size="sm"
               >
                 <Plus className="h-4 w-4 mr-2" />
@@ -212,27 +237,27 @@ export default function ProjectsPage() {
         ) : (
           <Table>
             <TableHeader>
-              <TableRow className="border-white/10 hover:bg-transparent">
-                <TableHead className="text-white/60">Project</TableHead>
-                <TableHead className="text-white/60">Client</TableHead>
-                <TableHead className="text-white/60">Status</TableHead>
-                <TableHead className="text-white/60">Progress</TableHead>
-                <TableHead className="text-white/60">Deadline</TableHead>
-                <TableHead className="text-white/60 text-right">Budget</TableHead>
+              <TableRow className="border-border hover:bg-transparent">
+                <TableHead className="text-muted-foreground">Project</TableHead>
+                <TableHead className="text-muted-foreground">Client</TableHead>
+                <TableHead className="text-muted-foreground">Status</TableHead>
+                <TableHead className="text-muted-foreground">Progress</TableHead>
+                <TableHead className="text-muted-foreground">Deadline</TableHead>
+                <TableHead className="text-muted-foreground text-right">Budget</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filtered.map((project) => (
-                <TableRow key={project.id} className="border-white/5 hover:bg-white/5">
+                <TableRow key={project.id} className="border-border hover:bg-muted/50">
                   <TableCell>
                     <div>
-                      <p className="font-medium text-white">{project.name}</p>
+                      <p className="font-medium text-foreground">{project.name}</p>
                       {project.description && (
-                        <p className="text-xs text-white/40 mt-0.5 truncate max-w-xs">{project.description}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5 truncate max-w-xs">{project.description}</p>
                       )}
                     </div>
                   </TableCell>
-                  <TableCell className="text-white/60">{project.client}</TableCell>
+                  <TableCell className="text-muted-foreground">{project.client}</TableCell>
                   <TableCell>
                     <Badge className={`${statusColors[project.status]} border-0`}>
                       {project.status}
@@ -240,19 +265,19 @@ export default function ProjectsPage() {
                   </TableCell>
                   <TableCell>
                     <div className="w-24">
-                      <div className="h-2 rounded-full bg-white/10 overflow-hidden">
+                      <div className="h-2 rounded-full bg-muted overflow-hidden">
                         <div
-                          className={`h-full rounded-full bg-gradient-to-r ${progressColors[project.status] ?? "from-white/30 to-white/50"}`}
+                          className={`h-full rounded-full bg-gradient-to-r ${progressColors[project.status] ?? "from-muted-foreground/30 to-muted-foreground/50"}`}
                           style={{ width: `${project.progress}%` }}
                         />
                       </div>
-                      <p className="text-[10px] text-white/40 mt-1">{project.progress}%</p>
+                      <p className="text-[10px] text-muted-foreground mt-1">{project.progress}%</p>
                     </div>
                   </TableCell>
-                  <TableCell className="text-white/60 text-sm">
+                  <TableCell className="text-muted-foreground text-sm">
                     {project.deadline ? formatDate(project.deadline) : "—"}
                   </TableCell>
-                  <TableCell className="text-white text-right font-medium">
+                  <TableCell className="text-foreground text-right font-medium">
                     {project.budget ? formatINR(project.budget) : "—"}
                   </TableCell>
                 </TableRow>
@@ -263,48 +288,45 @@ export default function ProjectsPage() {
       </GlassCard>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="bg-[#141E3A] border-white/10 text-white">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>Add Project</DialogTitle>
-            <DialogDescription className="text-white/50">
+            <DialogDescription className="text-muted-foreground">
               Fill in the details to create a new project.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-2">
-              <Label className="text-white/70">Project Name *</Label>
+              <Label>Project Name *</Label>
               <Input
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
                 placeholder="e.g. YouTube Episode 42"
-                className="bg-white/5 border-white/10 text-white placeholder:text-white/40"
               />
             </div>
             <div className="space-y-2">
-              <Label className="text-white/70">Client *</Label>
+              <Label>Client *</Label>
               <Input
                 value={form.client}
                 onChange={(e) => setForm({ ...form, client: e.target.value })}
                 placeholder="Client name"
-                className="bg-white/5 border-white/10 text-white placeholder:text-white/40"
               />
             </div>
             <div className="space-y-2">
-              <Label className="text-white/70">Description</Label>
+              <Label>Description</Label>
               <Textarea
                 value={form.description}
                 onChange={(e) => setForm({ ...form, description: e.target.value })}
                 placeholder="Brief description of the project..."
-                className="bg-white/5 border-white/10 text-white placeholder:text-white/40"
               />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label className="text-white/70">Status</Label>
+                <Label>Status</Label>
                 <select
                   value={form.status}
                   onChange={(e) => setForm({ ...form, status: e.target.value as ProjectData["status"] })}
-                  className="flex h-10 w-full rounded-md border border-white/10 bg-white/5 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-white/20"
+                  className="flex h-10 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                 >
                   {["brief", "editing", "review", "revision", "approved", "delivered"].map((s) => (
                     <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>
@@ -312,34 +334,31 @@ export default function ProjectsPage() {
                 </select>
               </div>
               <div className="space-y-2">
-                <Label className="text-white/70">Budget (₹)</Label>
+                <Label>Budget (₹)</Label>
                 <Input
                   type="number"
                   value={form.budget}
                   onChange={(e) => setForm({ ...form, budget: e.target.value })}
                   placeholder="0"
-                  className="bg-white/5 border-white/10 text-white placeholder:text-white/40"
                 />
               </div>
             </div>
             <div className="space-y-2">
-              <Label className="text-white/70">Deadline</Label>
+              <Label>Deadline</Label>
               <Input
                 type="date"
                 value={form.deadline}
                 onChange={(e) => setForm({ ...form, deadline: e.target.value })}
-                className="bg-white/5 border-white/10 text-white"
               />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="ghost" onClick={() => setDialogOpen(false)} className="text-white/60 hover:text-white">
+            <Button variant="ghost" onClick={() => setDialogOpen(false)}>
               Cancel
             </Button>
             <Button
               onClick={handleSave}
               disabled={!form.name || !form.client || saving}
-              className="bg-gradient-to-r from-[#3A506B] to-[#5C7A9B] text-white"
             >
               {saving ? "Creating..." : "Create Project"}
             </Button>

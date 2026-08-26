@@ -32,8 +32,8 @@ export function Logo({ className, size = "md", showText = true }: LogoProps) {
         <path d="M32 18l10 6-10 6V18z" fill="#5C7A9B" />
       </svg>
       {showText && (
-        <span className={cn("font-bold text-white", sizes[size].text)}>
-          Client<span className="text-[#5C7A9B]">Regit</span>
+        <span className={cn("font-bold text-foreground", sizes[size].text)}>
+          Client<span className="text-primary">Regit</span>
         </span>
       )}
     </div>

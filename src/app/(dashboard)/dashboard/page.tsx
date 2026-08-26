@@ -38,12 +38,12 @@ function getGreeting(): string {
 }
 
 const statusColor: Record<string, string> = {
-  brief: "bg-white/10 text-white/60",
-  editing: "bg-blue-500/20 text-blue-400",
-  review: "bg-yellow-500/20 text-yellow-400",
-  revision: "bg-orange-500/20 text-orange-400",
-  approved: "bg-green-500/20 text-green-400",
-  delivered: "bg-purple-500/20 text-purple-400",
+  brief: "bg-muted text-muted-foreground",
+  editing: "bg-blue-500/20 text-blue-600 dark:text-blue-400",
+  review: "bg-yellow-500/20 text-yellow-600 dark:text-yellow-400",
+  revision: "bg-orange-500/20 text-orange-600 dark:text-orange-400",
+  approved: "bg-green-500/20 text-green-600 dark:text-green-400",
+  delivered: "bg-purple-500/20 text-purple-600 dark:text-purple-400",
 }
 
 export default function DashboardPage() {
@@ -73,6 +73,18 @@ export default function DashboardPage() {
 
         if (profile?.full_name) {
           setUserName(profile.full_name.split(" ")[0])
+        } else {
+          const metaName = user.user_metadata?.full_name
+          if (metaName) {
+            setUserName(metaName.split(" ")[0])
+          }
+          await supabase.from("profiles").upsert({
+            id: user.id,
+            full_name: metaName || "",
+            email: user.email || "",
+            phone: user.user_metadata?.phone || "",
+            role: user.user_metadata?.role || "editor",
+          }, { onConflict: "id" })
         }
 
         const [clientsRes, projectsRes, videosRes, invoicesRes, activitiesRes] = await Promise.all([
@@ -124,10 +136,10 @@ export default function DashboardPage() {
   }, [])
 
   const statCards = [
-    { label: "Active Clients", value: stats.activeClients, icon: Users, color: "bg-blue-500/20 text-blue-400" },
-    { label: "Active Projects", value: stats.activeProjects, icon: FolderKanban, color: "bg-green-500/20 text-green-400" },
-    { label: "Pending Reviews", value: stats.pendingReviews, icon: Video, color: "bg-yellow-500/20 text-yellow-400" },
-    { label: "Pending Payments", value: formatINR(stats.pendingPayments), icon: FileText, color: "bg-purple-500/20 text-purple-400" },
+    { label: "Active Clients", value: stats.activeClients, icon: Users, color: "bg-blue-500/20 text-blue-600 dark:text-blue-400" },
+    { label: "Active Projects", value: stats.activeProjects, icon: FolderKanban, color: "bg-green-500/20 text-green-600 dark:text-green-400" },
+    { label: "Pending Reviews", value: stats.pendingReviews, icon: Video, color: "bg-yellow-500/20 text-yellow-600 dark:text-yellow-400" },
+    { label: "Pending Payments", value: formatINR(stats.pendingPayments), icon: FileText, color: "bg-purple-500/20 text-purple-600 dark:text-purple-400" },
   ]
 
   const isEmpty = !loading && stats.activeClients === 0 && stats.activeProjects === 0
@@ -135,10 +147,10 @@ export default function DashboardPage() {
   return (
     <div className="p-6 space-y-6 animate-fade-in">
       <div>
-        <h1 className="text-2xl font-bold text-white">
+        <h1 className="text-2xl font-bold text-foreground">
           {getGreeting()}, {userName}
         </h1>
-        <div className="text-white/50 mt-1">
+        <div className="text-muted-foreground mt-1">
           Here&apos;s what&apos;s happening with your workspace.
         </div>
       </div>
@@ -148,8 +160,8 @@ export default function DashboardPage() {
           <GlassCard key={card.label} className="p-5">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-white/50">{card.label}</p>
-                <p className="text-2xl font-bold text-white mt-1">{card.value}</p>
+                <p className="text-sm text-muted-foreground">{card.label}</p>
+                <p className="text-2xl font-bold text-foreground mt-1">{card.value}</p>
               </div>
               <div className={`h-12 w-12 rounded-xl flex items-center justify-center ${card.color}`}>
                 <card.icon className="h-6 w-6" />
@@ -161,13 +173,13 @@ export default function DashboardPage() {
 
       {isEmpty ? (
         <GlassCard className="p-12 text-center">
-          <FolderKanban className="h-16 w-16 text-white/10 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-white mb-2">Welcome to ClientRegit</h2>
-          <p className="text-white/40 mb-6 max-w-md mx-auto">
+          <FolderKanban className="h-16 w-16 text-muted-foreground/30 mx-auto mb-4" />
+          <h2 className="text-xl font-semibold text-foreground mb-2">Welcome to ClientRegit</h2>
+          <p className="text-muted-foreground mb-6 max-w-md mx-auto">
             Get started by adding your first client. Once you have clients, you can create projects, upload videos, and track invoices.
           </p>
           <Link href="/clients">
-            <Button className="bg-white text-[#0B132B] hover:bg-white/90">
+            <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
               <Plus className="h-4 w-4 mr-2" />
               Add Your First Client
             </Button>
@@ -178,20 +190,20 @@ export default function DashboardPage() {
           <div className="lg:col-span-2">
             <GlassCard className="p-6">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold text-white">Recent Projects</h2>
+                <h2 className="text-lg font-semibold text-foreground">Recent Projects</h2>
                 <Link
                   href="/projects"
-                  className="text-sm text-white/50 hover:text-white flex items-center gap-1 transition-colors"
+                  className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors"
                 >
                   View all <ArrowRight className="h-4 w-4" />
                 </Link>
               </div>
               {projects.length === 0 ? (
                 <div className="text-center py-12">
-                  <FolderKanban className="h-12 w-12 text-white/20 mx-auto mb-3" />
-                  <p className="text-white/40 mb-4">No projects yet.</p>
+                  <FolderKanban className="h-12 w-12 text-muted-foreground/30 mx-auto mb-3" />
+                  <p className="text-muted-foreground mb-4">No projects yet.</p>
                   <Link href="/projects">
-                    <Button variant="outline" className="border-white/20 text-white hover:bg-white/10">
+                    <Button variant="outline" className="border-border text-foreground hover:bg-muted">
                       <Plus className="h-4 w-4 mr-2" />
                       Create Project
                     </Button>
@@ -202,23 +214,23 @@ export default function DashboardPage() {
                   {projects.map((project) => (
                     <div
                       key={project.id}
-                      className="flex items-center justify-between p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
+                      className="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
                     >
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-white truncate">{project.name}</p>
-                        <p className="text-xs text-white/40 mt-0.5">{project.client}</p>
+                        <p className="text-sm font-medium text-foreground truncate">{project.name}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">{project.client}</p>
                       </div>
                       <div className="flex items-center gap-3 ml-4">
                         <div className="w-24">
-                          <div className="h-1.5 rounded-full bg-white/10 overflow-hidden">
+                          <div className="h-1.5 rounded-full bg-border overflow-hidden">
                             <div
                               className="h-full rounded-full bg-gradient-to-r from-blue-500 to-cyan-400"
                               style={{ width: `${project.progress}%` }}
                             />
                           </div>
-                          <p className="text-[10px] text-white/40 text-right mt-0.5">{project.progress}%</p>
+                          <p className="text-[10px] text-muted-foreground text-right mt-0.5">{project.progress}%</p>
                         </div>
-                        <Badge className={`${statusColor[project.status] ?? "bg-white/10 text-white/60"} border-0`}>
+                        <Badge className={`${statusColor[project.status] ?? "bg-muted text-muted-foreground"} border-0`}>
                           {project.status}
                         </Badge>
                       </div>
@@ -232,21 +244,21 @@ export default function DashboardPage() {
           <div>
             <GlassCard className="p-6">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold text-white">Recent Activity</h2>
+                <h2 className="text-lg font-semibold text-foreground">Recent Activity</h2>
               </div>
               {activities.length === 0 ? (
                 <div className="text-center py-12">
-                  <Clock className="h-12 w-12 text-white/20 mx-auto mb-3" />
-                  <p className="text-white/40">No recent activity to show.</p>
+                  <Clock className="h-12 w-12 text-muted-foreground/30 mx-auto mb-3" />
+                  <p className="text-muted-foreground">No recent activity to show.</p>
                 </div>
               ) : (
                 <div className="space-y-4">
                   {activities.map((activity) => (
                     <div key={activity.id} className="flex gap-3">
-                      <div className="h-2 w-2 rounded-full bg-blue-400 mt-2 flex-shrink-0" />
+                      <div className="h-2 w-2 rounded-full bg-blue-500 mt-2 flex-shrink-0" />
                       <div>
-                        <p className="text-sm text-white/80">{activity.description}</p>
-                        <p className="text-xs text-white/40 mt-0.5">{activity.time}</p>
+                        <p className="text-sm text-foreground/80">{activity.description}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">{activity.time}</p>
                       </div>
                     </div>
                   ))}

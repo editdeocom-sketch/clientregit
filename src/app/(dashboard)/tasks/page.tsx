@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { GlassCard } from "@/components/layout/glass-card"
 import { Button } from "@/components/ui/button"
@@ -16,19 +16,29 @@ import {
   DialogFooter,
   DialogDescription,
 } from "@/components/ui/dialog"
-import { CheckSquare, Plus, Calendar, GripVertical } from "lucide-react"
+import { CheckSquare, Plus, Calendar, GripVertical, Trash2 } from "lucide-react"
+import { toast } from "sonner"
 
 interface TaskData {
   id: string
+  project_id: string
   title: string
   description: string | null
   status: "todo" | "in_progress" | "review" | "done"
   priority: "low" | "medium" | "high"
   due_date: string | null
+  assignee_id: string | null
+  created_at: string
+  updated_at: string
+}
+
+interface ProjectOption {
+  id: string
+  name: string
 }
 
 const columns: { key: TaskData["status"]; label: string; color: string }[] = [
-  { key: "todo", label: "TO DO", color: "border-white/10" },
+  { key: "todo", label: "TO DO", color: "border-border" },
   { key: "in_progress", label: "IN PROGRESS", color: "border-blue-500/30" },
   { key: "review", label: "REVIEW", color: "border-yellow-500/30" },
   { key: "done", label: "DONE", color: "border-green-500/30" },
@@ -46,48 +56,91 @@ const emptyForm = {
   status: "todo" as TaskData["status"],
   priority: "medium" as TaskData["priority"],
   due_date: "",
+  project_id: "",
 }
 
 export default function TasksPage() {
   const [tasks, setTasks] = useState<TaskData[]>([])
+  const [projects, setProjects] = useState<ProjectOption[]>([])
   const [dialogOpen, setDialogOpen] = useState(false)
   const [form, setForm] = useState(emptyForm)
   const [saving, setSaving] = useState(false)
+  const [deletingTask, setDeletingTask] = useState<TaskData | null>(null)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+
+  const loadTasks = useCallback(async () => {
+    try {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      const { data, error } = await supabase
+        .from("tasks")
+        .select("*")
+        .eq("assignee_id", user.id)
+        .order("created_at", { ascending: false })
+
+      if (error) throw error
+      if (data) {
+        setTasks(data as TaskData[])
+      }
+    } catch {
+      setTasks([])
+    }
+  }, [])
+
+  const loadProjects = useCallback(async () => {
+    try {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      const { data, error } = await supabase
+        .from("projects")
+        .select("id, name")
+        .eq("editor_id", user.id)
+        .order("name", { ascending: true })
+
+      if (error) throw error
+      if (data) {
+        setProjects(data as ProjectOption[])
+      }
+    } catch {
+      setProjects([])
+    }
+  }, [])
 
   useEffect(() => {
-    async function loadTasks() {
-      try {
-        const supabase = createClient()
-        const { data: { user } } = await supabase.auth.getUser()
-        if (!user) return
-
-        const { data } = await supabase
-          .from("tasks")
-          .select("*")
-          .eq("assignee_id", user.id)
-          .order("created_at", { ascending: false })
-
-        if (data) {
-          setTasks(data as TaskData[])
-        }
-      } catch {
-        setTasks([])
-      }
-    }
-
     loadTasks()
-  }, [])
+    loadProjects()
+  }, [loadTasks, loadProjects])
 
   function handleDragStart(e: React.DragEvent, taskId: string) {
     e.dataTransfer.setData("taskId", taskId)
   }
 
-  function handleDrop(e: React.DragEvent, newStatus: TaskData["status"]) {
+  async function handleDrop(e: React.DragEvent, newStatus: TaskData["status"]) {
     e.preventDefault()
     const taskId = e.dataTransfer.getData("taskId")
+    const task = tasks.find((t) => t.id === taskId)
+    if (!task || task.status === newStatus) return
+
     setTasks((prev) =>
       prev.map((t) => (t.id === taskId ? { ...t, status: newStatus } : t))
     )
+
+    try {
+      const supabase = createClient()
+      const { error } = await supabase
+        .from("tasks")
+        .update({ status: newStatus, updated_at: new Date().toISOString() })
+        .eq("id", taskId)
+      if (error) throw error
+      toast.success("Task status updated.")
+    } catch (err: unknown) {
+      toast.error("Failed to update task status.")
+      await loadTasks()
+    }
   }
 
   function handleDragOver(e: React.DragEvent) {
@@ -97,19 +150,62 @@ export default function TasksPage() {
   async function handleSave() {
     setSaving(true)
     try {
-      const newTask: TaskData = {
-        id: Date.now().toString(),
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        toast.error("You must be logged in.")
+        return
+      }
+
+      if (!form.project_id) {
+        toast.error("Please select a project.")
+        return
+      }
+
+      const { error } = await supabase.from("tasks").insert({
+        project_id: form.project_id,
         title: form.title,
         description: form.description || null,
         status: form.status,
         priority: form.priority,
         due_date: form.due_date || null,
-      }
-      setTasks((prev) => [...prev, newTask])
+        assignee_id: user.id,
+      })
+      if (error) throw error
+
+      toast.success("Task created successfully.")
       setDialogOpen(false)
       setForm(emptyForm)
+      await loadTasks()
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Failed to create task."
+      toast.error(message)
     } finally {
       setSaving(false)
+    }
+  }
+
+  function openDeleteDialog(task: TaskData) {
+    setDeletingTask(task)
+    setDeleteDialogOpen(true)
+  }
+
+  async function handleDelete() {
+    if (!deletingTask) return
+    try {
+      const supabase = createClient()
+      const { error } = await supabase
+        .from("tasks")
+        .delete()
+        .eq("id", deletingTask.id)
+      if (error) throw error
+      toast.success("Task deleted.")
+      setDeleteDialogOpen(false)
+      setDeletingTask(null)
+      await loadTasks()
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Failed to delete task."
+      toast.error(message)
     }
   }
 
@@ -119,8 +215,8 @@ export default function TasksPage() {
     <div className="p-6 space-y-6 animate-fade-in">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">Tasks</h1>
-          <p className="text-white/50 mt-1">Drag and drop tasks between columns.</p>
+          <h1 className="text-2xl font-bold text-foreground">Tasks</h1>
+          <p className="text-muted-foreground mt-1">Drag and drop tasks between columns.</p>
         </div>
         <Button onClick={() => { setForm(emptyForm); setDialogOpen(true) }} className="bg-gradient-to-r from-[#3A506B] to-[#5C7A9B] hover:from-[#4A607B] hover:to-[#6C8AAB] text-white">
           <Plus className="h-4 w-4 mr-2" />
@@ -130,8 +226,8 @@ export default function TasksPage() {
 
       {totalTasks === 0 ? (
         <GlassCard className="p-16 text-center">
-          <CheckSquare className="h-12 w-12 text-white/20 mx-auto mb-3" />
-          <p className="text-white/40 mb-4">No tasks yet. Create tasks to track your work.</p>
+          <CheckSquare className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
+          <p className="text-muted-foreground mb-4">No tasks yet. Create tasks to track your work.</p>
           <Button onClick={() => { setForm(emptyForm); setDialogOpen(true) }} variant="glass" size="sm">
             <Plus className="h-4 w-4 mr-2" />
             Add Task
@@ -144,15 +240,15 @@ export default function TasksPage() {
             return (
               <div
                 key={col.key}
-                className={`rounded-xl border-t-2 ${col.color} bg-white/[0.02] p-3 space-y-3 min-h-[200px]`}
+                className={`rounded-xl border-t-2 ${col.color} bg-card p-3 space-y-3 min-h-[200px]`}
                 onDrop={(e) => handleDrop(e, col.key)}
                 onDragOver={handleDragOver}
               >
                 <div className="flex items-center justify-between px-1">
-                  <h3 className="text-xs font-semibold text-white/50 uppercase tracking-wider">
+                  <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                     {col.label}
                   </h3>
-                  <span className="text-xs text-white/30 bg-white/5 rounded-full px-2 py-0.5">
+                  <span className="text-xs text-muted-foreground bg-muted rounded-full px-2 py-0.5">
                     {colTasks.length}
                   </span>
                 </div>
@@ -160,31 +256,39 @@ export default function TasksPage() {
                   {colTasks.map((task) => (
                     <GlassCard
                       key={task.id}
-                      className="p-3 cursor-grab active:cursor-grabbing hover:bg-white/10 transition-colors"
+                      className="p-3 cursor-grab active:cursor-grabbing hover:bg-muted transition-colors"
                       draggable
                       onDragStart={(e) => handleDragStart(e, task.id)}
                     >
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex items-start gap-2 flex-1 min-w-0">
-                          <GripVertical className="h-4 w-4 text-white/20 mt-0.5 flex-shrink-0" />
+                          <GripVertical className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
                           <div className="min-w-0">
-                            <p className="text-sm font-medium text-white leading-snug">{task.title}</p>
+                            <p className="text-sm font-medium text-foreground leading-snug">{task.title}</p>
                             {task.due_date && (
                               <div className="flex items-center gap-1 mt-1.5">
-                                <Calendar className="h-3 w-3 text-white/30" />
-                                <span className="text-[10px] text-white/40">{task.due_date}</span>
+                                <Calendar className="h-3 w-3 text-muted-foreground" />
+                                <span className="text-[10px] text-muted-foreground">{task.due_date}</span>
                               </div>
                             )}
                           </div>
                         </div>
-                        <Badge className={`${priorityConfig[task.priority].className} text-[10px] flex-shrink-0`}>
-                          {priorityConfig[task.priority].label}
-                        </Badge>
+                        <div className="flex items-center gap-1 flex-shrink-0">
+                          <Badge className={`${priorityConfig[task.priority].className} text-[10px]`}>
+                            {priorityConfig[task.priority].label}
+                          </Badge>
+                          <button
+                            onClick={() => openDeleteDialog(task)}
+                            className="p-1 rounded hover:bg-destructive/20 text-muted-foreground hover:text-destructive transition-colors"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </button>
+                        </div>
                       </div>
                     </GlassCard>
                   ))}
                   {colTasks.length === 0 && (
-                    <div className="text-center py-8 text-white/20 text-xs">
+                    <div className="text-center py-8 text-muted-foreground text-xs">
                       Drop tasks here
                     </div>
                   )}
@@ -196,39 +300,52 @@ export default function TasksPage() {
       )}
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="bg-[#141E3A] border-white/10 text-white">
+        <DialogContent className="bg-card border-border text-foreground">
           <DialogHeader>
             <DialogTitle>Add Task</DialogTitle>
-            <DialogDescription className="text-white/50">
-              Create a new task and assign it to a column.
+            <DialogDescription className="text-muted-foreground">
+              Create a new task and assign it to a project.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-2">
-              <Label className="text-white/70">Title *</Label>
+              <Label className="text-muted-foreground">Project *</Label>
+              <select
+                value={form.project_id}
+                onChange={(e) => setForm({ ...form, project_id: e.target.value })}
+                className="flex h-10 w-full rounded-md border border-border bg-muted px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+              >
+                <option value="">Select a project</option>
+                {projects.map((p) => (
+                  <option key={p.id} value={p.id}>{p.name}</option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-muted-foreground">Title *</Label>
               <Input
                 value={form.title}
                 onChange={(e) => setForm({ ...form, title: e.target.value })}
                 placeholder="Task title"
-                className="bg-white/5 border-white/10 text-white placeholder:text-white/40"
+                className="bg-muted border-border text-foreground placeholder:text-muted-foreground"
               />
             </div>
             <div className="space-y-2">
-              <Label className="text-white/70">Description</Label>
+              <Label className="text-muted-foreground">Description</Label>
               <Textarea
                 value={form.description}
                 onChange={(e) => setForm({ ...form, description: e.target.value })}
                 placeholder="Optional description..."
-                className="bg-white/5 border-white/10 text-white placeholder:text-white/40"
+                className="bg-muted border-border text-foreground placeholder:text-muted-foreground"
               />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label className="text-white/70">Status</Label>
+                <Label className="text-muted-foreground">Status</Label>
                 <select
                   value={form.status}
                   onChange={(e) => setForm({ ...form, status: e.target.value as TaskData["status"] })}
-                  className="flex h-10 w-full rounded-md border border-white/10 bg-white/5 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-white/20"
+                  className="flex h-10 w-full rounded-md border border-border bg-muted px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                 >
                   <option value="todo">To Do</option>
                   <option value="in_progress">In Progress</option>
@@ -237,11 +354,11 @@ export default function TasksPage() {
                 </select>
               </div>
               <div className="space-y-2">
-                <Label className="text-white/70">Priority</Label>
+                <Label className="text-muted-foreground">Priority</Label>
                 <select
                   value={form.priority}
                   onChange={(e) => setForm({ ...form, priority: e.target.value as TaskData["priority"] })}
-                  className="flex h-10 w-full rounded-md border border-white/10 bg-white/5 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-white/20"
+                  className="flex h-10 w-full rounded-md border border-border bg-muted px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                 >
                   <option value="low">Low</option>
                   <option value="medium">Medium</option>
@@ -250,25 +367,47 @@ export default function TasksPage() {
               </div>
             </div>
             <div className="space-y-2">
-              <Label className="text-white/70">Due Date</Label>
+              <Label className="text-muted-foreground">Due Date</Label>
               <Input
                 type="date"
                 value={form.due_date}
                 onChange={(e) => setForm({ ...form, due_date: e.target.value })}
-                className="bg-white/5 border-white/10 text-white"
+                className="bg-muted border-border text-foreground"
               />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="ghost" onClick={() => setDialogOpen(false)} className="text-white/60 hover:text-white">
+            <Button variant="ghost" onClick={() => setDialogOpen(false)} className="text-muted-foreground hover:text-foreground">
               Cancel
             </Button>
             <Button
               onClick={handleSave}
-              disabled={!form.title || saving}
+              disabled={!form.title || !form.project_id || saving}
               className="bg-gradient-to-r from-[#3A506B] to-[#5C7A9B] text-white"
             >
               {saving ? "Creating..." : "Create Task"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent className="bg-card border-border text-foreground">
+          <DialogHeader>
+            <DialogTitle>Delete Task</DialogTitle>
+            <DialogDescription className="text-muted-foreground">
+              Are you sure you want to delete &ldquo;{deletingTask?.title}&rdquo;? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setDeleteDialogOpen(false)} className="text-muted-foreground hover:text-foreground">
+              Cancel
+            </Button>
+            <Button
+              onClick={handleDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
             </Button>
           </DialogFooter>
         </DialogContent>

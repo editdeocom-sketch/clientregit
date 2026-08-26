@@ -18,7 +18,6 @@ import {
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Logo } from "@/components/layout/logo"
 import { useState } from "react"
 
@@ -42,24 +41,24 @@ export function Sidebar() {
   return (
     <aside
       className={cn(
-        "fixed left-0 top-0 z-40 h-screen bg-[#0B132B] border-r border-white/5 transition-all duration-300",
+        "fixed left-0 top-0 z-40 h-screen bg-sidebar border-r border-sidebar-border transition-all duration-300",
         collapsed ? "w-20" : "w-72"
       )}
     >
       <div className="flex h-full flex-col">
-        <div className="flex h-16 items-center justify-between px-4 border-b border-white/10">
+        <div className="flex h-16 items-center justify-between px-4 border-b border-sidebar-border">
           {!collapsed && (
             <Link href="/dashboard" className="flex items-center">
               <Logo size="sm" showText={false} />
-              <span className="ml-2 font-semibold text-lg text-white">
-                Client<span className="text-[#5C7A9B]">Regit</span>
+              <span className="ml-2 font-semibold text-lg text-sidebar-foreground">
+                Client<span className="text-muted-foreground">Regit</span>
               </span>
             </Link>
           )}
           <Button
             variant="ghost"
             size="icon"
-            className={cn("text-white/60 hover:text-white", collapsed && "mx-auto")}
+            className={cn("text-muted-foreground hover:text-foreground", collapsed && "mx-auto")}
             onClick={() => setCollapsed(!collapsed)}
             aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
@@ -70,7 +69,7 @@ export function Sidebar() {
         <nav className="flex-1 space-y-1 px-3 py-4 overflow-y-auto">
           {!collapsed && (
             <>
-              <p className="px-3 py-1 text-xs font-medium text-white/40 uppercase tracking-wider">
+              <p className="px-3 py-1 text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 Workspace
               </p>
               {navigation.map((item) => {
@@ -82,8 +81,8 @@ export function Sidebar() {
                     className={cn(
                       "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
                       isActive
-                        ? "bg-white/10 text-white"
-                        : "text-white/60 hover:bg-white/5 hover:text-white"
+                        ? "bg-muted text-foreground"
+                        : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
                     )}
                   >
                     <item.icon className="h-5 w-5 flex-shrink-0" />
@@ -91,8 +90,8 @@ export function Sidebar() {
                   </Link>
                 )
               })}
-              <Separator className="my-4 border-white/10" />
-              <p className="px-3 py-1 text-xs font-medium text-white/40 uppercase tracking-wider">
+              <Separator className="my-4" />
+              <p className="px-3 py-1 text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 System
               </p>
               {systemNavigation.map((item) => {
@@ -104,8 +103,8 @@ export function Sidebar() {
                     className={cn(
                       "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
                       isActive
-                        ? "bg-white/10 text-white"
-                        : "text-white/60 hover:bg-white/5 hover:text-white"
+                        ? "bg-muted text-foreground"
+                        : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
                     )}
                   >
                     <item.icon className="h-5 w-5 flex-shrink-0" />
@@ -117,12 +116,12 @@ export function Sidebar() {
           )}
         </nav>
 
-        <div className="border-t border-white/10 p-4">
+        <div className="border-t border-sidebar-border p-4">
           {!collapsed ? (
             <div className="space-y-2">
               <Link
                 href="/settings"
-                className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-white/60 hover:bg-white/5 hover:text-white transition-colors"
+                className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-colors"
               >
                 <User className="h-5 w-5 flex-shrink-0" />
                 <span>Profile</span>
@@ -130,7 +129,7 @@ export function Sidebar() {
               <form action="/api/auth/logout" method="POST">
                 <button
                   type="submit"
-                  className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-white/60 hover:bg-white/5 hover:text-white transition-colors"
+                  className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-colors"
                 >
                   <LogOut className="h-5 w-5 flex-shrink-0" />
                   <span>Logout</span>
@@ -141,7 +140,7 @@ export function Sidebar() {
             <div className="flex flex-col items-center gap-2">
               <Link
                 href="/settings"
-                className="rounded-lg p-2 text-white/60 hover:bg-white/5 hover:text-white transition-colors"
+                className="rounded-lg p-2 text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-colors"
                 title="Profile"
               >
                 <User className="h-5 w-5" />
@@ -149,7 +148,7 @@ export function Sidebar() {
               <form action="/api/auth/logout" method="POST">
                 <button
                   type="submit"
-                  className="rounded-lg p-2 text-white/60 hover:bg-white/5 hover:text-white transition-colors w-full"
+                  className="rounded-lg p-2 text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-colors w-full"
                   title="Logout"
                 >
                   <LogOut className="h-5 w-5 mx-auto" />

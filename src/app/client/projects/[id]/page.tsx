@@ -48,13 +48,13 @@ const demoVideos: VideoData[] = [
 ]
 
 const statusColor: Record<string, string> = {
-  brief: "bg-white/10 text-white/60",
-  editing: "bg-blue-500/20 text-blue-400",
-  review: "bg-yellow-500/20 text-yellow-400",
-  revision: "bg-orange-500/20 text-orange-400",
-  approved: "bg-green-500/20 text-green-400",
-  delivered: "bg-purple-500/20 text-purple-400",
-  awaiting_review: "bg-yellow-500/20 text-yellow-400",
+  brief: "bg-muted text-muted-foreground",
+  editing: "bg-blue-500/20 text-blue-600 dark:text-blue-400",
+  review: "bg-yellow-500/20 text-yellow-600 dark:text-yellow-400",
+  revision: "bg-orange-500/20 text-orange-600 dark:text-orange-400",
+  approved: "bg-green-500/20 text-green-600 dark:text-green-400",
+  delivered: "bg-purple-500/20 text-purple-600 dark:text-purple-400",
+  awaiting_review: "bg-yellow-500/20 text-yellow-600 dark:text-yellow-400",
 }
 
 const progressGradients: Record<string, string> = {
@@ -130,18 +130,18 @@ export default function ClientProjectDetailPage() {
           variant="ghost"
           size="icon"
           onClick={() => router.push("/client/projects")}
-          className="text-white/60 hover:text-white"
+          className="text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div className="flex-1">
-          <h1 className="text-2xl font-bold text-white">{project.name}</h1>
+          <h1 className="text-2xl font-bold text-foreground">{project.name}</h1>
           <div className="flex items-center gap-3 mt-1">
-            <Badge className={`${statusColor[project.status] ?? "bg-white/10 text-white/60"} border-0`}>
+            <Badge className={`${statusColor[project.status] ?? "bg-muted text-muted-foreground"} border-0`}>
               {project.status}
             </Badge>
             {project.deadline && (
-              <span className="text-sm text-white/50">Due {formatDate(project.deadline)}</span>
+              <span className="text-sm text-muted-foreground">Due {formatDate(project.deadline)}</span>
             )}
             {isDemo && (
               <Badge variant="glass" className="text-xs">
@@ -154,43 +154,43 @@ export default function ClientProjectDetailPage() {
 
       <GlassCard className="p-4">
         <div className="flex items-center justify-between mb-2">
-          <p className="text-sm text-white/60">Project Progress</p>
-          <p className="text-sm font-medium text-white">{project.progress}%</p>
+          <p className="text-sm text-muted-foreground">Project Progress</p>
+          <p className="text-sm font-medium text-foreground">{project.progress}%</p>
         </div>
-        <div className="h-2.5 rounded-full bg-white/10 overflow-hidden">
+        <div className="h-2.5 rounded-full bg-border overflow-hidden">
           <div
-            className={`h-full rounded-full bg-gradient-to-r ${progressGradients[project.status] ?? "from-white/30 to-white/50"}`}
+            className={`h-full rounded-full bg-gradient-to-r ${progressGradients[project.status] ?? "from-muted-foreground/30 to-muted-foreground/50"}`}
             style={{ width: `${project.progress}%` }}
           />
         </div>
       </GlassCard>
 
       <GlassCard className="p-6">
-        <h2 className="text-lg font-semibold text-white mb-4">Videos</h2>
+        <h2 className="text-lg font-semibold text-foreground mb-4">Videos</h2>
         {videos.length === 0 ? (
           <div className="text-center py-12">
-            <FolderKanban className="h-12 w-12 text-white/20 mx-auto mb-3" />
-            <p className="text-white/40">No videos uploaded for this project yet.</p>
+            <FolderKanban className="h-12 w-12 text-muted-foreground/30 mx-auto mb-3" />
+            <p className="text-muted-foreground">No videos uploaded for this project yet.</p>
           </div>
         ) : (
           <div className="space-y-3">
             {videos.map((video) => (
               <div
                 key={video.id}
-                className="flex items-center justify-between p-4 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
+                className="flex items-center justify-between p-4 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
               >
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <p className="text-sm font-medium text-white truncate">{video.title}</p>
+                    <p className="text-sm font-medium text-foreground truncate">{video.title}</p>
                     <Badge variant="glass" className="text-[10px] flex-shrink-0">
                       v{video.version}
                     </Badge>
                   </div>
                   <div className="flex items-center gap-2 mt-1">
-                    <Badge className={`${statusColor[video.status] ?? "bg-white/10 text-white/60"} border-0 text-[10px]`}>
+                    <Badge className={`${statusColor[video.status] ?? "bg-muted text-muted-foreground"} border-0 text-[10px]`}>
                       {video.status.replace(/_/g, " ")}
                     </Badge>
-                    <p className="text-xs text-white/40">{formatDate(video.uploaded_at)}</p>
+                    <p className="text-xs text-muted-foreground">{formatDate(video.uploaded_at)}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2 ml-4 flex-shrink-0">
@@ -204,11 +204,11 @@ export default function ClientProjectDetailPage() {
                     <MessageSquare className="h-3.5 w-3.5 mr-1.5" />
                     Comment
                   </Button>
-                  <Button variant="glass" size="sm" className="text-xs text-orange-400 hover:text-orange-300">
+                  <Button variant="glass" size="sm" className="text-xs text-orange-600 dark:text-orange-400 hover:text-orange-500 dark:hover:text-orange-300">
                     <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
                     Request Changes
                   </Button>
-                  <Button variant="glass" size="sm" className="text-xs text-green-400 hover:text-green-300">
+                  <Button variant="glass" size="sm" className="text-xs text-green-600 dark:text-green-400 hover:text-green-500 dark:hover:text-green-300">
                     <CheckCircle className="h-3.5 w-3.5 mr-1.5" />
                     Approve
                   </Button>
