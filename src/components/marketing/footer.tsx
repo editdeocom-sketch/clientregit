@@ -1,15 +1,13 @@
 import Link from "next/link"
-import { VideoIcon } from "lucide-react"
+import { Logo } from "@/components/layout/logo"
 
 const productLinks = [
   { label: "Features", href: "/#features" },
-  { label: "Pricing", href: "/#pricing" },
   { label: "FAQ", href: "/#faq" },
 ]
 
 const resourceLinks = [
-  { label: "Help", href: "/#help" },
-  { label: "Blog", href: "/#blog" },
+  { label: "Blog", href: "/blog" },
   { label: "About", href: "/about" },
   { label: "Contact", href: "/contact" },
 ]
@@ -22,13 +20,12 @@ const legalLinks = [
 
 export function MarketingFooter() {
   return (
-    <footer className="border-t border-white/10 py-16 px-6">
+    <footer className="border-t border-white/10 py-16 px-6 bg-[#0B132B]">
       <div className="mx-auto max-w-6xl">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
           <div>
-            <Link href="/" className="flex items-center gap-2 text-xl font-bold text-white mb-3">
-              <VideoIcon className="h-5 w-5" />
-              ClientRegit
+            <Link href="/" className="inline-block mb-3">
+              <Logo size="sm" />
             </Link>
             <p className="text-sm text-white/40">
               Manage clients. Deliver better work.
@@ -44,7 +41,7 @@ export function MarketingFooter() {
                 <li key={link.label}>
                   <Link
                     href={link.href}
-                    className="text-sm text-white/40 hover:text-white transition-colors"
+                    className="text-sm text-white/40 hover:text-white transition-colors duration-200"
                   >
                     {link.label}
                   </Link>
@@ -62,7 +59,7 @@ export function MarketingFooter() {
                 <li key={link.label}>
                   <Link
                     href={link.href}
-                    className="text-sm text-white/40 hover:text-white transition-colors"
+                    className="text-sm text-white/40 hover:text-white transition-colors duration-200"
                   >
                     {link.label}
                   </Link>
@@ -80,7 +77,7 @@ export function MarketingFooter() {
                 <li key={link.label}>
                   <Link
                     href={link.href}
-                    className="text-sm text-white/40 hover:text-white transition-colors"
+                    className="text-sm text-white/40 hover:text-white transition-colors duration-200"
                   >
                     {link.label}
                   </Link>

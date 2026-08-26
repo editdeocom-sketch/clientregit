@@ -3,7 +3,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
-import { VideoIcon, Loader2, ArrowLeft, CheckCircle2 } from "lucide-react";
+import { Loader2, ArrowLeft, CheckCircle2 } from "lucide-react";
+import { Logo } from "@/components/layout/logo";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -66,9 +67,8 @@ export default function ForgotPasswordPage() {
     <div className="flex min-h-screen items-center justify-center bg-[#0B132B] px-4">
       <div className="w-full max-w-md bg-[#141E3A]/60 backdrop-blur-lg border border-white/10 rounded-2xl p-8">
         <div className="flex flex-col items-center mb-8">
-          <div className="flex items-center gap-2 text-2xl font-bold mb-2">
-            <VideoIcon className="h-7 w-7" />
-            ClientRegit
+          <div className="mb-2">
+            <Logo size="md" />
           </div>
           <p className="text-sm text-white/50">Reset your password</p>
         </div>

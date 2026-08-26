@@ -19,6 +19,7 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Logo } from "@/components/layout/logo"
 import { useState } from "react"
 
 const navigation = [
@@ -48,11 +49,11 @@ export function Sidebar() {
       <div className="flex h-full flex-col">
         <div className="flex h-16 items-center justify-between px-4 border-b border-white/10">
           {!collapsed && (
-            <Link href="/dashboard" className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-[#3A506B] to-[#5C7A9B]">
-                <Video className="h-5 w-5 text-white" />
-              </div>
-              <span className="font-semibold text-lg text-white">ClientRegit</span>
+            <Link href="/dashboard" className="flex items-center">
+              <Logo size="sm" showText={false} />
+              <span className="ml-2 font-semibold text-lg text-white">
+                Client<span className="text-[#5C7A9B]">Regit</span>
+              </span>
             </Link>
           )}
           <Button

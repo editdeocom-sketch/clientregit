@@ -2,14 +2,15 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { VideoIcon, Menu, X } from "lucide-react"
+import { Menu, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { Logo } from "@/components/layout/logo"
 
 const navLinks = [
   { label: "Features", href: "/#features" },
   { label: "How It Works", href: "/#how-it-works" },
   { label: "FAQ", href: "/#faq" },
-  { label: "Blog", href: "/#blog" },
+  { label: "Blog", href: "/blog" },
 ]
 
 export function MarketingNavbar() {
@@ -18,9 +19,11 @@ export function MarketingNavbar() {
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-[#0B132B]/80 backdrop-blur-md border-b border-white/10">
       <div className="mx-auto max-w-7xl flex items-center justify-between px-6 py-4">
-        <Link href="/" className="flex items-center gap-2 text-xl font-bold text-white">
-          <VideoIcon className="h-6 w-6 text-white" />
-          ClientRegit
+        <Link href="/" className="flex items-center">
+          <Logo size="sm" showText={false} />
+          <span className="ml-2 text-xl font-bold text-white">
+            Client<span className="text-[#5C7A9B]">Regit</span>
+          </span>
         </Link>
 
         <div className="hidden md:flex items-center gap-8">
@@ -28,7 +31,7 @@ export function MarketingNavbar() {
             <Link
               key={link.label}
               href={link.href}
-              className="text-sm text-white/70 hover:text-white transition-colors"
+              className="text-sm text-white/70 hover:text-white transition-colors duration-200"
             >
               {link.label}
             </Link>
@@ -57,7 +60,7 @@ export function MarketingNavbar() {
       </div>
 
       {mobileNavOpen && (
-        <div className="md:hidden border-t border-white/10 bg-[#0B132B]/95 backdrop-blur-md px-6 py-4 space-y-4">
+        <div className="md:hidden border-t border-white/10 bg-[#0B132B]/95 backdrop-blur-md px-6 py-4 space-y-4 animate-slide-up">
           {navLinks.map((link) => (
             <Link
               key={link.label}

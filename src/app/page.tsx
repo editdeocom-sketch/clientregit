@@ -17,10 +17,11 @@ import {
   Clapperboard,
   Building2,
   Briefcase,
-  VideoIcon,
 } from "lucide-react";
 import { WaveBackground } from "@/components/layout/wave-background";
 import { GlassCard } from "@/components/layout/glass-card";
+import { Logo } from "@/components/layout/logo";
+import { MarketingFooter } from "@/components/marketing/footer";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { AnimatedSection } from "@/hooks/use-in-view";
@@ -149,9 +150,11 @@ export default function LandingPage() {
       {/* ── Nav ── */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-[#0B132B]/80 backdrop-blur-md border-b border-white/10 transition-all duration-300">
         <div className="mx-auto max-w-7xl flex items-center justify-between px-6 py-4">
-          <a href="/" className="flex items-center gap-2 text-xl font-bold hover-lift">
-            <VideoIcon className="h-6 w-6 text-white" />
-            ClientRegit
+          <a href="/" className="flex items-center">
+            <Logo size="sm" showText={false} />
+            <span className="ml-2 text-xl font-bold text-white">
+              Client<span className="text-[#5C7A9B]">Regit</span>
+            </span>
           </a>
 
           <div className="hidden md:flex items-center gap-8">
@@ -414,82 +417,7 @@ export default function LandingPage() {
         </AnimatedSection>
       </section>
 
-      {/* ── Footer ── */}
-      <footer className="border-t border-white/10 py-16 px-6">
-        <div className="mx-auto max-w-6xl">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
-            <div>
-              <a href="/" className="flex items-center gap-2 text-xl font-bold mb-3">
-                <VideoIcon className="h-5 w-5" />
-                ClientRegit
-              </a>
-              <p className="text-sm text-white/40">
-                Manage clients. Deliver better work.
-              </p>
-            </div>
-
-            <div>
-              <h4 className="text-sm font-semibold uppercase tracking-wider text-white/60 mb-4">
-                Product
-              </h4>
-              <ul className="space-y-3">
-                <li>
-                  <a href="#features" className="text-sm text-white/40 hover:text-white transition-colors duration-200">
-                    Features
-                  </a>
-                </li>
-                <li>
-                  <a href="#faq" className="text-sm text-white/40 hover:text-white transition-colors duration-200">
-                    FAQ
-                  </a>
-                </li>
-              </ul>
-            </div>
-
-            <div>
-              <h4 className="text-sm font-semibold uppercase tracking-wider text-white/60 mb-4">
-                Resources
-              </h4>
-              <ul className="space-y-3">
-                <li>
-                  <Link href="/blog" className="text-sm text-white/40 hover:text-white transition-colors duration-200">
-                    Blog
-                  </Link>
-                </li>
-              </ul>
-            </div>
-
-            <div>
-              <h4 className="text-sm font-semibold uppercase tracking-wider text-white/60 mb-4">
-                Legal
-              </h4>
-              <ul className="space-y-3">
-                <li>
-                  <Link href="/privacy" className="text-sm text-white/40 hover:text-white transition-colors duration-200">
-                    Privacy Policy
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/terms" className="text-sm text-white/40 hover:text-white transition-colors duration-200">
-                    Terms &amp; Conditions
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/cookies" className="text-sm text-white/40 hover:text-white transition-colors duration-200">
-                    Cookie Policy
-                  </Link>
-                </li>
-              </ul>
-            </div>
-          </div>
-
-          <div className="mt-12 pt-8 border-t border-white/10 text-center">
-            <p className="text-xs text-white/30">
-              &copy; 2026 ClientRegit. All rights reserved.
-            </p>
-          </div>
-        </div>
-      </footer>
+      <MarketingFooter />
     </div>
   );
 }
