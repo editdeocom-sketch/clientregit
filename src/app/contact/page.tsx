@@ -40,17 +40,17 @@ export default function ContactPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0B132B] text-white">
+    <div className="min-h-screen bg-background text-foreground">
       <MarketingNavbar />
 
       <section className="relative pt-32 pb-20 px-6 overflow-hidden">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-gradient-to-br from-[#3A506B]/30 to-transparent blur-3xl pointer-events-none" />
         <div className="relative z-10 mx-auto max-w-4xl text-center">
-          <p className="text-sm uppercase tracking-widest text-white/50 mb-6">Contact</p>
+          <p className="text-sm uppercase tracking-widest text-muted-foreground mb-6">Contact</p>
           <h1 className="text-4xl md:text-6xl font-bold leading-tight tracking-tight mb-6">
             Get in Touch
           </h1>
-          <p className="mx-auto max-w-xl text-lg text-white/60 leading-relaxed">
+          <p className="mx-auto max-w-xl text-lg text-muted-foreground leading-relaxed">
             Have a question, suggestion, or just want to say hello? We&apos;d love to hear from you.
           </p>
         </div>
@@ -63,48 +63,48 @@ export default function ContactPage() {
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <Label className="text-white/70">Name</Label>
+                    <Label className="text-foreground/70">Name</Label>
                     <Input
                       value={name}
                       onChange={(e) => setName(e.target.value)}
                       required
-                      className="bg-white/5 border-white/10 text-white placeholder:text-white/30 focus-visible:ring-white/20"
+                      className="bg-muted/50 border-border text-foreground placeholder:text-muted-foreground focus-visible:ring-ring/20"
                       placeholder="Your name"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-white/70">Email</Label>
+                    <Label className="text-foreground/70">Email</Label>
                     <Input
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       required
-                      className="bg-white/5 border-white/10 text-white placeholder:text-white/30 focus-visible:ring-white/20"
+                      className="bg-muted/50 border-border text-foreground placeholder:text-muted-foreground focus-visible:ring-ring/20"
                       placeholder="your@email.com"
                     />
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-white/70">Subject</Label>
+                  <Label className="text-foreground/70">Subject</Label>
                   <Select value={subject} onValueChange={setSubject} required>
-                    <SelectTrigger className="bg-white/5 border-white/10 text-white focus:ring-white/20">
+                    <SelectTrigger className="bg-muted/50 border-border text-foreground focus:ring-ring/20">
                       <SelectValue placeholder="Select a subject" />
                     </SelectTrigger>
-                    <SelectContent className="bg-[#0B132B] border-white/10">
-                      <SelectItem value="general" className="text-white focus:bg-white/10 focus:text-white">
+                    <SelectContent className="bg-background border-border">
+                      <SelectItem value="general" className="text-foreground focus:bg-muted focus:text-foreground">
                         General Inquiry
                       </SelectItem>
-                      <SelectItem value="support" className="text-white focus:bg-white/10 focus:text-white">
+                      <SelectItem value="support" className="text-foreground focus:bg-muted focus:text-foreground">
                         Support
                       </SelectItem>
-                      <SelectItem value="billing" className="text-white focus:bg-white/10 focus:text-white">
+                      <SelectItem value="billing" className="text-foreground focus:bg-muted focus:text-foreground">
                         Billing
                       </SelectItem>
-                      <SelectItem value="feedback" className="text-white focus:bg-white/10 focus:text-white">
+                      <SelectItem value="feedback" className="text-foreground focus:bg-muted focus:text-foreground">
                         Feedback
                       </SelectItem>
-                      <SelectItem value="other" className="text-white focus:bg-white/10 focus:text-white">
+                      <SelectItem value="other" className="text-foreground focus:bg-muted focus:text-foreground">
                         Other
                       </SelectItem>
                     </SelectContent>
@@ -112,13 +112,13 @@ export default function ContactPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-white/70">Message</Label>
+                  <Label className="text-foreground/70">Message</Label>
                   <Textarea
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
                     required
                     rows={6}
-                    className="bg-white/5 border-white/10 text-white placeholder:text-white/30 focus-visible:ring-white/20 resize-none"
+                    className="bg-muted/50 border-border text-foreground placeholder:text-muted-foreground focus-visible:ring-ring/20 resize-none"
                     placeholder="Tell us how we can help..."
                   />
                 </div>
@@ -126,7 +126,7 @@ export default function ContactPage() {
                 <div className="flex justify-end">
                   <Button
                     type="submit"
-                    className="bg-white text-[#0B132B] hover:bg-white/90 px-8"
+                    className="bg-primary text-primary-foreground hover:bg-primary/90 px-8"
                     disabled={loading}
                   >
                     {loading ? "Sending..." : "Send Message"}
@@ -138,15 +138,15 @@ export default function ContactPage() {
 
           <div className="space-y-6">
             <GlassCard className="p-6">
-              <h3 className="text-lg font-semibold text-white mb-2">Email Us</h3>
-              <p className="text-sm text-white/50 mb-4">
+              <h3 className="text-lg font-semibold text-foreground mb-2">Email Us</h3>
+              <p className="text-sm text-muted-foreground mb-4">
                 We typically respond within 24 hours.
               </p>
-              <div className="flex items-center gap-3 text-white/70">
+              <div className="flex items-center gap-3 text-foreground/70">
                 <Mail className="h-5 w-5" />
                 <a
                   href="mailto:hello@clientregit.com"
-                  className="text-sm hover:text-white transition-colors"
+                  className="text-sm hover:text-foreground transition-colors"
                 >
                   hello@clientregit.com
                 </a>
@@ -154,8 +154,8 @@ export default function ContactPage() {
             </GlassCard>
 
             <GlassCard className="p-6">
-              <h3 className="text-lg font-semibold text-white mb-2">Follow Us</h3>
-              <p className="text-sm text-white/50">
+              <h3 className="text-lg font-semibold text-foreground mb-2">Follow Us</h3>
+              <p className="text-sm text-muted-foreground">
                 Stay updated with the latest news and product updates.
               </p>
             </GlassCard>

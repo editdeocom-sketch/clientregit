@@ -31,7 +31,7 @@ export function CookieConsent() {
       <GlassCard variant="strong" className="mx-auto max-w-4xl p-6">
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
           <div className="flex-1">
-            <p className="text-sm text-white/80 leading-relaxed">
+            <p className="text-sm text-foreground/80 leading-relaxed">
               We use cookies to improve ClientRegit&apos;s experience and understand
               how people use our website.
             </p>
@@ -39,13 +39,13 @@ export function CookieConsent() {
           <div className="flex items-center gap-3 flex-shrink-0">
             <Button
               variant="outline"
-              className="border-white/20 text-white hover:bg-white/10"
+              className="border-border text-foreground hover:bg-muted"
               onClick={handleManage}
             >
               Manage Preferences
             </Button>
             <Button
-              className="bg-white text-[#0B132B] hover:bg-white/90"
+              className="bg-primary text-primary-foreground hover:bg-primary/90"
               onClick={handleAccept}
             >
               Accept

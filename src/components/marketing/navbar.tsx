@@ -17,12 +17,12 @@ export function MarketingNavbar() {
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-[#0B132B]/80 backdrop-blur-md border-b border-white/10">
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-border">
       <div className="mx-auto max-w-7xl flex items-center justify-between px-6 py-4">
         <Link href="/" className="flex items-center">
           <Logo size="sm" showText={false} />
-          <span className="ml-2 text-xl font-bold text-white">
-            Client<span className="text-[#5C7A9B]">Regit</span>
+          <span className="ml-2 text-xl font-bold text-foreground">
+            Client<span className="text-primary">Regit</span>
           </span>
         </Link>
 
@@ -31,7 +31,7 @@ export function MarketingNavbar() {
             <Link
               key={link.label}
               href={link.href}
-              className="text-sm text-white/70 hover:text-white transition-colors duration-200"
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors duration-200"
             >
               {link.label}
             </Link>
@@ -40,19 +40,19 @@ export function MarketingNavbar() {
 
         <div className="hidden md:flex items-center gap-3">
           <Link href="/login">
-            <Button variant="ghost" className="text-white/70 hover:text-white">
+            <Button variant="ghost" className="text-muted-foreground hover:text-foreground">
               Login
             </Button>
           </Link>
           <Link href="/signup">
-            <Button className="bg-white text-[#0B132B] hover:bg-white/90">
+            <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
               Get Started
             </Button>
           </Link>
         </div>
 
         <button
-          className="md:hidden text-white/70 hover:text-white"
+          className="md:hidden text-muted-foreground hover:text-foreground"
           onClick={() => setMobileNavOpen(!mobileNavOpen)}
         >
           {mobileNavOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
@@ -60,12 +60,12 @@ export function MarketingNavbar() {
       </div>
 
       {mobileNavOpen && (
-        <div className="md:hidden border-t border-white/10 bg-[#0B132B]/95 backdrop-blur-md px-6 py-4 space-y-4 animate-slide-up">
+        <div className="md:hidden border-t border-border bg-background/95 backdrop-blur-md px-6 py-4 space-y-4 animate-slide-up">
           {navLinks.map((link) => (
             <Link
               key={link.label}
               href={link.href}
-              className="block text-sm text-white/70 hover:text-white transition-colors"
+              className="block text-sm text-muted-foreground hover:text-foreground transition-colors"
               onClick={() => setMobileNavOpen(false)}
             >
               {link.label}
@@ -73,12 +73,12 @@ export function MarketingNavbar() {
           ))}
           <div className="flex flex-col gap-3 pt-2">
             <Link href="/login" className="w-full">
-              <Button variant="ghost" className="text-white/70 hover:text-white w-full">
+              <Button variant="ghost" className="text-muted-foreground hover:text-foreground w-full">
                 Login
               </Button>
             </Link>
             <Link href="/signup" className="w-full">
-              <Button className="bg-white text-[#0B132B] hover:bg-white/90 w-full">
+              <Button className="bg-primary text-primary-foreground hover:bg-primary/90 w-full">
                 Get Started
               </Button>
             </Link>

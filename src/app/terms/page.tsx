@@ -9,19 +9,19 @@ export const metadata = {
 
 export default function TermsPage() {
   return (
-    <div className="min-h-screen bg-[#0B132B] text-white">
+    <div className="min-h-screen bg-background text-foreground">
       <MarketingNavbar />
 
       <section className="relative pt-32 pb-16 px-6">
         <div className="mx-auto max-w-3xl text-center">
           <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-4">Terms & Conditions</h1>
-          <p className="text-white/50">Last updated: August 2026</p>
+          <p className="text-muted-foreground">Last updated: August 2026</p>
         </div>
       </section>
 
       <section className="pb-24 px-6">
         <div className="mx-auto max-w-3xl space-y-12">
-          <p className="text-white/60 leading-relaxed">
+          <p className="text-muted-foreground leading-relaxed">
             Welcome to ClientRegit. By accessing or using our platform, you agree to be bound by
             these Terms and Conditions. If you do not agree with any part of these terms, you may
             not access the service.
@@ -29,7 +29,7 @@ export default function TermsPage() {
 
           <div className="space-y-4">
             <h2 className="text-2xl font-bold">1. Acceptance of Terms</h2>
-            <div className="text-white/60 leading-relaxed space-y-4">
+            <div className="text-muted-foreground leading-relaxed space-y-4">
               <p>
                 By creating an account or using ClientRegit, you acknowledge that you have read,
                 understood, and agree to be bound by these Terms and Conditions and our Privacy
@@ -41,7 +41,7 @@ export default function TermsPage() {
 
           <div className="space-y-4">
             <h2 className="text-2xl font-bold">2. Account Responsibility</h2>
-            <div className="text-white/60 leading-relaxed space-y-4">
+            <div className="text-muted-foreground leading-relaxed space-y-4">
               <p>
                 You are responsible for safeguarding your account credentials and for all activities
                 that occur under your account. You must notify us immediately of any unauthorized use
@@ -58,7 +58,7 @@ export default function TermsPage() {
 
           <div className="space-y-4">
             <h2 className="text-2xl font-bold">3. Acceptable Use</h2>
-            <div className="text-white/60 leading-relaxed space-y-4">
+            <div className="text-muted-foreground leading-relaxed space-y-4">
               <p>You agree not to use ClientRegit to:</p>
               <ul className="list-disc list-inside space-y-2 ml-4">
                 <li>Violate any applicable laws or regulations</li>
@@ -73,7 +73,7 @@ export default function TermsPage() {
 
           <div className="space-y-4">
             <h2 className="text-2xl font-bold">4. User Content</h2>
-            <div className="text-white/60 leading-relaxed space-y-4">
+            <div className="text-muted-foreground leading-relaxed space-y-4">
               <p>
                 You retain ownership of all content you upload to ClientRegit, including videos,
                 documents, and project files. By uploading content, you grant us a limited license to
@@ -89,7 +89,7 @@ export default function TermsPage() {
 
           <div className="space-y-4">
             <h2 className="text-2xl font-bold">5. Intellectual Property</h2>
-            <div className="text-white/60 leading-relaxed space-y-4">
+            <div className="text-muted-foreground leading-relaxed space-y-4">
               <p>
                 The ClientRegit platform, including its design, code, features, and branding, is the
                 intellectual property of ClientRegit and is protected by copyright, trademark, and
@@ -101,7 +101,7 @@ export default function TermsPage() {
 
           <div className="space-y-4">
             <h2 className="text-2xl font-bold">6. Service Availability</h2>
-            <div className="text-white/60 leading-relaxed space-y-4">
+            <div className="text-muted-foreground leading-relaxed space-y-4">
               <p>
                 We strive to maintain high availability of our service, but we do not guarantee
                 uninterrupted access. We may temporarily suspend or restrict access to the service
@@ -117,7 +117,7 @@ export default function TermsPage() {
 
           <div className="space-y-4">
             <h2 className="text-2xl font-bold">7. Account Termination</h2>
-            <div className="text-white/60 leading-relaxed space-y-4">
+            <div className="text-muted-foreground leading-relaxed space-y-4">
               <p>
                 You may terminate your account at any time by contacting us or using the account
                 deletion feature. We reserve the right to suspend or terminate your account if you
@@ -133,7 +133,7 @@ export default function TermsPage() {
 
           <div className="space-y-4">
             <h2 className="text-2xl font-bold">8. Limitation of Liability</h2>
-            <div className="text-white/60 leading-relaxed space-y-4">
+            <div className="text-muted-foreground leading-relaxed space-y-4">
               <p>
                 To the maximum extent permitted by law, ClientRegit shall not be liable for any
                 indirect, incidental, special, consequential, or punitive damages, or any loss of
@@ -145,7 +145,7 @@ export default function TermsPage() {
 
           <div className="space-y-4">
             <h2 className="text-2xl font-bold">9. Changes to Service</h2>
-            <div className="text-white/60 leading-relaxed space-y-4">
+            <div className="text-muted-foreground leading-relaxed space-y-4">
               <p>
                 We reserve the right to update, modify, or change our service and these terms at any
                 time. We will notify you of any material changes by posting the new terms on this
@@ -155,10 +155,10 @@ export default function TermsPage() {
             </div>
           </div>
 
-          <div className="space-y-4 pt-8 border-t border-white/10">
-            <p className="text-white/40 text-sm">
+          <div className="space-y-4 pt-8 border-t border-border">
+            <p className="text-muted-foreground text-sm">
               If you have any questions about these Terms & Conditions, please contact us at{" "}
-              <a href="mailto:hello@clientregit.com" className="text-white/60 hover:text-white transition-colors">
+              <a href="mailto:hello@clientregit.com" className="text-muted-foreground hover:text-foreground transition-colors">
                 hello@clientregit.com
               </a>
               .

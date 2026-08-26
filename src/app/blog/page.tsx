@@ -60,25 +60,25 @@ const blogPosts = [
 ]
 
 const categoryColors: Record<string, string> = {
-  Workflow: "bg-blue-500/20 text-blue-400 border-blue-500/30",
-  Productivity: "bg-purple-500/20 text-purple-400 border-purple-500/30",
-  Tips: "bg-green-500/20 text-green-400 border-green-500/30",
-  Business: "bg-amber-500/20 text-amber-400 border-amber-500/30",
+  Workflow: "bg-blue-500/20 text-blue-600 dark:text-blue-400 border-blue-500/30",
+  Productivity: "bg-purple-500/20 text-purple-600 dark:text-purple-400 border-purple-500/30",
+  Tips: "bg-green-500/20 text-green-600 dark:text-green-400 border-green-500/30",
+  Business: "bg-amber-500/20 text-amber-600 dark:text-amber-400 border-amber-500/30",
 }
 
 export default function BlogPage() {
   return (
-    <div className="min-h-screen bg-[#0B132B] text-white">
+    <div className="min-h-screen bg-background text-foreground">
       <MarketingNavbar />
 
       <section className="relative pt-32 pb-20 px-6 overflow-hidden">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-gradient-to-br from-[#3A506B]/30 to-transparent blur-3xl pointer-events-none" />
         <div className="relative z-10 mx-auto max-w-4xl text-center">
-          <p className="text-sm uppercase tracking-widest text-white/50 mb-6">Blog</p>
+          <p className="text-sm uppercase tracking-widest text-muted-foreground mb-6">Blog</p>
           <h1 className="text-4xl md:text-6xl font-bold leading-tight tracking-tight mb-6">
             Tips and insights for creative professionals
           </h1>
-          <p className="mx-auto max-w-2xl text-lg text-white/60 leading-relaxed">
+          <p className="mx-auto max-w-2xl text-lg text-muted-foreground leading-relaxed">
             Practical advice on client management, workflow, and growing your creative business.
           </p>
         </div>
@@ -89,23 +89,23 @@ export default function BlogPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {blogPosts.map((post) => (
               <Link key={post.slug} href={`/blog/${post.slug}`} className="group block">
-                <article className="h-full bg-white/5 backdrop-blur-md border border-white/10 rounded-xl p-6 flex flex-col hover:bg-white/10 transition-colors">
+                <article className="h-full bg-muted/50 backdrop-blur-md border border-border rounded-xl p-6 flex flex-col hover:bg-muted transition-colors">
                   <Badge
                     variant="outline"
-                    className={`w-fit mb-4 ${categoryColors[post.category] || "border-white/20 bg-white/10 text-white"}`}
+                    className={`w-fit mb-4 ${categoryColors[post.category] || "border-border bg-muted text-foreground"}`}
                   >
                     {post.category}
                   </Badge>
 
-                  <h2 className="text-xl font-bold mb-3 group-hover:text-white/90 transition-colors leading-snug">
+                  <h2 className="text-xl font-bold mb-3 group-hover:text-foreground/90 transition-colors leading-snug">
                     {post.title}
                   </h2>
 
-                  <p className="text-sm text-white/50 leading-relaxed mb-6 flex-1">
+                  <p className="text-sm text-muted-foreground leading-relaxed mb-6 flex-1">
                     {post.excerpt}
                   </p>
 
-                  <div className="flex items-center justify-between text-xs text-white/40 pt-4 border-t border-white/10">
+                  <div className="flex items-center justify-between text-xs text-muted-foreground pt-4 border-t border-border">
                     <div className="flex items-center gap-4">
                       <span className="flex items-center gap-1">
                         <User className="h-3 w-3" />
@@ -122,7 +122,7 @@ export default function BlogPage() {
                     </span>
                   </div>
 
-                  <div className="mt-4 flex items-center gap-1 text-sm font-medium text-white/70 group-hover:text-white transition-colors">
+                  <div className="mt-4 flex items-center gap-1 text-sm font-medium text-foreground/70 group-hover:text-foreground transition-colors">
                     Read More
                     <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
                   </div>

@@ -90,10 +90,10 @@ const blogPosts: Record<string, BlogPost> = {
 }
 
 const categoryColors: Record<string, string> = {
-  Workflow: "bg-blue-500/20 text-blue-400 border-blue-500/30",
-  Productivity: "bg-purple-500/20 text-purple-400 border-purple-500/30",
-  Tips: "bg-green-500/20 text-green-400 border-green-500/30",
-  Business: "bg-amber-500/20 text-amber-400 border-amber-500/30",
+  Workflow: "bg-blue-500/20 text-blue-600 dark:text-blue-400 border-blue-500/30",
+  Productivity: "bg-purple-500/20 text-purple-600 dark:text-purple-400 border-purple-500/30",
+  Tips: "bg-green-500/20 text-green-600 dark:text-green-400 border-green-500/30",
+  Business: "bg-amber-500/20 text-amber-600 dark:text-amber-400 border-amber-500/30",
 }
 
 export default function BlogArticlePage() {
@@ -103,15 +103,15 @@ export default function BlogArticlePage() {
 
   if (!post) {
     return (
-      <div className="min-h-screen bg-[#0B132B] text-white">
+      <div className="min-h-screen bg-background text-foreground">
         <MarketingNavbar />
         <div className="pt-32 pb-20 px-6">
           <div className="mx-auto max-w-3xl text-center">
             <h1 className="text-3xl font-bold mb-4">Article Not Found</h1>
-            <p className="text-white/50 mb-8">The article you&apos;re looking for doesn&apos;t exist.</p>
+            <p className="text-muted-foreground mb-8">The article you&apos;re looking for doesn&apos;t exist.</p>
             <Link
               href="/blog"
-              className="inline-flex items-center gap-2 text-sm text-white/70 hover:text-white transition-colors"
+              className="inline-flex items-center gap-2 text-sm text-foreground/70 hover:text-foreground transition-colors"
             >
               <ArrowLeft className="h-4 w-4" />
               Back to Blog
@@ -124,14 +124,14 @@ export default function BlogArticlePage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0B132B] text-white">
+    <div className="min-h-screen bg-background text-foreground">
       <MarketingNavbar />
 
       <article className="pt-32 pb-20 px-6">
         <div className="mx-auto max-w-3xl">
           <Link
             href="/blog"
-            className="inline-flex items-center gap-2 text-sm text-white/50 hover:text-white transition-colors mb-8"
+            className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-8"
           >
             <ArrowLeft className="h-4 w-4" />
             Back to Blog
@@ -140,7 +140,7 @@ export default function BlogArticlePage() {
           <div className="mb-8">
             <Badge
               variant="outline"
-              className={`mb-4 ${categoryColors[post.category] || "border-white/20 bg-white/10 text-white"}`}
+              className={`mb-4 ${categoryColors[post.category] || "border-border bg-muted text-foreground"}`}
             >
               <Tag className="h-3 w-3 mr-1" />
               {post.category}
@@ -150,7 +150,7 @@ export default function BlogArticlePage() {
               {post.title}
             </h1>
 
-            <div className="flex flex-wrap items-center gap-4 text-sm text-white/40">
+            <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
               <span className="flex items-center gap-1.5">
                 <User className="h-4 w-4" />
                 {post.author}
@@ -166,26 +166,26 @@ export default function BlogArticlePage() {
             </div>
           </div>
 
-          <div className="h-px bg-white/10 mb-10" />
+          <div className="h-px bg-border mb-10" />
 
           <div className="space-y-6">
             {post.content.map((paragraph, index) => (
-              <p key={index} className="text-base text-white/70 leading-relaxed">
+              <p key={index} className="text-base text-foreground/70 leading-relaxed">
                 {paragraph}
               </p>
             ))}
           </div>
 
-          <div className="h-px bg-white/10 my-12" />
+          <div className="h-px bg-border my-12" />
 
-          <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-xl p-8 text-center">
+          <div className="bg-muted/50 backdrop-blur-md border border-border rounded-xl p-8 text-center">
             <h2 className="text-2xl font-bold mb-3">Ready to streamline your workflow?</h2>
-            <p className="text-white/50 mb-6 max-w-md mx-auto">
+            <p className="text-muted-foreground mb-6 max-w-md mx-auto">
               Manage your clients, projects, and deliveries from one clean workspace.
             </p>
             <Link
               href="/signup"
-              className="inline-flex items-center gap-2 bg-white text-[#0B132B] hover:bg-white/90 px-6 py-3 rounded-md font-medium transition-colors"
+              className="inline-flex items-center gap-2 bg-primary text-primary-foreground hover:bg-primary/90 px-6 py-3 rounded-md font-medium transition-colors"
             >
               Get Started Free
             </Link>

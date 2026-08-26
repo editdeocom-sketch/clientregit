@@ -9,19 +9,19 @@ export const metadata = {
 
 export default function CookiePolicyPage() {
   return (
-    <div className="min-h-screen bg-[#0B132B] text-white">
+    <div className="min-h-screen bg-background text-foreground">
       <MarketingNavbar />
 
       <section className="relative pt-32 pb-16 px-6">
         <div className="mx-auto max-w-3xl text-center">
           <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-4">Cookie Policy</h1>
-          <p className="text-white/50">Last updated: August 2026</p>
+          <p className="text-muted-foreground">Last updated: August 2026</p>
         </div>
       </section>
 
       <section className="pb-24 px-6">
         <div className="mx-auto max-w-3xl space-y-12">
-          <p className="text-white/60 leading-relaxed">
+          <p className="text-muted-foreground leading-relaxed">
             This Cookie Policy explains how ClientRegit uses cookies and similar technologies to
             recognize you when you visit our website and platform. It explains what these
             technologies are and why we use them, as well as your rights to control our use of them.
@@ -29,7 +29,7 @@ export default function CookiePolicyPage() {
 
           <div className="space-y-4">
             <h2 className="text-2xl font-bold">What Are Cookies</h2>
-            <div className="text-white/60 leading-relaxed space-y-4">
+            <div className="text-muted-foreground leading-relaxed space-y-4">
               <p>
                 Cookies are small data files that are placed on your computer or mobile device when
                 you visit a website. Cookies are widely used by website owners to make their
@@ -47,7 +47,7 @@ export default function CookiePolicyPage() {
 
           <div className="space-y-4">
             <h2 className="text-2xl font-bold">Necessary Cookies</h2>
-            <div className="text-white/60 leading-relaxed space-y-4">
+            <div className="text-muted-foreground leading-relaxed space-y-4">
               <p>
                 These cookies are essential for the operation of our platform. They enable core
                 functionality such as security, account authentication, and session management.
@@ -64,7 +64,7 @@ export default function CookiePolicyPage() {
 
           <div className="space-y-4">
             <h2 className="text-2xl font-bold">Analytics Cookies</h2>
-            <div className="text-white/60 leading-relaxed space-y-4">
+            <div className="text-muted-foreground leading-relaxed space-y-4">
               <p>
                 These cookies allow us to count visits and traffic sources so we can measure and
                 improve the performance of our platform. They help us understand which pages are the
@@ -79,7 +79,7 @@ export default function CookiePolicyPage() {
 
           <div className="space-y-4">
             <h2 className="text-2xl font-bold">Advertising Cookies</h2>
-            <div className="text-white/60 leading-relaxed space-y-4">
+            <div className="text-muted-foreground leading-relaxed space-y-4">
               <p>
                 These cookies may be set through our site by our advertising partners. They may be
                 used by those companies to build a profile of your interests and show you relevant
@@ -91,7 +91,7 @@ export default function CookiePolicyPage() {
 
           <div className="space-y-4">
             <h2 className="text-2xl font-bold">Managing Cookies</h2>
-            <div className="text-white/60 leading-relaxed space-y-4">
+            <div className="text-muted-foreground leading-relaxed space-y-4">
               <p>
                 You can set your browser to refuse all or some cookies, or to alert you when
                 websites set or access cookies. If you disable or refuse cookies, please note that
@@ -113,7 +113,7 @@ export default function CookiePolicyPage() {
 
           <div className="space-y-4">
             <h2 className="text-2xl font-bold">Changes to This Policy</h2>
-            <div className="text-white/60 leading-relaxed space-y-4">
+            <div className="text-muted-foreground leading-relaxed space-y-4">
               <p>
                 We may update this Cookie Policy from time to time to reflect changes in technology
                 or legislation. We will notify you of any significant changes by posting the new
@@ -123,10 +123,10 @@ export default function CookiePolicyPage() {
             </div>
           </div>
 
-          <div className="space-y-4 pt-8 border-t border-white/10">
-            <p className="text-white/40 text-sm">
+          <div className="space-y-4 pt-8 border-t border-border">
+            <p className="text-muted-foreground text-sm">
               If you have any questions about our use of cookies, please contact us at{" "}
-              <a href="mailto:hello@clientregit.com" className="text-white/60 hover:text-white transition-colors">
+              <a href="mailto:hello@clientregit.com" className="text-muted-foreground hover:text-foreground transition-colors">
                 hello@clientregit.com
               </a>
               .

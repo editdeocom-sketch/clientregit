@@ -7,14 +7,13 @@ export function Toaster(props?: ToasterProps) {
   return (
     <Sonner
       position="bottom-right"
-      theme="dark"
       toastOptions={{
         classNames: {
-          toast: "bg-white/10 backdrop-blur-sm border border-white/20 text-white",
-          description: "text-white/80",
+          toast: "bg-card backdrop-blur-sm border border-border text-foreground",
+          description: "text-muted-foreground",
           actionButton: "bg-primary hover:bg-primary/90",
-          cancelButton: "bg-white/10 hover:bg-white/20",
-          closeButton: "text-white/60 hover:text-white",
+          cancelButton: "bg-muted hover:bg-muted/80",
+          closeButton: "text-muted-foreground hover:text-foreground",
         },
       }}
       {...props}
