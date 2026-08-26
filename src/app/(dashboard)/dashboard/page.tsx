@@ -3,9 +3,10 @@
 import { useEffect, useState } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { GlassCard } from "@/components/layout/glass-card"
-import { Users, FolderKanban, Video, FileText, Clock, ArrowRight } from "lucide-react"
-import { formatINR, formatDate } from "@/lib/utils"
+import { Users, FolderKanban, Video, FileText, Clock, ArrowRight, Plus } from "lucide-react"
+import { formatINR } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import Link from "next/link"
 
 interface DashboardStats {
@@ -29,25 +30,6 @@ interface RecentActivity {
   time: string
 }
 
-const demoStats: DashboardStats = {
-  activeClients: 12,
-  activeProjects: 8,
-  pendingReviews: 5,
-  pendingPayments: 38000,
-}
-
-const demoProjects: RecentProject[] = [
-  { id: "1", name: "YouTube Episode 42", client: "Rahul Media", status: "editing", progress: 65 },
-  { id: "2", name: "Instagram Reel Campaign", client: "Pixel Studios", status: "review", progress: 80 },
-  { id: "3", name: "Product Commercial", client: "Creator Labs", status: "brief", progress: 15 },
-]
-
-const demoActivities: RecentActivity[] = [
-  { id: "1", description: "YouTube Episode 42 moved to Review", time: "2 hours ago" },
-  { id: "2", description: "New comment on Instagram Reel Campaign", time: "4 hours ago" },
-  { id: "3", description: "Invoice INV-2608-0001 marked as paid", time: "1 day ago" },
-]
-
 function getGreeting(): string {
   const hour = new Date().getHours()
   if (hour < 12) return "Good morning"
@@ -65,11 +47,16 @@ const statusColor: Record<string, string> = {
 }
 
 export default function DashboardPage() {
-  const [stats, setStats] = useState<DashboardStats>(demoStats)
-  const [projects, setProjects] = useState<RecentProject[]>(demoProjects)
-  const [activities, setActivities] = useState<RecentActivity[]>(demoActivities)
+  const [stats, setStats] = useState<DashboardStats>({
+    activeClients: 0,
+    activeProjects: 0,
+    pendingReviews: 0,
+    pendingPayments: 0,
+  })
+  const [projects, setProjects] = useState<RecentProject[]>([])
+  const [activities, setActivities] = useState<RecentActivity[]>([])
   const [userName, setUserName] = useState("there")
-  const [isDemo, setIsDemo] = useState(true)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     async function loadData() {
@@ -88,24 +75,22 @@ export default function DashboardPage() {
           setUserName(profile.full_name.split(" ")[0])
         }
 
-        const [clientsRes, projectsRes, videosRes, invoicesRes] = await Promise.all([
+        const [clientsRes, projectsRes, videosRes, invoicesRes, activitiesRes] = await Promise.all([
           supabase.from("clients").select("id", { count: "exact", head: true }).eq("editor_id", user.id).eq("status", "active"),
           supabase.from("projects").select("id, name, status, progress, clients(name)", { count: "exact" }).eq("editor_id", user.id).order("created_at", { ascending: false }).limit(5),
           supabase.from("videos").select("id", { count: "exact", head: true }).eq("uploaded_by", user.id).eq("status", "awaiting_review"),
-          supabase.from("invoices").select("amount").eq("client_id", user.id).in("status", ["sent", "overdue"]),
+          supabase.from("invoices").select("amount, clients!inner(editor_id)").eq("clients.editor_id", user.id).in("status", ["sent", "overdue"]),
+          supabase.from("activities").select("id, description, created_at").eq("user_id", user.id).order("created_at", { ascending: false }).limit(5),
         ])
 
-        const totalPayments = invoicesRes.data?.reduce((sum, inv) => sum + (inv.amount || 0), 0) ?? 0
+        const totalPayments = invoicesRes.data?.reduce((sum: number, inv: any) => sum + (inv.amount || 0), 0) ?? 0
 
-        if (clientsRes.count !== null) {
-          setIsDemo(false)
-          setStats({
-            activeClients: clientsRes.count ?? 0,
-            activeProjects: projectsRes.count ?? 0,
-            pendingReviews: videosRes.count ?? 0,
-            pendingPayments: totalPayments,
-          })
-        }
+        setStats({
+          activeClients: clientsRes.count ?? 0,
+          activeProjects: projectsRes.count ?? 0,
+          pendingReviews: videosRes.count ?? 0,
+          pendingPayments: totalPayments,
+        })
 
         if (projectsRes.data && projectsRes.data.length > 0) {
           setProjects(
@@ -118,8 +103,20 @@ export default function DashboardPage() {
             }))
           )
         }
+
+        if (activitiesRes.data && activitiesRes.data.length > 0) {
+          setActivities(
+            activitiesRes.data.map((a: any) => ({
+              id: a.id,
+              description: a.description,
+              time: new Date(a.created_at).toLocaleDateString(),
+            }))
+          )
+        }
       } catch {
-        // Keep demo data
+        // Keep empty state
+      } finally {
+        setLoading(false)
       }
     }
 
@@ -133,19 +130,16 @@ export default function DashboardPage() {
     { label: "Pending Payments", value: formatINR(stats.pendingPayments), icon: FileText, color: "bg-purple-500/20 text-purple-400" },
   ]
 
+  const isEmpty = !loading && stats.activeClients === 0 && stats.activeProjects === 0
+
   return (
     <div className="p-6 space-y-6 animate-fade-in">
       <div>
         <h1 className="text-2xl font-bold text-white">
-          {getGreeting()}, {userName} 👋
+          {getGreeting()}, {userName}
         </h1>
-        <div className="text-white/50 mt-1 flex items-center gap-2">
+        <div className="text-white/50 mt-1">
           Here&apos;s what&apos;s happening with your workspace.
-          {isDemo && (
-            <Badge variant="glass" className="text-xs">
-              Demo Data
-            </Badge>
-          )}
         </div>
       </div>
 
@@ -165,81 +159,103 @@ export default function DashboardPage() {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2">
-          <GlassCard className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-white">Recent Projects</h2>
-              <Link
-                href="/projects"
-                className="text-sm text-white/50 hover:text-white flex items-center gap-1 transition-colors"
-              >
-                View all <ArrowRight className="h-4 w-4" />
-              </Link>
-            </div>
-            {projects.length === 0 ? (
-              <div className="text-center py-12">
-                <FolderKanban className="h-12 w-12 text-white/20 mx-auto mb-3" />
-                <p className="text-white/40">No projects yet. Create your first project to get started.</p>
+      {isEmpty ? (
+        <GlassCard className="p-12 text-center">
+          <FolderKanban className="h-16 w-16 text-white/10 mx-auto mb-4" />
+          <h2 className="text-xl font-semibold text-white mb-2">Welcome to ClientRegit</h2>
+          <p className="text-white/40 mb-6 max-w-md mx-auto">
+            Get started by adding your first client. Once you have clients, you can create projects, upload videos, and track invoices.
+          </p>
+          <Link href="/clients">
+            <Button className="bg-white text-[#0B132B] hover:bg-white/90">
+              <Plus className="h-4 w-4 mr-2" />
+              Add Your First Client
+            </Button>
+          </Link>
+        </GlassCard>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2">
+            <GlassCard className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold text-white">Recent Projects</h2>
+                <Link
+                  href="/projects"
+                  className="text-sm text-white/50 hover:text-white flex items-center gap-1 transition-colors"
+                >
+                  View all <ArrowRight className="h-4 w-4" />
+                </Link>
               </div>
-            ) : (
-              <div className="space-y-3">
-                {projects.map((project) => (
-                  <div
-                    key={project.id}
-                    className="flex items-center justify-between p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
-                  >
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-white truncate">{project.name}</p>
-                      <p className="text-xs text-white/40 mt-0.5">{project.client}</p>
-                    </div>
-                    <div className="flex items-center gap-3 ml-4">
-                      <div className="w-24">
-                        <div className="h-1.5 rounded-full bg-white/10 overflow-hidden">
-                          <div
-                            className="h-full rounded-full bg-gradient-to-r from-blue-500 to-cyan-400"
-                            style={{ width: `${project.progress}%` }}
-                          />
-                        </div>
-                        <p className="text-[10px] text-white/40 text-right mt-0.5">{project.progress}%</p>
+              {projects.length === 0 ? (
+                <div className="text-center py-12">
+                  <FolderKanban className="h-12 w-12 text-white/20 mx-auto mb-3" />
+                  <p className="text-white/40 mb-4">No projects yet.</p>
+                  <Link href="/projects">
+                    <Button variant="outline" className="border-white/20 text-white hover:bg-white/10">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Create Project
+                    </Button>
+                  </Link>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {projects.map((project) => (
+                    <div
+                      key={project.id}
+                      className="flex items-center justify-between p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
+                    >
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-white truncate">{project.name}</p>
+                        <p className="text-xs text-white/40 mt-0.5">{project.client}</p>
                       </div>
-                      <Badge className={`${statusColor[project.status] ?? "bg-white/10 text-white/60"} border-0`}>
-                        {project.status}
-                      </Badge>
+                      <div className="flex items-center gap-3 ml-4">
+                        <div className="w-24">
+                          <div className="h-1.5 rounded-full bg-white/10 overflow-hidden">
+                            <div
+                              className="h-full rounded-full bg-gradient-to-r from-blue-500 to-cyan-400"
+                              style={{ width: `${project.progress}%` }}
+                            />
+                          </div>
+                          <p className="text-[10px] text-white/40 text-right mt-0.5">{project.progress}%</p>
+                        </div>
+                        <Badge className={`${statusColor[project.status] ?? "bg-white/10 text-white/60"} border-0`}>
+                          {project.status}
+                        </Badge>
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </GlassCard>
-        </div>
+                  ))}
+                </div>
+              )}
+            </GlassCard>
+          </div>
 
-        <div>
-          <GlassCard className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-white">Recent Activity</h2>
-            </div>
-            {activities.length === 0 ? (
-              <div className="text-center py-12">
-                <Clock className="h-12 w-12 text-white/20 mx-auto mb-3" />
-                <p className="text-white/40">No recent activity to show.</p>
+          <div>
+            <GlassCard className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold text-white">Recent Activity</h2>
               </div>
-            ) : (
-              <div className="space-y-4">
-                {activities.map((activity) => (
-                  <div key={activity.id} className="flex gap-3">
-                    <div className="h-2 w-2 rounded-full bg-blue-400 mt-2 flex-shrink-0" />
-                    <div>
-                      <p className="text-sm text-white/80">{activity.description}</p>
-                      <p className="text-xs text-white/40 mt-0.5">{activity.time}</p>
+              {activities.length === 0 ? (
+                <div className="text-center py-12">
+                  <Clock className="h-12 w-12 text-white/20 mx-auto mb-3" />
+                  <p className="text-white/40">No recent activity to show.</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {activities.map((activity) => (
+                    <div key={activity.id} className="flex gap-3">
+                      <div className="h-2 w-2 rounded-full bg-blue-400 mt-2 flex-shrink-0" />
+                      <div>
+                        <p className="text-sm text-white/80">{activity.description}</p>
+                        <p className="text-xs text-white/40 mt-0.5">{activity.time}</p>
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </GlassCard>
+                  ))}
+                </div>
+              )}
+            </GlassCard>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   )
 }

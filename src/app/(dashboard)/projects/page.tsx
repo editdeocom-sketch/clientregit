@@ -38,14 +38,6 @@ interface ProjectData {
   description: string | null
 }
 
-const demoProjects: ProjectData[] = [
-  { id: "1", name: "YouTube Episode 42", client: "Rahul Media", status: "editing", progress: 65, deadline: "2026-09-01", budget: 45000, description: "Weekly podcast episode edit" },
-  { id: "2", name: "Instagram Reel Campaign", client: "Pixel Studios", status: "review", progress: 80, deadline: "2026-08-28", budget: 25000, description: "10-reel social media campaign" },
-  { id: "3", name: "Product Commercial", client: "Creator Labs", status: "brief", progress: 15, deadline: "2026-09-15", budget: 120000, description: "30-second product launch video" },
-  { id: "4", name: "Corporate Training Video", client: "ABC Marketing", status: "delivered", progress: 100, deadline: "2026-08-20", budget: 80000, description: "Onboarding training series" },
-  { id: "5", name: "Music Video Edit", client: "Rahul Media", status: "revision", progress: 50, deadline: "2026-09-10", budget: 35000, description: "Indie artist music video" },
-]
-
 const statusColors: Record<string, string> = {
   brief: "bg-white/10 text-white/60",
   editing: "bg-blue-500/20 text-blue-400",
@@ -79,7 +71,6 @@ export default function ProjectsPage() {
   const [filtered, setFiltered] = useState<ProjectData[]>([])
   const [search, setSearch] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
-  const [isDemo, setIsDemo] = useState(true)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [form, setForm] = useState(emptyForm)
   const [saving, setSaving] = useState(false)
@@ -97,8 +88,7 @@ export default function ProjectsPage() {
           .eq("editor_id", user.id)
           .order("created_at", { ascending: false })
 
-        if (data && data.length > 0) {
-          setIsDemo(false)
+        if (data) {
           setProjects(
             data.map((p: any) => ({
               id: p.id,
@@ -111,11 +101,9 @@ export default function ProjectsPage() {
               description: p.description,
             }))
           )
-        } else {
-          setProjects(demoProjects)
         }
       } catch {
-        setProjects(demoProjects)
+        setProjects([])
       }
     }
 
@@ -173,12 +161,6 @@ export default function ProjectsPage() {
           Add Project
         </Button>
       </div>
-
-      {isDemo && (
-        <Badge variant="glass" className="text-xs">
-          Showing demo data — connect Supabase to load real projects
-        </Badge>
-      )}
 
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">

@@ -38,14 +38,6 @@ interface InvoiceData {
   status: "draft" | "sent" | "paid" | "overdue"
 }
 
-const demoInvoices: InvoiceData[] = [
-  { id: "1", invoice_number: "INV-2608-0001", client: "Rahul Media", description: "YouTube Episode 41 — Edit & Color Grade", amount: 45000, issue_date: "2026-08-01", due_date: "2026-08-15", status: "paid" },
-  { id: "2", invoice_number: "INV-2608-0002", client: "Pixel Studios", description: "Instagram Reel Campaign — Batch 1", amount: 25000, issue_date: "2026-08-10", due_date: "2026-08-24", status: "sent" },
-  { id: "3", invoice_number: "INV-2608-0003", client: "Creator Labs", description: "Product Commercial — Pre-production", amount: 60000, issue_date: "2026-08-15", due_date: "2026-08-29", status: "sent" },
-  { id: "4", invoice_number: "INV-2607-0008", client: "ABC Marketing", description: "Corporate Training Videos — June", amount: 80000, issue_date: "2026-07-01", due_date: "2026-07-15", status: "overdue" },
-  { id: "5", invoice_number: "INV-2608-0004", client: "Rahul Media", description: "YouTube Episode 42 — Edit", amount: 45000, issue_date: "2026-08-20", due_date: "2026-09-03", status: "draft" },
-]
-
 const statusConfig: Record<string, { label: string; className: string }> = {
   draft: { label: "Draft", className: "bg-white/10 text-white/60 border-0" },
   sent: { label: "Sent", className: "bg-blue-500/20 text-blue-400 border-0" },
@@ -64,7 +56,6 @@ const emptyForm = {
 
 export default function InvoicesPage() {
   const [invoices, setInvoices] = useState<InvoiceData[]>([])
-  const [isDemo, setIsDemo] = useState(true)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [form, setForm] = useState(emptyForm)
   const [saving, setSaving] = useState(false)
@@ -82,8 +73,7 @@ export default function InvoicesPage() {
           .eq("client_id", user.id)
           .order("created_at", { ascending: false })
 
-        if (data && data.length > 0) {
-          setIsDemo(false)
+        if (data) {
           setInvoices(
             data.map((inv: any) => ({
               id: inv.id,
@@ -96,11 +86,9 @@ export default function InvoicesPage() {
               status: inv.status,
             }))
           )
-        } else {
-          setInvoices(demoInvoices)
         }
       } catch {
-        setInvoices(demoInvoices)
+        setInvoices([])
       }
     }
 
@@ -145,12 +133,6 @@ export default function InvoicesPage() {
         </Button>
       </div>
 
-      {isDemo && (
-        <Badge variant="glass" className="text-xs">
-          Showing demo data — connect Supabase to load real invoices
-        </Badge>
-      )}
-
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <GlassCard className="p-5">
           <p className="text-sm text-white/50">Total Invoices</p>
@@ -170,7 +152,7 @@ export default function InvoicesPage() {
         {invoices.length === 0 ? (
           <div className="text-center py-16">
             <FileText className="h-12 w-12 text-white/20 mx-auto mb-3" />
-            <p className="text-white/40 mb-4">No invoices yet. Create your first invoice to get started.</p>
+            <p className="text-white/40 mb-4">No invoices yet. Create your first invoice.</p>
             <Button onClick={() => { setForm(emptyForm); setDialogOpen(true) }} variant="glass" size="sm">
               <Plus className="h-4 w-4 mr-2" />
               Create Invoice

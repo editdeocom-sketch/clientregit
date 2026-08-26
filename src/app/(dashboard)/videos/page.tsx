@@ -3,8 +3,9 @@
 import { useEffect, useState } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { GlassCard } from "@/components/layout/glass-card"
+import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Video as VideoIcon, Play, ExternalLink } from "lucide-react"
+import { Video as VideoIcon, Play, ExternalLink, Plus } from "lucide-react"
 import { formatDate } from "@/lib/utils"
 import Link from "next/link"
 
@@ -17,13 +18,6 @@ interface VideoData {
   created_at: string
 }
 
-const demoVideos: VideoData[] = [
-  { id: "1", title: "YouTube Episode 42 — Rough Cut", project: "YouTube Episode 42", version: 1, status: "awaiting_review", created_at: "2026-08-24T10:00:00Z" },
-  { id: "2", title: "Instagram Reel #1 — Final", project: "Instagram Reel Campaign", version: 3, status: "approved", created_at: "2026-08-23T14:30:00Z" },
-  { id: "3", title: "Product Commercial — V2", project: "Product Commercial", version: 2, status: "revision_requested", created_at: "2026-08-22T09:15:00Z" },
-  { id: "4", title: "Corporate Training — Intro", project: "Corporate Training Video", version: 1, status: "draft", created_at: "2026-08-21T16:45:00Z" },
-]
-
 const statusConfig: Record<string, { label: string; className: string }> = {
   draft: { label: "Draft", className: "bg-white/10 text-white/60 border-0" },
   awaiting_review: { label: "Awaiting Review", className: "bg-yellow-500/20 text-yellow-400 border-0" },
@@ -33,7 +27,6 @@ const statusConfig: Record<string, { label: string; className: string }> = {
 
 export default function VideosPage() {
   const [videos, setVideos] = useState<VideoData[]>([])
-  const [isDemo, setIsDemo] = useState(true)
 
   useEffect(() => {
     async function loadVideos() {
@@ -48,8 +41,7 @@ export default function VideosPage() {
           .eq("uploaded_by", user.id)
           .order("created_at", { ascending: false })
 
-        if (data && data.length > 0) {
-          setIsDemo(false)
+        if (data) {
           setVideos(
             data.map((v: any) => ({
               id: v.id,
@@ -60,11 +52,9 @@ export default function VideosPage() {
               created_at: v.created_at,
             }))
           )
-        } else {
-          setVideos(demoVideos)
         }
       } catch {
-        setVideos(demoVideos)
+        setVideos([])
       }
     }
 
@@ -73,21 +63,23 @@ export default function VideosPage() {
 
   return (
     <div className="p-6 space-y-6 animate-fade-in">
-      <div>
-        <h1 className="text-2xl font-bold text-white">Videos</h1>
-        <p className="text-white/50 mt-1">Review and manage all uploaded videos.</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-white">Videos</h1>
+          <p className="text-white/50 mt-1">Review and manage all uploaded videos.</p>
+        </div>
       </div>
-
-      {isDemo && (
-        <Badge variant="glass" className="text-xs">
-          Showing demo data — connect Supabase to load real videos
-        </Badge>
-      )}
 
       {videos.length === 0 ? (
         <GlassCard className="p-16 text-center">
           <VideoIcon className="h-12 w-12 text-white/20 mx-auto mb-3" />
-          <p className="text-white/40">No videos uploaded yet. Upload your first video from a project.</p>
+          <p className="text-white/40 mb-4">No videos yet. Upload your first video to get started.</p>
+          <Button variant="glass" size="sm" asChild>
+            <Link href="/projects">
+              <Plus className="h-4 w-4 mr-2" />
+              Upload Video
+            </Link>
+          </Button>
         </GlassCard>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

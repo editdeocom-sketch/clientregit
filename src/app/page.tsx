@@ -22,6 +22,8 @@ import {
 import { WaveBackground } from "@/components/layout/wave-background";
 import { GlassCard } from "@/components/layout/glass-card";
 import { Button } from "@/components/ui/button";
+import Link from "next/link";
+import { AnimatedSection } from "@/hooks/use-in-view";
 
 const features = [
   {
@@ -32,14 +34,12 @@ const features = [
   {
     icon: FolderKanban,
     title: "Project Management",
-    description:
-      "Track projects, deadlines and progress from start to finish.",
+    description: "Track projects, deadlines and progress from start to finish.",
   },
   {
     icon: Video,
     title: "Video Reviews",
-    description:
-      "Share videos and collect timestamped feedback from clients.",
+    description: "Share videos and collect timestamped feedback from clients.",
   },
   {
     icon: RefreshCw,
@@ -137,7 +137,7 @@ const navLinks = [
   { label: "Features", href: "#features" },
   { label: "How It Works", href: "#how-it-works" },
   { label: "FAQ", href: "#faq" },
-  { label: "Blog", href: "#blog" },
+  { label: "Blog", href: "/blog" },
 ];
 
 export default function LandingPage() {
@@ -147,20 +147,19 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen bg-[#0B132B] text-white">
       {/* ── Nav ── */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-[#0B132B]/80 backdrop-blur-md border-b border-white/10">
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-[#0B132B]/80 backdrop-blur-md border-b border-white/10 transition-all duration-300">
         <div className="mx-auto max-w-7xl flex items-center justify-between px-6 py-4">
-          <a href="/" className="flex items-center gap-2 text-xl font-bold">
+          <a href="/" className="flex items-center gap-2 text-xl font-bold hover-lift">
             <VideoIcon className="h-6 w-6 text-white" />
             ClientRegit
           </a>
 
-          {/* Desktop links */}
           <div className="hidden md:flex items-center gap-8">
             {navLinks.map((link) => (
               <a
                 key={link.label}
                 href={link.href}
-                className="text-sm text-white/70 hover:text-white transition-colors"
+                className="text-sm text-white/70 hover:text-white transition-colors duration-200"
               >
                 {link.label}
               </a>
@@ -168,26 +167,28 @@ export default function LandingPage() {
           </div>
 
           <div className="hidden md:flex items-center gap-3">
-            <Button variant="ghost" className="text-white/70 hover:text-white">
-              Login
-            </Button>
-            <Button className="bg-white text-[#0B132B] hover:bg-white/90">
-              Get Started
-            </Button>
+            <Link href="/login">
+              <Button variant="ghost" className="text-white/70 hover:text-white transition-all duration-200">
+                Login
+              </Button>
+            </Link>
+            <Link href="/signup">
+              <Button className="bg-white text-[#0B132B] hover:bg-white/90 transition-all duration-200 hover-lift">
+                Get Started
+              </Button>
+            </Link>
           </div>
 
-          {/* Mobile toggle */}
           <button
-            className="md:hidden text-white/70 hover:text-white"
+            className="md:hidden text-white/70 hover:text-white transition-colors"
             onClick={() => setMobileNavOpen(!mobileNavOpen)}
           >
             {mobileNavOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
           </button>
         </div>
 
-        {/* Mobile nav */}
         {mobileNavOpen && (
-          <div className="md:hidden border-t border-white/10 bg-[#0B132B]/95 backdrop-blur-md px-6 py-4 space-y-4">
+          <div className="md:hidden border-t border-white/10 bg-[#0B132B]/95 backdrop-blur-md px-6 py-4 space-y-4 animate-slide-up">
             {navLinks.map((link) => (
               <a
                 key={link.label}
@@ -199,12 +200,16 @@ export default function LandingPage() {
               </a>
             ))}
             <div className="flex flex-col gap-3 pt-2">
-              <Button variant="ghost" className="text-white/70 hover:text-white w-full">
-                Login
-              </Button>
-              <Button className="bg-white text-[#0B132B] hover:bg-white/90 w-full">
-                Get Started
-              </Button>
+              <Link href="/login">
+                <Button variant="ghost" className="text-white/70 hover:text-white w-full">
+                  Login
+                </Button>
+              </Link>
+              <Link href="/signup">
+                <Button className="bg-white text-[#0B132B] hover:bg-white/90 w-full">
+                  Get Started
+                </Button>
+              </Link>
             </div>
           </div>
         )}
@@ -212,33 +217,38 @@ export default function LandingPage() {
 
       {/* ── Hero ── */}
       <section className="relative flex flex-col items-center justify-center pt-32 pb-0 overflow-hidden">
-        {/* Decorative orb */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] rounded-full bg-gradient-to-br from-[#3A506B]/30 to-transparent blur-3xl pointer-events-none" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] rounded-full bg-gradient-to-br from-[#3A506B]/30 to-transparent blur-3xl pointer-events-none animate-glow" />
 
         <div className="relative z-10 mx-auto max-w-4xl text-center px-6">
-          <p className="text-sm uppercase tracking-widest text-white/50 mb-6">
+          <p className="text-sm uppercase tracking-widest text-white/50 mb-6 animate-fade-in delay-100">
             A workspace for creative professionals
           </p>
-          <h1 className="text-5xl md:text-7xl font-bold leading-tight tracking-tight mb-6">
+          <h1 className="text-5xl md:text-7xl font-bold leading-tight tracking-tight mb-6 animate-slide-up delay-200">
             Manage clients.
             <br />
-            Deliver better work.
+            <span className="bg-gradient-to-r from-white via-white/90 to-white/70 bg-clip-text text-transparent">
+              Deliver better work.
+            </span>
           </h1>
-          <p className="mx-auto max-w-xl text-lg text-white/60 mb-10 leading-relaxed">
+          <p className="mx-auto max-w-xl text-lg text-white/60 mb-10 leading-relaxed animate-slide-up delay-300">
             ClientRegit helps creative professionals manage clients, projects,
             video reviews, revisions and invoices from one simple workspace.
           </p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Button className="bg-white text-[#0B132B] hover:bg-white/90 px-8 py-6 text-base">
-              Get Started
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
-            <Button
-              variant="outline"
-              className="border-white/20 text-white hover:bg-white/10 px-8 py-6 text-base"
-            >
-              See How It Works
-            </Button>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-slide-up delay-400">
+            <Link href="/signup">
+              <Button className="bg-white text-[#0B132B] hover:bg-white/90 px-8 py-6 text-base hover-lift transition-all duration-300 group">
+                Get Started
+                <ArrowRight className="ml-2 h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
+              </Button>
+            </Link>
+            <a href="#how-it-works">
+              <Button
+                variant="outline"
+                className="border-white/20 text-white hover:bg-white/10 px-8 py-6 text-base hover-glow transition-all duration-300"
+              >
+                See How It Works
+              </Button>
+            </a>
           </div>
         </div>
 
@@ -250,42 +260,57 @@ export default function LandingPage() {
       {/* ── Features ── */}
       <section id="features" className="py-24 px-6">
         <div className="mx-auto max-w-6xl">
-          <h2 className="text-3xl md:text-5xl font-bold text-center mb-16">
-            Everything you need
-          </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {features.map((feature) => (
-              <GlassCard key={feature.title} variant="subtle" className="p-6">
-                <feature.icon className="h-8 w-8 text-white/80 mb-4" />
-                <h3 className="text-lg font-semibold mb-2">{feature.title}</h3>
-                <p className="text-sm text-white/50 leading-relaxed">
-                  {feature.description}
-                </p>
-              </GlassCard>
+          <AnimatedSection>
+            <h2 className="text-3xl md:text-5xl font-bold text-center mb-16">
+              Everything you need
+            </h2>
+          </AnimatedSection>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 stagger-children">
+            {features.map((feature, i) => (
+              <AnimatedSection key={feature.title} delay={i * 80}>
+                <GlassCard
+                  variant="subtle"
+                  className="p-6 hover-lift hover-glow transition-all duration-300 cursor-default group"
+                >
+                  <div className="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center mb-4 group-hover:bg-white/10 transition-colors duration-300">
+                    <feature.icon className="h-6 w-6 text-white/80 group-hover:text-white transition-colors duration-300" />
+                  </div>
+                  <h3 className="text-lg font-semibold mb-2">{feature.title}</h3>
+                  <p className="text-sm text-white/50 leading-relaxed">
+                    {feature.description}
+                  </p>
+                </GlassCard>
+              </AnimatedSection>
             ))}
           </div>
         </div>
       </section>
 
       {/* ── How It Works ── */}
-      <section id="how-it-works" className="py-24 px-6">
-        <div className="mx-auto max-w-6xl">
-          <h2 className="text-3xl md:text-5xl font-bold text-center mb-16">
-            How it works
-          </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {steps.map((step) => (
-              <GlassCard key={step.number} className="p-6">
-                <span className="text-5xl font-bold text-white/20">
-                  {step.number}
-                </span>
-                <h3 className="text-lg font-semibold mt-4 mb-2">
-                  {step.title}
-                </h3>
-                <p className="text-sm text-white/50 leading-relaxed">
-                  {step.description}
-                </p>
-              </GlassCard>
+      <section id="how-it-works" className="py-24 px-6 relative">
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#3A506B]/5 to-transparent pointer-events-none" />
+        <div className="mx-auto max-w-6xl relative z-10">
+          <AnimatedSection>
+            <h2 className="text-3xl md:text-5xl font-bold text-center mb-16">
+              How it works
+            </h2>
+          </AnimatedSection>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 stagger-children">
+            {steps.map((step, i) => (
+              <AnimatedSection key={step.number} delay={i * 100}>
+                <GlassCard className="p-6 hover-lift hover-glow transition-all duration-300 relative overflow-hidden group">
+                  <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-[#3A506B]/20 to-transparent rounded-bl-full group-hover:from-[#3A506B]/30 transition-colors duration-300" />
+                  <span className="text-5xl font-bold text-white/20 group-hover:text-white/30 transition-colors duration-300">
+                    {step.number}
+                  </span>
+                  <h3 className="text-lg font-semibold mt-4 mb-2">
+                    {step.title}
+                  </h3>
+                  <p className="text-sm text-white/50 leading-relaxed">
+                    {step.description}
+                  </p>
+                </GlassCard>
+              </AnimatedSection>
             ))}
           </div>
         </div>
@@ -294,15 +319,24 @@ export default function LandingPage() {
       {/* ── Who Is It For ── */}
       <section className="py-24 px-6">
         <div className="mx-auto max-w-6xl">
-          <h2 className="text-3xl md:text-5xl font-bold text-center mb-16">
-            Built for creative professionals
-          </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
-            {whoIsItFor.map((item) => (
-              <GlassCard key={item.title} variant="subtle" className="p-6 text-center">
-                <item.icon className="h-10 w-10 mx-auto text-white/80 mb-4" />
-                <h3 className="text-base font-semibold">{item.title}</h3>
-              </GlassCard>
+          <AnimatedSection>
+            <h2 className="text-3xl md:text-5xl font-bold text-center mb-16">
+              Built for creative professionals
+            </h2>
+          </AnimatedSection>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 stagger-children">
+            {whoIsItFor.map((item, i) => (
+              <AnimatedSection key={item.title} delay={i * 80}>
+                <GlassCard
+                  variant="subtle"
+                  className="p-6 text-center hover-lift hover-glow transition-all duration-300 cursor-default group"
+                >
+                  <div className="w-14 h-14 rounded-2xl bg-white/5 flex items-center justify-center mx-auto mb-4 group-hover:bg-white/10 group-hover:scale-110 transition-all duration-300">
+                    <item.icon className="h-7 w-7 text-white/80 group-hover:text-white transition-colors duration-300" />
+                  </div>
+                  <h3 className="text-base font-semibold">{item.title}</h3>
+                </GlassCard>
+              </AnimatedSection>
             ))}
           </div>
         </div>
@@ -311,35 +345,46 @@ export default function LandingPage() {
       {/* ── FAQ ── */}
       <section id="faq" className="py-24 px-6">
         <div className="mx-auto max-w-3xl">
-          <h2 className="text-3xl md:text-5xl font-bold text-center mb-16">
-            Frequently asked questions
-          </h2>
+          <AnimatedSection>
+            <h2 className="text-3xl md:text-5xl font-bold text-center mb-16">
+              Frequently asked questions
+            </h2>
+          </AnimatedSection>
           <div className="space-y-3">
             {faqs.map((faq, index) => (
-              <GlassCard
-                key={faq.question}
-                variant="subtle"
-                className="overflow-hidden"
-              >
-                <button
-                  className="flex w-full items-center justify-between px-6 py-5 text-left"
-                  onClick={() => setOpenFaq(openFaq === index ? null : index)}
+              <AnimatedSection key={faq.question} delay={index * 50}>
+                <GlassCard
+                  variant="subtle"
+                  className="overflow-hidden hover-glow transition-all duration-300"
                 >
-                  <span className="font-medium">{faq.question}</span>
-                  <ChevronDown
-                    className={`h-5 w-5 text-white/50 transition-transform duration-200 ${
-                      openFaq === index ? "rotate-180" : ""
-                    }`}
-                  />
-                </button>
-                {openFaq === index && (
-                  <div className="px-6 pb-5 pt-0">
-                    <p className="text-sm text-white/50 leading-relaxed">
-                      {faq.answer}
-                    </p>
+                  <button
+                    className="flex w-full items-center justify-between px-6 py-5 text-left group"
+                    onClick={() => setOpenFaq(openFaq === index ? null : index)}
+                  >
+                    <span className="font-medium group-hover:text-white/90 transition-colors">
+                      {faq.question}
+                    </span>
+                    <ChevronDown
+                      className={`h-5 w-5 text-white/50 transition-transform duration-300 ease-out ${
+                        openFaq === index ? "rotate-180" : ""
+                      }`}
+                    />
+                  </button>
+                  <div
+                    className="overflow-hidden transition-all duration-300 ease-out"
+                    style={{
+                      maxHeight: openFaq === index ? "200px" : "0",
+                      opacity: openFaq === index ? 1 : 0,
+                    }}
+                  >
+                    <div className="px-6 pb-5 pt-0">
+                      <p className="text-sm text-white/50 leading-relaxed">
+                        {faq.answer}
+                      </p>
+                    </div>
                   </div>
-                )}
-              </GlassCard>
+                </GlassCard>
+              </AnimatedSection>
             ))}
           </div>
         </div>
@@ -347,26 +392,32 @@ export default function LandingPage() {
 
       {/* ── CTA ── */}
       <section className="py-24 px-6">
-        <GlassCard className="mx-auto max-w-4xl text-center p-12 md:p-16">
-          <h2 className="text-3xl md:text-5xl font-bold mb-6">
-            Ready to streamline your workflow?
-          </h2>
-          <p className="text-lg text-white/50 mb-10 max-w-xl mx-auto">
-            Join creative professionals who manage their clients, projects, and
-            deliveries from one workspace.
-          </p>
-          <Button className="bg-white text-[#0B132B] hover:bg-white/90 px-10 py-6 text-base">
-            Get Started
-            <ArrowRight className="ml-2 h-4 w-4" />
-          </Button>
-        </GlassCard>
+        <AnimatedSection>
+          <GlassCard className="mx-auto max-w-4xl text-center p-12 md:p-16 relative overflow-hidden group hover-glow transition-all duration-300">
+            <div className="absolute inset-0 bg-gradient-to-r from-[#3A506B]/10 via-transparent to-[#3A506B]/10 pointer-events-none" />
+            <div className="relative z-10">
+              <h2 className="text-3xl md:text-5xl font-bold mb-6">
+                Ready to streamline your workflow?
+              </h2>
+              <p className="text-lg text-white/50 mb-10 max-w-xl mx-auto">
+                Join creative professionals who manage their clients, projects, and
+                deliveries from one workspace.
+              </p>
+              <Link href="/signup">
+                <Button className="bg-white text-[#0B132B] hover:bg-white/90 px-10 py-6 text-base hover-lift transition-all duration-300 group/btn">
+                  Get Started
+                  <ArrowRight className="ml-2 h-4 w-4 transition-transform duration-300 group-hover/btn:translate-x-1" />
+                </Button>
+              </Link>
+            </div>
+          </GlassCard>
+        </AnimatedSection>
       </section>
 
       {/* ── Footer ── */}
       <footer className="border-t border-white/10 py-16 px-6">
         <div className="mx-auto max-w-6xl">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
-            {/* Brand */}
             <div>
               <a href="/" className="flex items-center gap-2 text-xl font-bold mb-3">
                 <VideoIcon className="h-5 w-5" />
@@ -377,62 +428,57 @@ export default function LandingPage() {
               </p>
             </div>
 
-            {/* Product */}
             <div>
               <h4 className="text-sm font-semibold uppercase tracking-wider text-white/60 mb-4">
                 Product
               </h4>
               <ul className="space-y-3">
-                {["Features", "Pricing", "FAQ"].map((item) => (
-                  <li key={item}>
-                    <a
-                      href="#"
-                      className="text-sm text-white/40 hover:text-white transition-colors"
-                    >
-                      {item}
-                    </a>
-                  </li>
-                ))}
+                <li>
+                  <a href="#features" className="text-sm text-white/40 hover:text-white transition-colors duration-200">
+                    Features
+                  </a>
+                </li>
+                <li>
+                  <a href="#faq" className="text-sm text-white/40 hover:text-white transition-colors duration-200">
+                    FAQ
+                  </a>
+                </li>
               </ul>
             </div>
 
-            {/* Resources */}
             <div>
               <h4 className="text-sm font-semibold uppercase tracking-wider text-white/60 mb-4">
                 Resources
               </h4>
               <ul className="space-y-3">
-                {["Help", "Blog"].map((item) => (
-                  <li key={item}>
-                    <a
-                      href="#"
-                      className="text-sm text-white/40 hover:text-white transition-colors"
-                    >
-                      {item}
-                    </a>
-                  </li>
-                ))}
+                <li>
+                  <Link href="/blog" className="text-sm text-white/40 hover:text-white transition-colors duration-200">
+                    Blog
+                  </Link>
+                </li>
               </ul>
             </div>
 
-            {/* Legal */}
             <div>
               <h4 className="text-sm font-semibold uppercase tracking-wider text-white/60 mb-4">
                 Legal
               </h4>
               <ul className="space-y-3">
-                {["Privacy Policy", "Terms & Conditions", "Cookie Policy"].map(
-                  (item) => (
-                    <li key={item}>
-                      <a
-                        href="#"
-                        className="text-sm text-white/40 hover:text-white transition-colors"
-                      >
-                        {item}
-                      </a>
-                    </li>
-                  )
-                )}
+                <li>
+                  <Link href="/privacy" className="text-sm text-white/40 hover:text-white transition-colors duration-200">
+                    Privacy Policy
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/terms" className="text-sm text-white/40 hover:text-white transition-colors duration-200">
+                    Terms &amp; Conditions
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/cookies" className="text-sm text-white/40 hover:text-white transition-colors duration-200">
+                    Cookie Policy
+                  </Link>
+                </li>
               </ul>
             </div>
           </div>

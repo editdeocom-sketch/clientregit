@@ -36,13 +36,6 @@ interface ClientData {
   status: "active" | "inactive"
 }
 
-const demoClients: ClientData[] = [
-  { id: "1", name: "Rahul Sharma", email: "rahul@rahulmedia.com", company: "Rahul Media", phone: "+91 98765 43210", notes: "YouTube content creator", status: "active" },
-  { id: "2", name: "Priya Patel", email: "priya@pixelstudios.in", company: "Pixel Studios", phone: "+91 98765 12345", notes: "Short-form content specialist", status: "active" },
-  { id: "3", name: "Amit Singh", email: "amit@creatorlabs.co", company: "Creator Labs", phone: "+91 99887 66554", notes: "Product launches", status: "active" },
-  { id: "4", name: "Neha Gupta", email: "neha@abcmarketing.com", company: "ABC Marketing", phone: "+91 88776 55443", notes: "Corporate videos", status: "inactive" },
-]
-
 const emptyForm: { name: string; email: string; company: string; phone: string; notes: string; status: "active" | "inactive" } = {
   name: "",
   email: "",
@@ -56,7 +49,6 @@ export default function ClientsPage() {
   const [clients, setClients] = useState<ClientData[]>([])
   const [filteredClients, setFilteredClients] = useState<ClientData[]>([])
   const [search, setSearch] = useState("")
-  const [isDemo, setIsDemo] = useState(true)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [editingClient, setEditingClient] = useState<ClientData | null>(null)
@@ -77,14 +69,11 @@ export default function ClientsPage() {
           .eq("editor_id", user.id)
           .order("created_at", { ascending: false })
 
-        if (data && data.length > 0) {
-          setIsDemo(false)
+        if (data) {
           setClients(data as ClientData[])
-        } else {
-          setClients(demoClients)
         }
       } catch {
-        setClients(demoClients)
+        setClients([])
       }
     }
 
@@ -179,12 +168,6 @@ export default function ClientsPage() {
           Add Client
         </Button>
       </div>
-
-      {isDemo && (
-        <Badge variant="glass" className="text-xs">
-          Showing demo data — connect Supabase to load real clients
-        </Badge>
-      )}
 
       <div className="relative">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/40" />
