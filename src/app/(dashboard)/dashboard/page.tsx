@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { GlassCard } from "@/components/layout/glass-card"
-import { Users, FolderKanban, Video, FileText, Clock, ArrowRight, Plus } from "lucide-react"
+import { Users, FolderKanban, Video, FileText, Clock, ArrowRight, Plus, TrendingUp, Calendar, CheckCircle } from "lucide-react"
 import { formatINR } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -14,6 +14,8 @@ interface DashboardStats {
   activeProjects: number
   pendingReviews: number
   pendingPayments: number
+  completedProjects: number
+  overdueTasks: number
 }
 
 interface RecentProject {
@@ -22,6 +24,7 @@ interface RecentProject {
   client: string
   status: string
   progress: number
+  deadline: string | null
 }
 
 interface RecentActivity {
@@ -52,6 +55,8 @@ export default function DashboardPage() {
     activeProjects: 0,
     pendingReviews: 0,
     pendingPayments: 0,
+    completedProjects: 0,
+    overdueTasks: 0,
   })
   const [projects, setProjects] = useState<RecentProject[]>([])
   const [activities, setActivities] = useState<RecentActivity[]>([])
@@ -87,12 +92,14 @@ export default function DashboardPage() {
           }, { onConflict: "id" })
         }
 
-        const [clientsRes, projectsRes, videosRes, invoicesRes, activitiesRes] = await Promise.all([
+        const [clientsRes, projectsRes, videosRes, invoicesRes, activitiesRes, completedRes, overdueRes] = await Promise.all([
           supabase.from("clients").select("id", { count: "exact", head: true }).eq("editor_id", user.id).eq("status", "active"),
-          supabase.from("projects").select("id, name, status, progress, clients(name)", { count: "exact" }).eq("editor_id", user.id).order("created_at", { ascending: false }).limit(5),
+          supabase.from("projects").select("id, name, status, progress, deadline, clients(name)", { count: "exact" }).eq("editor_id", user.id).order("created_at", { ascending: false }).limit(5),
           supabase.from("videos").select("id", { count: "exact", head: true }).eq("uploaded_by", user.id).eq("status", "awaiting_review"),
           supabase.from("invoices").select("amount, clients!inner(editor_id)").eq("clients.editor_id", user.id).in("status", ["sent", "overdue"]),
           supabase.from("activities").select("id, description, created_at").eq("user_id", user.id).order("created_at", { ascending: false }).limit(5),
+          supabase.from("projects").select("id", { count: "exact", head: true }).eq("editor_id", user.id).eq("status", "delivered"),
+          supabase.from("tasks").select("id", { count: "exact", head: true }).eq("assignee_id", user.id).eq("status", "todo"),
         ])
 
         const totalPayments = invoicesRes.data?.reduce((sum: number, inv: any) => sum + (inv.amount || 0), 0) ?? 0
@@ -102,6 +109,8 @@ export default function DashboardPage() {
           activeProjects: projectsRes.count ?? 0,
           pendingReviews: videosRes.count ?? 0,
           pendingPayments: totalPayments,
+          completedProjects: completedRes.count ?? 0,
+          overdueTasks: overdueRes.count ?? 0,
         })
 
         if (projectsRes.data && projectsRes.data.length > 0) {
@@ -112,6 +121,7 @@ export default function DashboardPage() {
               client: p.clients?.name ?? "Unknown",
               status: p.status,
               progress: p.progress ?? 0,
+              deadline: p.deadline,
             }))
           )
         }
@@ -142,10 +152,18 @@ export default function DashboardPage() {
     { label: "Pending Payments", value: formatINR(stats.pendingPayments), icon: FileText, color: "bg-purple-500/20 text-purple-600 dark:text-purple-400" },
   ]
 
+  const quickActions = [
+    { label: "Add Client", href: "/clients", icon: Users },
+    { label: "New Project", href: "/projects", icon: FolderKanban },
+    { label: "Upload Video", href: "/videos", icon: Video },
+    { label: "Create Invoice", href: "/invoices", icon: FileText },
+  ]
+
   const isEmpty = !loading && stats.activeClients === 0 && stats.activeProjects === 0
 
   return (
     <div className="p-6 space-y-6 animate-fade-in">
+      {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-foreground">
           {getGreeting()}, {userName}
@@ -155,9 +173,24 @@ export default function DashboardPage() {
         </div>
       </div>
 
+      {/* Quick Actions */}
+      {!isEmpty && (
+        <div className="flex flex-wrap gap-3">
+          {quickActions.map((action) => (
+            <Link key={action.label} href={action.href}>
+              <Button variant="outline" className="border-border text-foreground hover:bg-muted">
+                <action.icon className="h-4 w-4 mr-2" />
+                {action.label}
+              </Button>
+            </Link>
+          ))}
+        </div>
+      )}
+
+      {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {statCards.map((card) => (
-          <GlassCard key={card.label} className="p-5">
+          <GlassCard key={card.label} className="p-5 hover-lift transition-all duration-300">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">{card.label}</p>
@@ -171,6 +204,7 @@ export default function DashboardPage() {
         ))}
       </div>
 
+      {/* Empty State */}
       {isEmpty ? (
         <GlassCard className="p-12 text-center">
           <FolderKanban className="h-16 w-16 text-muted-foreground/30 mx-auto mb-4" />
@@ -187,6 +221,7 @@ export default function DashboardPage() {
         </GlassCard>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Recent Projects */}
           <div className="lg:col-span-2">
             <GlassCard className="p-6">
               <div className="flex items-center justify-between mb-4">
@@ -221,6 +256,12 @@ export default function DashboardPage() {
                         <p className="text-xs text-muted-foreground mt-0.5">{project.client}</p>
                       </div>
                       <div className="flex items-center gap-3 ml-4">
+                        {project.deadline && (
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                            <Calendar className="h-3 w-3" />
+                            {new Date(project.deadline).toLocaleDateString()}
+                          </div>
+                        )}
                         <div className="w-24">
                           <div className="h-1.5 rounded-full bg-border overflow-hidden">
                             <div
@@ -241,7 +282,38 @@ export default function DashboardPage() {
             </GlassCard>
           </div>
 
-          <div>
+          {/* Activity & Stats */}
+          <div className="space-y-6">
+            {/* Quick Stats */}
+            <GlassCard className="p-6">
+              <h2 className="text-lg font-semibold text-foreground mb-4">Quick Stats</h2>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-lg bg-green-500/20 flex items-center justify-center">
+                      <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-foreground">Completed</p>
+                      <p className="text-xs text-muted-foreground">{stats.completedProjects} projects</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-lg bg-yellow-500/20 flex items-center justify-center">
+                      <TrendingUp className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-foreground">To-Do Tasks</p>
+                      <p className="text-xs text-muted-foreground">{stats.overdueTasks} tasks</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </GlassCard>
+
+            {/* Recent Activity */}
             <GlassCard className="p-6">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-lg font-semibold text-foreground">Recent Activity</h2>
@@ -255,7 +327,7 @@ export default function DashboardPage() {
                 <div className="space-y-4">
                   {activities.map((activity) => (
                     <div key={activity.id} className="flex gap-3">
-                      <div className="h-2 w-2 rounded-full bg-blue-500 mt-2 flex-shrink-0" />
+                      <div className="h-2 w-2 rounded-full bg-primary mt-2 flex-shrink-0" />
                       <div>
                         <p className="text-sm text-foreground/80">{activity.description}</p>
                         <p className="text-xs text-muted-foreground mt-0.5">{activity.time}</p>

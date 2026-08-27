@@ -10,9 +10,6 @@ import {
   ArrowLeft,
   FolderKanban,
   Play,
-  MessageSquare,
-  RefreshCw,
-  CheckCircle,
 } from "lucide-react"
 import { formatDate } from "@/lib/utils"
 import Link from "next/link"
@@ -22,7 +19,7 @@ interface VideoData {
   title: string
   version: number
   status: string
-  uploaded_at: string
+  created_at: string
 }
 
 interface ProjectDetail {
@@ -31,6 +28,7 @@ interface ProjectDetail {
   status: string
   progress: number
   deadline: string | null
+  description: string | null
 }
 
 const demoProject: ProjectDetail = {
@@ -39,12 +37,13 @@ const demoProject: ProjectDetail = {
   status: "review",
   progress: 80,
   deadline: "2026-12-15",
+  description: "Final cut review for YouTube Episode 42",
 }
 
 const demoVideos: VideoData[] = [
-  { id: "v1", title: "Full Episode Cut - Draft 3", version: 3, status: "awaiting_review", uploaded_at: "2026-12-10" },
-  { id: "v2", title: "Intro Sequence Revision", version: 2, status: "approved", uploaded_at: "2026-12-08" },
-  { id: "v3", title: "Full Episode Cut - Draft 1", version: 1, status: "approved", uploaded_at: "2026-12-02" },
+  { id: "v1", title: "Full Episode Cut - Draft 3", version: 3, status: "awaiting_review", created_at: "2026-12-10" },
+  { id: "v2", title: "Intro Sequence Revision", version: 2, status: "approved", created_at: "2026-12-08" },
+  { id: "v3", title: "Full Episode Cut - Draft 1", version: 1, status: "approved", created_at: "2026-12-02" },
 ]
 
 const statusColor: Record<string, string> = {
@@ -82,37 +81,54 @@ export default function ClientProjectDetailPage() {
         const { data: { user } } = await supabase.auth.getUser()
         if (!user) return
 
-        const { data: projectData } = await supabase
-          .from("projects")
-          .select("id, name, status, progress, deadline")
-          .eq("id", projectId)
-          .eq("client_id", user.id)
+        // Get client record by email
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("email")
+          .eq("id", user.id)
           .single()
 
-        if (projectData) {
-          setIsDemo(false)
-          setProject({
-            id: projectData.id,
-            name: projectData.name,
-            status: projectData.status,
-            progress: projectData.progress ?? 0,
-            deadline: projectData.deadline,
-          })
+        const clientEmail = profile?.email || user.email
+        const { data: clientRecord } = await supabase
+          .from("clients")
+          .select("id")
+          .eq("email", clientEmail)
+          .single()
 
-          const { data: videoData } = await supabase
-            .from("videos")
-            .select("id, title, version, status, uploaded_at")
-            .eq("project_id", projectId)
-            .order("version", { ascending: false })
+        if (clientRecord) {
+          const { data: projectData } = await supabase
+            .from("projects")
+            .select("id, name, status, progress, deadline, description")
+            .eq("id", projectId)
+            .eq("client_id", clientRecord.id)
+            .single()
 
-          if (videoData && videoData.length > 0) {
-            setVideos(videoData.map((v: any) => ({
-              id: v.id,
-              title: v.title,
-              version: v.version,
-              status: v.status,
-              uploaded_at: v.uploaded_at,
-            })))
+          if (projectData) {
+            setIsDemo(false)
+            setProject({
+              id: projectData.id,
+              name: projectData.name,
+              status: projectData.status,
+              progress: projectData.progress ?? 0,
+              deadline: projectData.deadline,
+              description: projectData.description,
+            })
+
+            const { data: videoData } = await supabase
+              .from("videos")
+              .select("id, title, version, status, created_at")
+              .eq("project_id", projectId)
+              .order("version", { ascending: false })
+
+            if (videoData && videoData.length > 0) {
+              setVideos(videoData.map((v: any) => ({
+                id: v.id,
+                title: v.title,
+                version: v.version,
+                status: v.status,
+                created_at: v.created_at,
+              })))
+            }
           }
         }
       } catch {
@@ -125,11 +141,12 @@ export default function ClientProjectDetailPage() {
 
   return (
     <div className="p-6 space-y-6 animate-fade-in">
+      {/* Header */}
       <div className="flex items-center gap-3">
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => router.push("/client/projects")}
+          onClick={() => router.push("/client/dashboard")}
           className="text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="h-5 w-5" />
@@ -144,7 +161,7 @@ export default function ClientProjectDetailPage() {
               <span className="text-sm text-muted-foreground">Due {formatDate(project.deadline)}</span>
             )}
             {isDemo && (
-              <Badge variant="glass" className="text-xs">
+              <Badge variant="secondary" className="text-xs">
                 Demo Data
               </Badge>
             )}
@@ -152,6 +169,14 @@ export default function ClientProjectDetailPage() {
         </div>
       </div>
 
+      {/* Description */}
+      {project.description && (
+        <GlassCard className="p-4">
+          <p className="text-sm text-muted-foreground">{project.description}</p>
+        </GlassCard>
+      )}
+
+      {/* Progress */}
       <GlassCard className="p-4">
         <div className="flex items-center justify-between mb-2">
           <p className="text-sm text-muted-foreground">Project Progress</p>
@@ -165,6 +190,7 @@ export default function ClientProjectDetailPage() {
         </div>
       </GlassCard>
 
+      {/* Videos */}
       <GlassCard className="p-6">
         <h2 className="text-lg font-semibold text-foreground mb-4">Videos</h2>
         {videos.length === 0 ? (
@@ -182,7 +208,7 @@ export default function ClientProjectDetailPage() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <p className="text-sm font-medium text-foreground truncate">{video.title}</p>
-                    <Badge variant="glass" className="text-[10px] flex-shrink-0">
+                    <Badge variant="secondary" className="text-[10px] flex-shrink-0">
                       v{video.version}
                     </Badge>
                   </div>
@@ -190,28 +216,16 @@ export default function ClientProjectDetailPage() {
                     <Badge className={`${statusColor[video.status] ?? "bg-muted text-muted-foreground"} border-0 text-[10px]`}>
                       {video.status.replace(/_/g, " ")}
                     </Badge>
-                    <p className="text-xs text-muted-foreground">{formatDate(video.uploaded_at)}</p>
+                    <p className="text-xs text-muted-foreground">{formatDate(video.created_at)}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2 ml-4 flex-shrink-0">
-                  <Link href={`/client/projects/${projectId}/review/${video.id}`}>
-                    <Button variant="glass" size="sm" className="text-xs">
+                  <Link href={`/videos/${video.id}`}>
+                    <Button variant="outline" size="sm" className="text-xs border-border text-foreground hover:bg-muted">
                       <Play className="h-3.5 w-3.5 mr-1.5" />
-                      Watch Video
+                      Watch
                     </Button>
                   </Link>
-                  <Button variant="glass" size="sm" className="text-xs">
-                    <MessageSquare className="h-3.5 w-3.5 mr-1.5" />
-                    Comment
-                  </Button>
-                  <Button variant="glass" size="sm" className="text-xs text-orange-600 dark:text-orange-400 hover:text-orange-500 dark:hover:text-orange-300">
-                    <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
-                    Request Changes
-                  </Button>
-                  <Button variant="glass" size="sm" className="text-xs text-green-600 dark:text-green-400 hover:text-green-500 dark:hover:text-green-300">
-                    <CheckCircle className="h-3.5 w-3.5 mr-1.5" />
-                    Approve
-                  </Button>
                 </div>
               </div>
             ))}

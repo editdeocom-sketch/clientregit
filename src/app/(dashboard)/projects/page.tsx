@@ -9,14 +9,6 @@ import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { Textarea } from "@/components/ui/textarea"
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
-import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -24,7 +16,14 @@ import {
   DialogFooter,
   DialogDescription,
 } from "@/components/ui/dialog"
-import { FolderKanban, Plus, Search } from "lucide-react"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { FolderKanban, Plus, Search, MoreHorizontal, Trash2, Pencil } from "lucide-react"
 import { formatINR, formatDate } from "@/lib/utils"
 import { toast } from "sonner"
 
@@ -41,11 +40,11 @@ interface ProjectData {
 
 const statusColors: Record<string, string> = {
   brief: "bg-muted text-muted-foreground",
-  editing: "bg-blue-500/20 text-blue-400",
-  review: "bg-yellow-500/20 text-yellow-400",
-  revision: "bg-orange-500/20 text-orange-400",
-  approved: "bg-green-500/20 text-green-400",
-  delivered: "bg-purple-500/20 text-purple-400",
+  editing: "bg-blue-500/20 text-blue-600 dark:text-blue-400",
+  review: "bg-yellow-500/20 text-yellow-600 dark:text-yellow-400",
+  revision: "bg-orange-500/20 text-orange-600 dark:text-orange-400",
+  approved: "bg-green-500/20 text-green-600 dark:text-green-400",
+  delivered: "bg-purple-500/20 text-purple-600 dark:text-purple-400",
 }
 
 const progressColors: Record<string, string> = {
@@ -75,6 +74,9 @@ export default function ProjectsPage() {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [form, setForm] = useState(emptyForm)
   const [saving, setSaving] = useState(false)
+  const [progressDialogOpen, setProgressDialogOpen] = useState(false)
+  const [editingProject, setEditingProject] = useState<ProjectData | null>(null)
+  const [newProgress, setNewProgress] = useState(0)
 
   useEffect(() => {
     loadProjects()
@@ -102,11 +104,16 @@ export default function ProjectsPage() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
 
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("projects")
         .select("*, clients(name)")
         .eq("editor_id", user.id)
         .order("created_at", { ascending: false })
+
+      if (error) {
+        console.error("Load projects error:", error)
+        return
+      }
 
       if (data) {
         setProjects(
@@ -122,7 +129,8 @@ export default function ProjectsPage() {
           }))
         )
       }
-    } catch {
+    } catch (err) {
+      console.error("Load projects exception:", err)
       setProjects([])
     }
   }
@@ -154,7 +162,7 @@ export default function ProjectsPage() {
         client_id: clientData.id,
         editor_id: user.id,
         status: form.status,
-        progress: form.progress,
+        progress: form.progress ?? 0,
         deadline: form.deadline || null,
         budget: form.budget ? Number(form.budget) : null,
         description: form.description || null,
@@ -173,6 +181,92 @@ export default function ProjectsPage() {
   }
 
   const statuses = ["all", "brief", "editing", "review", "revision", "approved", "delivered"]
+
+  async function handleStatusUpdate(projectId: string, newStatus: ProjectData["status"]) {
+    try {
+      const supabase = createClient()
+      const statusProgress: Record<string, number> = {
+        brief: 0,
+        editing: 25,
+        review: 50,
+        revision: 60,
+        approved: 80,
+        delivered: 100,
+      }
+      const { data, error } = await supabase
+        .from("projects")
+        .update({ status: newStatus, progress: statusProgress[newStatus] ?? 0 })
+        .eq("id", projectId)
+        .select()
+      if (error) {
+        console.error("Status update error:", error)
+        throw error
+      }
+      console.log("Status updated:", data)
+      toast.success(`Project marked as ${newStatus}`)
+      await loadProjects()
+    } catch (err: any) {
+      console.error("Status update exception:", err)
+      toast.error(err?.message || "Failed to update status.")
+    }
+  }
+
+  async function handleDelete(projectId: string) {
+    try {
+      const supabase = createClient()
+      const { error } = await supabase
+        .from("projects")
+        .delete()
+        .eq("id", projectId)
+      if (error) throw error
+      toast.success("Project deleted.")
+      await loadProjects()
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to delete project.")
+    }
+  }
+
+  async function handleProgressUpdate() {
+    if (!editingProject) return
+    try {
+      const supabase = createClient()
+      const { data, error } = await supabase
+        .from("projects")
+        .update({ progress: newProgress })
+        .eq("id", editingProject.id)
+        .select()
+      if (error) {
+        console.error("Progress update error:", error)
+        throw error
+      }
+      console.log("Progress updated:", data)
+      toast.success("Progress updated!")
+      setProgressDialogOpen(false)
+      setEditingProject(null)
+      await loadProjects()
+    } catch (err: any) {
+      console.error("Progress update exception:", err)
+      toast.error(err?.message || "Failed to update progress.")
+    }
+  }
+
+  function openProgressDialog(project: ProjectData) {
+    setEditingProject(project)
+    setNewProgress(project.progress)
+    setProgressDialogOpen(true)
+  }
+
+  function getStatusActions(currentStatus: ProjectData["status"]) {
+    const allStatuses: { status: ProjectData["status"]; label: string }[] = [
+      { status: "brief", label: "Mark as Brief" },
+      { status: "editing", label: "Mark as Editing" },
+      { status: "review", label: "Mark as Review" },
+      { status: "revision", label: "Mark as Revision" },
+      { status: "approved", label: "Mark as Approved" },
+      { status: "delivered", label: "Mark as Delivered" },
+    ]
+    return allStatuses.filter((s) => s.status !== currentStatus)
+  }
 
   return (
     <div className="p-6 space-y-6 animate-fade-in">
@@ -235,55 +329,88 @@ export default function ProjectsPage() {
             )}
           </div>
         ) : (
-          <Table>
-            <TableHeader>
-              <TableRow className="border-border hover:bg-transparent">
-                <TableHead className="text-muted-foreground">Project</TableHead>
-                <TableHead className="text-muted-foreground">Client</TableHead>
-                <TableHead className="text-muted-foreground">Status</TableHead>
-                <TableHead className="text-muted-foreground">Progress</TableHead>
-                <TableHead className="text-muted-foreground">Deadline</TableHead>
-                <TableHead className="text-muted-foreground text-right">Budget</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filtered.map((project) => (
-                <TableRow key={project.id} className="border-border hover:bg-muted/50">
-                  <TableCell>
-                    <div>
-                      <p className="font-medium text-foreground">{project.name}</p>
-                      {project.description && (
-                        <p className="text-xs text-muted-foreground mt-0.5 truncate max-w-xs">{project.description}</p>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">{project.client}</TableCell>
-                  <TableCell>
-                    <Badge className={`${statusColors[project.status]} border-0`}>
-                      {project.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="w-24">
-                      <div className="h-2 rounded-full bg-muted overflow-hidden">
-                        <div
-                          className={`h-full rounded-full bg-gradient-to-r ${progressColors[project.status] ?? "from-muted-foreground/30 to-muted-foreground/50"}`}
-                          style={{ width: `${project.progress}%` }}
-                        />
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border">
+                  <th className="text-left py-3 px-5 font-medium text-muted-foreground">Project</th>
+                  <th className="text-left py-3 px-5 font-medium text-muted-foreground">Client</th>
+                  <th className="text-left py-3 px-5 font-medium text-muted-foreground">Deadline</th>
+                  <th className="text-right py-3 px-5 font-medium text-muted-foreground">Budget</th>
+                  <th className="text-left py-3 px-5 font-medium text-muted-foreground">Progress</th>
+                  <th className="text-left py-3 px-5 font-medium text-muted-foreground">Status</th>
+                  <th className="text-right py-3 px-5 font-medium text-muted-foreground">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((project) => (
+                  <tr
+                    key={project.id}
+                    className="border-b border-border last:border-0 hover:bg-muted/50 transition-colors"
+                  >
+                    <td className="py-4 px-5">
+                      <span className="font-medium text-foreground">{project.name}</span>
+                    </td>
+                    <td className="py-4 px-5 text-muted-foreground">{project.client}</td>
+                    <td className="py-4 px-5 text-muted-foreground">
+                      {project.deadline ? formatDate(project.deadline) : "—"}
+                    </td>
+                    <td className="py-4 px-5 text-right font-medium text-foreground">
+                      {project.budget ? formatINR(project.budget) : "—"}
+                    </td>
+                    <td className="py-4 px-5">
+                      <div className="w-24">
+                        <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                          <div
+                            className={`h-full rounded-full bg-gradient-to-r ${progressColors[project.status] ?? "from-muted-foreground/30 to-muted-foreground/50"}`}
+                            style={{ width: `${project.progress}%` }}
+                          />
+                        </div>
+                        <p className="text-[10px] text-muted-foreground mt-1">{project.progress}%</p>
                       </div>
-                      <p className="text-[10px] text-muted-foreground mt-1">{project.progress}%</p>
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground text-sm">
-                    {project.deadline ? formatDate(project.deadline) : "—"}
-                  </TableCell>
-                  <TableCell className="text-foreground text-right font-medium">
-                    {project.budget ? formatINR(project.budget) : "—"}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+                    </td>
+                    <td className="py-4 px-5">
+                      <Badge className={`${statusColors[project.status]} border-0`}>
+                        {project.status}
+                      </Badge>
+                    </td>
+                    <td className="py-4 px-5 text-right">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-48">
+                          <DropdownMenuItem onClick={() => openProgressDialog(project)}>
+                            <Pencil className="h-4 w-4 mr-2" />
+                            Update Progress
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          {getStatusActions(project.status).map((action) => (
+                            <DropdownMenuItem
+                              key={action.status}
+                              onClick={() => handleStatusUpdate(project.id, action.status)}
+                            >
+                              {action.label}
+                            </DropdownMenuItem>
+                          ))}
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            className="text-red-600 dark:text-red-400 focus:text-red-600 dark:focus:text-red-400"
+                            onClick={() => handleDelete(project.id)}
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </GlassCard>
 
@@ -361,6 +488,49 @@ export default function ProjectsPage() {
               disabled={!form.name || !form.client || saving}
             >
               {saving ? "Creating..." : "Create Project"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={progressDialogOpen} onOpenChange={setProgressDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Update Progress</DialogTitle>
+            <DialogDescription className="text-muted-foreground">
+              {editingProject?.name}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label>Progress</Label>
+                <span className="text-sm font-medium text-foreground">{newProgress}%</span>
+              </div>
+              <input
+                type="range"
+                min="0"
+                max="100"
+                step="5"
+                value={newProgress}
+                onChange={(e) => setNewProgress(Number(e.target.value))}
+                className="w-full h-2 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"
+              />
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>0%</span>
+                <span>25%</span>
+                <span>50%</span>
+                <span>75%</span>
+                <span>100%</span>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setProgressDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleProgressUpdate}>
+              Save Progress
             </Button>
           </DialogFooter>
         </DialogContent>

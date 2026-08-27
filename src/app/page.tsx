@@ -19,12 +19,15 @@ import {
   Briefcase,
   Moon,
   Sun,
+  Star,
+  Check,
 } from "lucide-react";
 import { WaveBackground } from "@/components/layout/wave-background";
 import { GlassCard } from "@/components/layout/glass-card";
 import { Logo } from "@/components/layout/logo";
 import { MarketingFooter } from "@/components/marketing/footer";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import { AnimatedSection } from "@/hooks/use-in-view";
 import { useTheme } from "next-themes";
@@ -34,32 +37,32 @@ const features = [
   {
     icon: Users,
     title: "Client Management",
-    description: "Keep client information organized in one place.",
+    description: "Keep client information organized in one place. Track contacts, projects, and history effortlessly.",
   },
   {
     icon: FolderKanban,
     title: "Project Management",
-    description: "Track projects, deadlines and progress from start to finish.",
+    description: "Track projects, deadlines and progress from start to finish with visual boards.",
   },
   {
     icon: Video,
     title: "Video Reviews",
-    description: "Share videos and collect timestamped feedback from clients.",
+    description: "Share videos and collect timestamped feedback from clients in real-time.",
   },
   {
     icon: RefreshCw,
     title: "Revision Tracking",
-    description: "Turn client feedback into actionable revisions quickly.",
+    description: "Turn client feedback into actionable revisions quickly. Never miss a comment.",
   },
   {
     icon: CheckCircle,
     title: "Client Approvals",
-    description: "Let clients approve completed versions with one click.",
+    description: "Let clients approve completed versions with one click. Simple and clear.",
   },
   {
     icon: FileText,
     title: "Invoice Tracking",
-    description: "Track invoices and payment status for every project.",
+    description: "Track invoices and payment status for every project. Get paid on time.",
   },
 ];
 
@@ -67,22 +70,22 @@ const steps = [
   {
     number: "01",
     title: "Add your client",
-    description: "Import or create a client profile in seconds.",
+    description: "Import or create a client profile in seconds. Keep all their info organized.",
   },
   {
     number: "02",
     title: "Create a project",
-    description: "Set up a project, upload assets and invite your client.",
+    description: "Set up a project, upload assets and invite your client to collaborate.",
   },
   {
     number: "03",
     title: "Share and review videos",
-    description: "Send video links and collect timestamped feedback.",
+    description: "Send video links and collect timestamped feedback from your clients.",
   },
   {
     number: "04",
     title: "Get approval and deliver",
-    description: "Clients approve the final version with one click.",
+    description: "Clients approve the final version with one click. Project complete!",
   },
 ];
 
@@ -92,6 +95,76 @@ const whoIsItFor = [
   { icon: Zap, title: "Content Creators" },
   { icon: Building2, title: "Creative Agencies" },
   { icon: Briefcase, title: "Freelancers" },
+];
+
+const pricingPlans = [
+  {
+    name: "Starter",
+    price: "Free",
+    period: "forever",
+    description: "Perfect for freelancers getting started",
+    features: [
+      "Up to 3 clients",
+      "Up to 5 projects",
+      "Basic video reviews",
+      "Invoice tracking",
+    ],
+    cta: "Get Started",
+    popular: false,
+  },
+  {
+    name: "Professional",
+    price: "₹999",
+    period: "month",
+    description: "For growing creative professionals",
+    features: [
+      "Unlimited clients",
+      "Unlimited projects",
+      "Advanced video reviews",
+      "Priority support",
+      "Custom branding",
+      "Team collaboration",
+    ],
+    cta: "Start Free Trial",
+    popular: true,
+  },
+  {
+    name: "Agency",
+    price: "₹2,999",
+    period: "month",
+    description: "For creative teams and agencies",
+    features: [
+      "Everything in Professional",
+      "Up to 10 team members",
+      "Client portal access",
+      "Advanced analytics",
+      "API access",
+      "Dedicated support",
+    ],
+    cta: "Contact Sales",
+    popular: false,
+  },
+];
+
+const testimonials = [
+  {
+    name: "Sarah Johnson",
+    role: "Video Editor",
+    content: "ClientRegit has transformed how I work with clients. The video review feature is a game-changer!",
+    rating: 5,
+  },
+  {
+    name: "Michael Chen",
+    role: "Freelance Designer",
+    content: "Finally, a tool that understands creative professionals. The timestamped feedback saves me hours.",
+    rating: 5,
+  },
+  {
+    name: "Emily Rodriguez",
+    role: "Creative Agency Owner",
+    content: "Our team's productivity increased by 40% since switching to ClientRegit. Highly recommend!",
+    rating: 5,
+  },
 ];
 
 const faqs = [
@@ -141,6 +214,7 @@ const faqs = [
 const navLinks = [
   { label: "Features", href: "#features" },
   { label: "How It Works", href: "#how-it-works" },
+  { label: "Pricing", href: "#pricing" },
   { label: "FAQ", href: "#faq" },
   { label: "Blog", href: "/blog" },
 ];
@@ -160,12 +234,12 @@ export default function LandingPage() {
       {/* ── Nav ── */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-card/80 backdrop-blur-md border-b border-border transition-all duration-300">
         <div className="mx-auto max-w-7xl flex items-center justify-between px-6 py-4">
-          <a href="/" className="flex items-center">
+          <Link href="/" className="flex items-center">
             <Logo size="sm" showText={false} />
             <span className="ml-2 text-xl font-bold text-foreground">
               Client<span className="text-muted-foreground">Regit</span>
             </span>
-          </a>
+          </Link>
 
           <div className="hidden md:flex items-center gap-8">
             {navLinks.map((link) => (
@@ -255,9 +329,9 @@ export default function LandingPage() {
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] rounded-full bg-gradient-to-br from-primary/30 to-transparent blur-3xl pointer-events-none animate-glow" />
 
         <div className="relative z-10 mx-auto max-w-4xl text-center px-6">
-          <p className="text-sm uppercase tracking-widest text-muted-foreground mb-6 animate-fade-in delay-100">
-            A workspace for creative professionals
-          </p>
+          <Badge variant="secondary" className="mb-6 animate-fade-in delay-100">
+            Built for creative professionals
+          </Badge>
           <h1 className="text-5xl md:text-7xl font-bold leading-tight tracking-tight mb-6 animate-slide-up delay-200">
             Manage clients.
             <br />
@@ -272,7 +346,7 @@ export default function LandingPage() {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-slide-up delay-400">
             <Link href="/signup">
               <Button className="bg-primary text-primary-foreground hover:bg-primary/90 px-8 py-6 text-base hover-lift transition-all duration-300 group">
-                Get Started
+                Get Started Free
                 <ArrowRight className="ml-2 h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
               </Button>
             </Link>
@@ -296,19 +370,22 @@ export default function LandingPage() {
       <section id="features" className="py-24 px-6">
         <div className="mx-auto max-w-6xl">
           <AnimatedSection>
-            <h2 className="text-3xl md:text-5xl font-bold text-center mb-16">
+            <h2 className="text-3xl md:text-5xl font-bold text-center mb-4">
               Everything you need
             </h2>
+            <p className="text-center text-muted-foreground mb-16 max-w-2xl mx-auto">
+              Powerful features designed specifically for creative professionals
+            </p>
           </AnimatedSection>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 stagger-children">
             {features.map((feature, i) => (
               <AnimatedSection key={feature.title} delay={i * 80}>
                 <GlassCard
                   variant="subtle"
-                  className="p-6 hover-lift hover-glow transition-all duration-300 cursor-default group"
+                  className="p-6 hover-lift hover-glow transition-all duration-300 cursor-default group h-full"
                 >
-                  <div className="w-12 h-12 rounded-xl bg-muted flex items-center justify-center mb-4 group-hover:bg-accent transition-colors duration-300">
-                    <feature.icon className="h-6 w-6 text-muted-foreground group-hover:text-foreground transition-colors duration-300" />
+                  <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors duration-300">
+                    <feature.icon className="h-6 w-6 text-primary group-hover:text-primary transition-colors duration-300" />
                   </div>
                   <h3 className="text-lg font-semibold mb-2">{feature.title}</h3>
                   <p className="text-sm text-muted-foreground leading-relaxed">
@@ -326,16 +403,19 @@ export default function LandingPage() {
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-primary/5 to-transparent pointer-events-none" />
         <div className="mx-auto max-w-6xl relative z-10">
           <AnimatedSection>
-            <h2 className="text-3xl md:text-5xl font-bold text-center mb-16">
+            <h2 className="text-3xl md:text-5xl font-bold text-center mb-4">
               How it works
             </h2>
+            <p className="text-center text-muted-foreground mb-16 max-w-2xl mx-auto">
+              Get started in minutes with our simple workflow
+            </p>
           </AnimatedSection>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 stagger-children">
             {steps.map((step, i) => (
               <AnimatedSection key={step.number} delay={i * 100}>
-                <GlassCard className="p-6 hover-lift hover-glow transition-all duration-300 relative overflow-hidden group">
+                <GlassCard className="p-6 hover-lift hover-glow transition-all duration-300 relative overflow-hidden group h-full">
                   <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-primary/20 to-transparent rounded-bl-full group-hover:from-primary/30 transition-colors duration-300" />
-                  <span className="text-5xl font-bold text-muted-foreground/30 group-hover:text-muted-foreground/50 transition-colors duration-300">
+                  <span className="text-5xl font-bold text-primary/30 group-hover:text-primary/50 transition-colors duration-300">
                     {step.number}
                   </span>
                   <h3 className="text-lg font-semibold mt-4 mb-2">
@@ -355,9 +435,12 @@ export default function LandingPage() {
       <section className="py-24 px-6">
         <div className="mx-auto max-w-6xl">
           <AnimatedSection>
-            <h2 className="text-3xl md:text-5xl font-bold text-center mb-16">
+            <h2 className="text-3xl md:text-5xl font-bold text-center mb-4">
               Built for creative professionals
             </h2>
+            <p className="text-center text-muted-foreground mb-16 max-w-2xl mx-auto">
+              Whether you work alone or with a team, ClientRegit scales with you
+            </p>
           </AnimatedSection>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 stagger-children">
             {whoIsItFor.map((item, i) => (
@@ -366,10 +449,109 @@ export default function LandingPage() {
                   variant="subtle"
                   className="p-6 text-center hover-lift hover-glow transition-all duration-300 cursor-default group"
                 >
-                  <div className="w-14 h-14 rounded-2xl bg-muted flex items-center justify-center mx-auto mb-4 group-hover:bg-accent group-hover:scale-110 transition-all duration-300">
-                    <item.icon className="h-7 w-7 text-muted-foreground group-hover:text-foreground transition-colors duration-300" />
+                  <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4 group-hover:bg-primary/20 group-hover:scale-110 transition-all duration-300">
+                    <item.icon className="h-7 w-7 text-primary group-hover:text-primary transition-colors duration-300" />
                   </div>
                   <h3 className="text-base font-semibold">{item.title}</h3>
+                </GlassCard>
+              </AnimatedSection>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── Testimonials ── */}
+      <section className="py-24 px-6 relative">
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-primary/5 to-transparent pointer-events-none" />
+        <div className="mx-auto max-w-6xl relative z-10">
+          <AnimatedSection>
+            <h2 className="text-3xl md:text-5xl font-bold text-center mb-4">
+              Loved by creative professionals
+            </h2>
+            <p className="text-center text-muted-foreground mb-16 max-w-2xl mx-auto">
+              See what our users have to say about ClientRegit
+            </p>
+          </AnimatedSection>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 stagger-children">
+            {testimonials.map((testimonial, i) => (
+              <AnimatedSection key={testimonial.name} delay={i * 100}>
+                <GlassCard
+                  variant="subtle"
+                  className="p-6 hover-lift transition-all duration-300 h-full"
+                >
+                  <div className="flex mb-4">
+                    {Array.from({ length: testimonial.rating }).map((_, j) => (
+                      <Star key={j} className="h-5 w-5 fill-primary text-primary" />
+                    ))}
+                  </div>
+                  <p className="text-sm text-muted-foreground leading-relaxed mb-6">
+                    &quot;{testimonial.content}&quot;
+                  </p>
+                  <div>
+                    <p className="font-medium text-foreground">{testimonial.name}</p>
+                    <p className="text-sm text-muted-foreground">{testimonial.role}</p>
+                  </div>
+                </GlassCard>
+              </AnimatedSection>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── Pricing ── */}
+      <section id="pricing" className="py-24 px-6">
+        <div className="mx-auto max-w-6xl">
+          <AnimatedSection>
+            <h2 className="text-3xl md:text-5xl font-bold text-center mb-4">
+              Simple, transparent pricing
+            </h2>
+            <p className="text-center text-muted-foreground mb-16 max-w-2xl mx-auto">
+              Start for free, upgrade when you need more
+            </p>
+          </AnimatedSection>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 stagger-children">
+            {pricingPlans.map((plan, i) => (
+              <AnimatedSection key={plan.name} delay={i * 100}>
+                <GlassCard
+                  variant={plan.popular ? "default" : "subtle"}
+                  className={`p-6 hover-lift transition-all duration-300 relative h-full flex flex-col ${
+                    plan.popular ? "ring-2 ring-primary" : ""
+                  }`}
+                >
+                  {plan.popular && (
+                    <Badge className="absolute -top-3 left-1/2 -translate-x-1/2">
+                      Most Popular
+                    </Badge>
+                  )}
+                  <div className="mb-6">
+                    <h3 className="text-lg font-semibold mb-2">{plan.name}</h3>
+                    <div className="flex items-baseline gap-1">
+                      <span className="text-4xl font-bold">{plan.price}</span>
+                      {plan.period !== "forever" && (
+                        <span className="text-muted-foreground">/{plan.period}</span>
+                      )}
+                    </div>
+                    <p className="text-sm text-muted-foreground mt-2">{plan.description}</p>
+                  </div>
+                  <ul className="space-y-3 mb-8 flex-1">
+                    {plan.features.map((feature) => (
+                      <li key={feature} className="flex items-center gap-2 text-sm">
+                        <Check className="h-4 w-4 text-primary flex-shrink-0" />
+                        <span>{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <Link href="/signup" className="block">
+                    <Button
+                      className={`w-full ${
+                        plan.popular
+                          ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                          : "bg-muted text-foreground hover:bg-muted/80"
+                      }`}
+                    >
+                      {plan.cta}
+                    </Button>
+                  </Link>
                 </GlassCard>
               </AnimatedSection>
             ))}
@@ -381,9 +563,12 @@ export default function LandingPage() {
       <section id="faq" className="py-24 px-6">
         <div className="mx-auto max-w-3xl">
           <AnimatedSection>
-            <h2 className="text-3xl md:text-5xl font-bold text-center mb-16">
+            <h2 className="text-3xl md:text-5xl font-bold text-center mb-4">
               Frequently asked questions
             </h2>
+            <p className="text-center text-muted-foreground mb-16 max-w-2xl mx-auto">
+              Everything you need to know about ClientRegit
+            </p>
           </AnimatedSection>
           <div className="space-y-3">
             {faqs.map((faq, index) => (
@@ -440,7 +625,7 @@ export default function LandingPage() {
               </p>
               <Link href="/signup">
                 <Button className="bg-primary text-primary-foreground hover:bg-primary/90 px-10 py-6 text-base hover-lift transition-all duration-300 group/btn">
-                  Get Started
+                  Get Started Free
                   <ArrowRight className="ml-2 h-4 w-4 transition-transform duration-300 group-hover/btn:translate-x-1" />
                 </Button>
               </Link>

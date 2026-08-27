@@ -36,7 +36,7 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
-  const protectedRoutes = ['/dashboard', '/clients', '/projects', '/tasks', '/videos', '/invoices', '/settings']
+  const protectedRoutes = ['/dashboard', '/clients', '/projects', '/tasks', '/videos', '/invoices', '/settings', '/client']
   const isProtectedRoute = protectedRoutes.some(route => request.nextUrl.pathname.startsWith(route))
   const isAuthRoute = ['/login', '/signup', '/forgot-password', '/update-password'].includes(request.nextUrl.pathname)
 
@@ -65,6 +65,7 @@ export const config = {
     '/videos/:path*',
     '/invoices/:path*',
     '/settings/:path*',
+    '/client/:path*',
     '/login',
     '/signup',
     '/forgot-password',
