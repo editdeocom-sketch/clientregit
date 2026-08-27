@@ -1,10 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
-import { Loader2, CheckCircle2, XCircle, ArrowLeft, Mail, Lock } from "lucide-react";
+import { Loader2, CheckCircle2, XCircle, Mail, CheckCircle } from "lucide-react";
 import { Logo } from "@/components/layout/logo";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -42,11 +41,8 @@ function PasswordRequirement({ met, text }: { met: boolean; text: string }) {
 }
 
 export default function SignupPage() {
-  const router = useRouter();
-
-  // Step 1: Email + Password + Role
-  // Step 2: OTP verification
-  const [step, setStep] = useState<"details" | "otp">("details");
+  const [step, setStep] = useState<"form" | "check-email">("form");
+  const [sentEmail, setSentEmail] = useState("");
 
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -54,18 +50,15 @@ export default function SignupPage() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [role, setRole] = useState<UserRole>("editor");
-
-  const [otp, setOtp] = useState(["", "", "", "", "", ""]);
-  const [signupLoading, setSignupLoading] = useState(false);
-  const [verifyLoading, setVerifyLoading] = useState(false);
-  const [resendCountdown, setResendCountdown] = useState(0);
+  const [loading, setLoading] = useState(false);
 
   const pwValidation = validatePassword(password);
   const passwordsMatch = password.length > 0 && password === confirmPassword;
-  const canSignup = fullName && email && password && confirmPassword && pwValidation.valid && passwordsMatch && !signupLoading;
+  const canSubmit = fullName && email && password && confirmPassword && pwValidation.valid && passwordsMatch && !loading;
 
-  // Step 1: Sign up user (creates account + sends OTP)
-  async function handleSignup() {
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+
     if (!pwValidation.valid) {
       toast.error("Password does not meet requirements.");
       return;
@@ -76,10 +69,10 @@ export default function SignupPage() {
       return;
     }
 
-    setSignupLoading(true);
+    setLoading(true);
     const supabase = createClient();
 
-    // Sign up - this creates the user and triggers Supabase's email confirmation
+    // Sign up - Supabase sends magic link email automatically
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -94,13 +87,13 @@ export default function SignupPage() {
 
     if (error) {
       toast.error(error.message);
-      setSignupLoading(false);
+      setLoading(false);
       return;
     }
 
     if (data.user) {
       // Create profile
-      const { error: profileError } = await supabase.from("profiles").upsert({
+      await supabase.from("profiles").upsert({
         id: data.user.id,
         full_name: fullName,
         email,
@@ -108,99 +101,85 @@ export default function SignupPage() {
         role,
       }, { onConflict: "id" });
 
-      if (profileError) {
-        console.error("Profile error:", profileError);
-      }
-
-      // Check if email confirmation is needed
-      if (data.user.identities?.length === 0) {
-        // User already exists
-        toast.error("An account with this email already exists. Please log in.");
-        setSignupLoading(false);
-        return;
-      }
-
-      // If Supabase sends OTP/magic link, show the OTP step
-      // The user will get an email with either a link or OTP code
-      toast.success("Account created! Check your email for verification.");
-      setStep("otp");
-      setResendCountdown(60);
+      // Show check email page
+      setSentEmail(email);
+      setStep("check-email");
+      toast.success("Verification email sent!");
     }
 
-    setSignupLoading(false);
+    setLoading(false);
   }
 
-  // Step 2: Verify OTP
-  async function handleVerifyOtp() {
-    const otpString = otp.join("");
-    if (otpString.length !== 6) {
-      toast.error("Please enter the complete 6-digit code");
-      return;
-    }
+  // Check email confirmation page
+  if (step === "check-email") {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background px-4">
+        <div className="w-full max-w-md bg-card/60 backdrop-blur-lg border border-border rounded-2xl p-8 text-center">
+          <div className="mb-6">
+            <Logo size="md" />
+          </div>
 
-    setVerifyLoading(true);
-    const supabase = createClient();
+          <div className="mb-6">
+            <div className="h-20 w-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+              <Mail className="h-10 w-10 text-primary" />
+            </div>
+            <h1 className="text-2xl font-bold text-foreground mb-2">Check your email</h1>
+            <p className="text-muted-foreground">
+              We sent a verification link to
+            </p>
+            <p className="font-medium text-foreground mt-1">{sentEmail}</p>
+          </div>
 
-    const { error } = await supabase.auth.verifyOtp({
-      email,
-      token: otpString,
-      type: "signup",
-    });
+          <div className="space-y-4">
+            <div className="p-4 rounded-lg bg-muted/50 border border-border">
+              <p className="text-sm text-muted-foreground">
+                Click the link in the email to verify your account and sign in. The link will expire in 24 hours.
+              </p>
+            </div>
 
-    if (error) {
-      toast.error(error.message || "Invalid verification code");
-      setVerifyLoading(false);
-      return;
-    }
+            <Button
+              onClick={() => {
+                setStep("form");
+                setSentEmail("");
+              }}
+              variant="outline"
+              className="w-full border-border text-foreground hover:bg-muted"
+            >
+              Use a different email
+            </Button>
 
-    toast.success("Email verified successfully!");
-    
-    // Redirect based on role
-    if (role === "client") {
-      router.push("/client/dashboard");
-    } else {
-      router.push("/dashboard");
-    }
-    setVerifyLoading(false);
+            <p className="text-sm text-muted-foreground">
+              Didn&apos;t receive the email?{" "}
+              <button
+                onClick={async () => {
+                  const supabase = createClient();
+                  await supabase.auth.resend({
+                    type: "signup",
+                    email: sentEmail,
+                  });
+                  toast.success("Email resent!");
+                }}
+                className="font-medium text-foreground hover:text-foreground/80"
+              >
+                Resend
+              </button>
+            </p>
+          </div>
+
+          <div className="mt-6 pt-6 border-t border-border">
+            <Link
+              href="/login"
+              className="text-sm text-muted-foreground hover:text-foreground"
+            >
+              ← Back to login
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
   }
 
-  // Resend OTP
-  async function handleResendOtp() {
-    if (resendCountdown > 0) return;
-
-    const supabase = createClient();
-
-    // Resend the confirmation email/OTP
-    const { error } = await supabase.auth.resend({
-      type: "signup",
-      email,
-    });
-
-    if (error) {
-      toast.error("Failed to resend code");
-    } else {
-      toast.success("New verification code sent!");
-      setResendCountdown(60);
-    }
-  }
-
-  // Countdown timer
-  useState(() => {
-    let interval: NodeJS.Timeout;
-    if (resendCountdown > 0) {
-      interval = setInterval(() => {
-        setResendCountdown((prev) => {
-          if (prev <= 1) {
-            clearInterval(interval);
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-    }
-    return () => clearInterval(interval);
-  });
-
+  // Registration form
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4 py-8">
       <div className="w-full max-w-md bg-card/60 backdrop-blur-lg border border-border rounded-2xl p-8">
@@ -211,198 +190,128 @@ export default function SignupPage() {
           <p className="text-sm text-muted-foreground">Create your account</p>
         </div>
 
-        {/* Step 1: Complete Registration Form */}
-        {step === "details" && (
-          <div className="space-y-5">
-            <div className="space-y-2">
-              <Label htmlFor="fullName">Full Name *</Label>
-              <Input
-                id="fullName"
-                type="text"
-                placeholder="John Doe"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                required
-                className="bg-muted border-border text-foreground"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="email">Email *</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="you@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="bg-muted border-border text-foreground"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="phone">Phone Number</Label>
-              <Input
-                id="phone"
-                type="tel"
-                placeholder="+91 98765 43210"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                className="bg-muted border-border text-foreground"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="password">Password *</Label>
-              <PasswordInput
-                id="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                className="bg-muted border-border text-foreground"
-              />
-              {password.length > 0 && (
-                <div className="space-y-1 mt-2">
-                  <PasswordRequirement met={password.length >= 6 && password.length <= 10} text="6-10 characters" />
-                  <PasswordRequirement met={/[A-Z]/.test(password)} text="One uppercase letter" />
-                  <PasswordRequirement met={/[a-z]/.test(password)} text="One lowercase letter" />
-                  <PasswordRequirement met={/[0-9]/.test(password)} text="One number" />
-                  <PasswordRequirement met={/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?`~]/.test(password)} text="One symbol" />
-                </div>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirm Password *</Label>
-              <PasswordInput
-                id="confirmPassword"
-                placeholder="••••••••"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                required
-                className="bg-muted border-border text-foreground"
-              />
-              {confirmPassword.length > 0 && (
-                <div className="flex items-center gap-1.5 text-xs mt-1">
-                  {passwordsMatch ? (
-                    <>
-                      <CheckCircle2 className="h-3 w-3 text-green-400" />
-                      <span className="text-green-400">Passwords match</span>
-                    </>
-                  ) : (
-                    <>
-                      <XCircle className="h-3 w-3 text-red-400" />
-                      <span className="text-red-400">Passwords do not match</span>
-                    </>
-                  )}
-                </div>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="role">I am a…</Label>
-              <select
-                id="role"
-                value={role}
-                onChange={(e) => setRole(e.target.value as UserRole)}
-                className="flex h-10 w-full rounded-md border border-border bg-muted px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
-              >
-                <option value="editor">Video Editor</option>
-                <option value="client">Client</option>
-              </select>
-            </div>
-
-            <Button
-              onClick={handleSignup}
-              disabled={!canSignup}
-              className="w-full bg-primary text-primary-foreground hover:bg-primary/90 h-11"
-            >
-              {signupLoading ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                "Create Account"
-              )}
-            </Button>
-
-            <p className="mt-4 text-center text-sm text-muted-foreground">
-              Already have an account?{" "}
-              <Link href="/login" className="font-medium text-foreground hover:text-foreground/80">
-                Sign in
-              </Link>
-            </p>
+        <form onSubmit={handleSubmit} className="space-y-5">
+          <div className="space-y-2">
+            <Label htmlFor="fullName">Full Name</Label>
+            <Input
+              id="fullName"
+              type="text"
+              placeholder="John Doe"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              required
+              className="bg-muted border-border text-foreground"
+            />
           </div>
-        )}
 
-        {/* Step 2: OTP Verification */}
-        {step === "otp" && (
-          <div className="space-y-5">
-            <div className="flex flex-col items-center mb-4">
-              <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-                <Mail className="h-8 w-8 text-primary" />
+          <div className="space-y-2">
+            <Label htmlFor="email">Email</Label>
+            <Input
+              id="email"
+              type="email"
+              placeholder="you@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              className="bg-muted border-border text-foreground"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="phone">Phone Number</Label>
+            <Input
+              id="phone"
+              type="tel"
+              placeholder="+91 98765 43210"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              className="bg-muted border-border text-foreground"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="password">Password</Label>
+            <PasswordInput
+              id="password"
+              placeholder="••••••••"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              className="bg-muted border-border text-foreground"
+            />
+            {password.length > 0 && (
+              <div className="space-y-1 mt-2">
+                <PasswordRequirement met={password.length >= 6 && password.length <= 10} text="6-10 characters" />
+                <PasswordRequirement met={/[A-Z]/.test(password)} text="One uppercase letter" />
+                <PasswordRequirement met={/[a-z]/.test(password)} text="One lowercase letter" />
+                <PasswordRequirement met={/[0-9]/.test(password)} text="One number" />
+                <PasswordRequirement met={/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?`~]/.test(password)} text="One symbol" />
               </div>
-              <p className="text-sm text-muted-foreground text-center">
-                Enter the 6-digit code sent to
-              </p>
-              <p className="text-sm font-medium text-foreground mt-1">{email}</p>
-            </div>
-
-            <div className="flex justify-center gap-2">
-              {otp.map((digit, index) => (
-                <Input
-                  key={index}
-                  type="text"
-                  inputMode="numeric"
-                  maxLength={1}
-                  value={digit}
-                  onChange={(e) => {
-                    const val = e.target.value.replace(/\D/g, "").slice(-1);
-                    const newOtp = [...otp];
-                    newOtp[index] = val;
-                    setOtp(newOtp);
-                    if (val && index < 5) {
-                      document.getElementById(`otp-${index + 1}`)?.focus();
-                    }
-                  }}
-                  id={`otp-${index}`}
-                  className="h-12 w-12 text-center text-lg font-mono bg-muted border-border text-foreground"
-                />
-              ))}
-            </div>
-
-            <Button
-              onClick={handleVerifyOtp}
-              disabled={otp.join("").length !== 6 || verifyLoading}
-              className="w-full bg-primary text-primary-foreground hover:bg-primary/90 h-11"
-            >
-              {verifyLoading ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                "Verify & Complete"
-              )}
-            </Button>
-
-            <div className="text-center">
-              <p className="text-sm text-muted-foreground">
-                {resendCountdown > 0 ? (
-                  `Resend in ${resendCountdown}s`
-                ) : (
-                  <button onClick={handleResendOtp} className="font-medium text-foreground hover:text-foreground/80">
-                    Resend code
-                  </button>
-                )}
-              </p>
-            </div>
-
-            <button
-              onClick={() => setStep("details")}
-              className="flex items-center justify-center gap-2 text-sm text-muted-foreground hover:text-foreground mx-auto"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Back to form
-            </button>
+            )}
           </div>
-        )}
+
+          <div className="space-y-2">
+            <Label htmlFor="confirmPassword">Confirm Password</Label>
+            <PasswordInput
+              id="confirmPassword"
+              placeholder="••••••••"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              required
+              className="bg-muted border-border text-foreground"
+            />
+            {confirmPassword.length > 0 && (
+              <div className="flex items-center gap-1.5 text-xs mt-1">
+                {passwordsMatch ? (
+                  <>
+                    <CheckCircle2 className="h-3 w-3 text-green-400" />
+                    <span className="text-green-400">Passwords match</span>
+                  </>
+                ) : (
+                  <>
+                    <XCircle className="h-3 w-3 text-red-400" />
+                    <span className="text-red-400">Passwords do not match</span>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="role">I am a…</Label>
+            <select
+              id="role"
+              value={role}
+              onChange={(e) => setRole(e.target.value as UserRole)}
+              className="flex h-10 w-full rounded-md border border-border bg-muted px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
+            >
+              <option value="editor">Video Editor</option>
+              <option value="client">Client</option>
+            </select>
+          </div>
+
+          <Button
+            type="submit"
+            disabled={!canSubmit}
+            className="w-full bg-primary text-primary-foreground hover:bg-primary/90 h-11"
+          >
+            {loading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              "Create Account"
+            )}
+          </Button>
+        </form>
+
+        <p className="mt-6 text-center text-sm text-muted-foreground">
+          Already have an account?{" "}
+          <Link
+            href="/login"
+            className="font-medium text-foreground hover:text-foreground/80"
+          >
+            Sign in
+          </Link>
+        </p>
       </div>
     </div>
   );
