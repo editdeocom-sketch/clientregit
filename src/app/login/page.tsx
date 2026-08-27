@@ -15,7 +15,7 @@ import { PasswordInput } from "@/components/ui/password-input";
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirectTo = searchParams.get("redirect") || "/dashboard";
+  const redirectTo = searchParams.get("redirect");
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -26,7 +26,7 @@ function LoginForm() {
     setLoading(true);
 
     const supabase = createClient();
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
@@ -37,7 +37,30 @@ function LoginForm() {
       return;
     }
 
-    router.push(redirectTo);
+    // If a specific redirect was requested, use it
+    if (redirectTo) {
+      router.push(redirectTo);
+      return;
+    }
+
+    // Check user role and redirect accordingly
+    if (data.user) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", data.user.id)
+        .single()
+
+      const role = profile?.role || data.user.user_metadata?.role || "editor"
+      
+      if (role === "client") {
+        router.push("/client/dashboard");
+      } else {
+        router.push("/dashboard");
+      }
+    } else {
+      router.push("/dashboard");
+    }
   }
 
   return (

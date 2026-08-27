@@ -5,7 +5,7 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const origin = request.nextUrl.origin
   const code = searchParams.get('code')
-  const next = searchParams.get('next') ?? '/dashboard'
+  const next = searchParams.get('next')
 
   if (code) {
     const supabase = createServerClient(
@@ -26,9 +26,27 @@ export async function GET(request: NextRequest) {
       }
     )
 
-    const { error } = await supabase.auth.exchangeCodeForSession(code)
-    if (!error) {
-      return NextResponse.redirect(`${origin}${next}`)
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code)
+    if (!error && data.user) {
+      // Check user role and redirect accordingly
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", data.user.id)
+        .single()
+
+      const role = profile?.role || data.user.user_metadata?.role || "editor"
+      
+      // If a specific next URL was requested, use it
+      if (next) {
+        return NextResponse.redirect(`${origin}${next}`)
+      }
+
+      // Redirect based on role
+      if (role === "client") {
+        return NextResponse.redirect(`${origin}/client/dashboard`)
+      }
+      return NextResponse.redirect(`${origin}/dashboard`)
     }
   }
 
