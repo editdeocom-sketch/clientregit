@@ -45,13 +45,8 @@ function LoginForm() {
 
     // Check user role and redirect accordingly
     if (data.user) {
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("role")
-        .eq("id", data.user.id)
-        .single()
-
-      const role = profile?.role || data.user.user_metadata?.role || "editor"
+      // Use user_metadata first (faster, no DB query needed)
+      const role = data.user.user_metadata?.role || "editor"
       
       if (role === "client") {
         router.push("/client/dashboard");

@@ -36,54 +36,16 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
-  // Editor-only routes
-  const editorRoutes = ['/dashboard', '/clients', '/projects', '/tasks', '/videos', '/invoices', '/settings']
-  const isEditorRoute = editorRoutes.some(route => request.nextUrl.pathname.startsWith(route))
-  
-  // Client-only routes
-  const isClientRoute = request.nextUrl.pathname.startsWith('/client')
-  
-  // Auth routes
-  const isAuthRoute = ['/login', '/signup', '/forgot-password', '/update-password', '/verify-otp'].includes(request.nextUrl.pathname)
+  // Protected routes that require authentication
+  const protectedRoutes = ['/dashboard', '/clients', '/projects', '/tasks', '/videos', '/invoices', '/settings', '/client']
+  const isProtectedRoute = protectedRoutes.some(route => request.nextUrl.pathname.startsWith(route))
 
-  // If user is not logged in and trying to access protected routes
-  if ((isEditorRoute || isClientRoute) && !user) {
+  // If user is not logged in and trying to access protected routes, redirect to login
+  if (isProtectedRoute && !user) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     url.searchParams.set('redirect', request.nextUrl.pathname)
     return NextResponse.redirect(url)
-  }
-
-  // If user is logged in and on auth routes, redirect based on role from user_metadata
-  if (isAuthRoute && user) {
-    const role = user.user_metadata?.role || "editor"
-    const url = request.nextUrl.clone()
-    
-    if (role === "client") {
-      url.pathname = '/client/dashboard'
-    } else {
-      url.pathname = '/dashboard'
-    }
-    return NextResponse.redirect(url)
-  }
-
-  // If user is logged in, check role-based access using user_metadata
-  if (user) {
-    const role = user.user_metadata?.role || "editor"
-
-    // Client trying to access editor routes - redirect to client dashboard
-    if (role === "client" && isEditorRoute) {
-      const url = request.nextUrl.clone()
-      url.pathname = '/client/dashboard'
-      return NextResponse.redirect(url)
-    }
-
-    // Editor trying to access client routes - redirect to editor dashboard
-    if (role === "editor" && isClientRoute) {
-      const url = request.nextUrl.clone()
-      url.pathname = '/dashboard'
-      return NextResponse.redirect(url)
-    }
   }
 
   return supabaseResponse
@@ -99,11 +61,5 @@ export const config = {
     '/invoices/:path*',
     '/settings/:path*',
     '/client/:path*',
-    '/login',
-    '/signup',
-    '/forgot-password',
-    '/update-password',
-    '/verify-otp',
-    '/auth/:path*',
   ],
 }
