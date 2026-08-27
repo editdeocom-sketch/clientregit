@@ -28,15 +28,12 @@ export async function GET(request: NextRequest) {
 
     const { data, error } = await supabase.auth.exchangeCodeForSession(code)
     if (!error && data.user) {
-      // Get role from user_metadata
       const role = data.user.user_metadata?.role || "editor"
       
-      // If a specific next URL was requested, use it
       if (next) {
         return NextResponse.redirect(`${origin}${next}`)
       }
 
-      // Redirect based on role
       if (role === "client") {
         return NextResponse.redirect(`${origin}/client/dashboard`)
       }
@@ -44,5 +41,6 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  return NextResponse.redirect(`${origin}/login?error=auth_callback_failed`)
+  // If no code or error, redirect to login
+  return NextResponse.redirect(`${origin}/login`)
 }
