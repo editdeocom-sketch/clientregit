@@ -54,7 +54,6 @@ export default function SignupPage() {
 
   const pwValidation = validatePassword(password);
   const passwordsMatch = password.length > 0 && password === confirmPassword;
-  const passwordsMismatch = confirmPassword.length > 0 && password !== confirmPassword;
   const canSubmit = fullName && email && password && confirmPassword && pwValidation.valid && passwordsMatch && !loading;
 
   async function handleSubmit(e: React.FormEvent) {
@@ -74,11 +73,11 @@ export default function SignupPage() {
 
     const supabase = createClient();
 
+    // Step 1: Sign up the user
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
         data: {
           full_name: fullName,
           role,
@@ -93,6 +92,7 @@ export default function SignupPage() {
     }
 
     if (data.user) {
+      // Step 2: Create profile
       const { error: profileError } = await supabase.from("profiles").insert({
         id: data.user.id,
         full_name: fullName,
@@ -106,10 +106,32 @@ export default function SignupPage() {
         setLoading(false);
         return;
       }
+
+      // Step 3: Send OTP for verification
+      const { error: otpError } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          shouldCreateUser: false, // User already created, just send OTP
+        },
+      });
+
+      if (otpError) {
+        // If OTP fails, user can still login with password
+        toast.success("Account created! You can now log in.");
+        router.push("/login");
+      } else {
+        toast.success("Verification code sent to your email!");
+        // Store email in sessionStorage for the verify page
+        sessionStorage.setItem("signup_email", email);
+        sessionStorage.setItem("signup_role", role);
+        router.push("/verify-otp");
+      }
+    } else {
+      toast.success("Account created! You can now log in.");
+      router.push("/login");
     }
 
-    toast.success("Account created! Check your email to confirm.");
-    router.push("/login");
+    setLoading(false);
   }
 
   return (

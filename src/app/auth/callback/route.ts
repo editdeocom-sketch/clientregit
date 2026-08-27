@@ -28,14 +28,8 @@ export async function GET(request: NextRequest) {
 
     const { data, error } = await supabase.auth.exchangeCodeForSession(code)
     if (!error && data.user) {
-      // Check user role and redirect accordingly
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("role")
-        .eq("id", data.user.id)
-        .single()
-
-      const role = profile?.role || data.user.user_metadata?.role || "editor"
+      // Get role from user_metadata
+      const role = data.user.user_metadata?.role || "editor"
       
       // If a specific next URL was requested, use it
       if (next) {

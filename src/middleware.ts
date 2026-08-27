@@ -44,7 +44,7 @@ export async function middleware(request: NextRequest) {
   const isClientRoute = request.nextUrl.pathname.startsWith('/client')
   
   // Auth routes
-  const isAuthRoute = ['/login', '/signup', '/forgot-password', '/update-password'].includes(request.nextUrl.pathname)
+  const isAuthRoute = ['/login', '/signup', '/forgot-password', '/update-password', '/verify-otp'].includes(request.nextUrl.pathname)
 
   // If user is not logged in and trying to access protected routes
   if ((isEditorRoute || isClientRoute) && !user) {
@@ -54,15 +54,9 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  // If user is logged in and on auth routes, redirect based on role
+  // If user is logged in and on auth routes, redirect based on role from user_metadata
   if (isAuthRoute && user) {
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .single()
-
-    const role = profile?.role || user.user_metadata?.role || "editor"
+    const role = user.user_metadata?.role || "editor"
     const url = request.nextUrl.clone()
     
     if (role === "client") {
@@ -73,15 +67,9 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  // If user is logged in, check role-based access
+  // If user is logged in, check role-based access using user_metadata
   if (user) {
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .single()
-
-    const role = profile?.role || user.user_metadata?.role || "editor"
+    const role = user.user_metadata?.role || "editor"
 
     // Client trying to access editor routes - redirect to client dashboard
     if (role === "client" && isEditorRoute) {
@@ -115,6 +103,7 @@ export const config = {
     '/signup',
     '/forgot-password',
     '/update-password',
+    '/verify-otp',
     '/auth/:path*',
   ],
 }
