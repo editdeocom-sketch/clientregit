@@ -1,49 +1,18 @@
 {
   "name": "clientregit",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "eslint"
-  },
-  "dependencies": {
-    "@hookform/resolvers": "^5.9.1",
-    "@radix-ui/react-avatar": "^1.2.6",
-    "@radix-ui/react-dialog": "^1.1.23",
-    "@radix-ui/react-dropdown-menu": "^2.1.24",
-    "@radix-ui/react-label": "^2.1.15",
-    "@radix-ui/react-scroll-area": "^1.2.18",
-    "@radix-ui/react-select": "^2.3.7",
-    "@radix-ui/react-separator": "^1.1.15",
-    "@radix-ui/react-slot": "^1.3.3",
-    "@radix-ui/react-tabs": "^1.1.21",
-    "@radix-ui/react-tooltip": "^1.2.16",
-    "@supabase/ssr": "^0.12.5",
-    "@supabase/supabase-js": "^2.112.4",
-    "@vercel/analytics": "^2.0.1",
-    "class-variance-authority": "^0.7.1",
-    "clsx": "^2.1.1",
-    "date-fns": "^4.4.0",
-    "lucide-react": "^1.34.0",
-    "next": "16.3.2",
-    "next-themes": "^0.4.6",
-    "react": "19.2.8",
-    "react-dom": "19.2.8",
-    "react-hook-form": "^7.86.0",
-    "sonner": "^2.0.8",
-    "tailwind-merge": "^3.6.0",
-    "zod": "^3.25.76"
+    "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
+    "dev:client": "cd client && npm run dev",
+    "dev:server": "cd server && npm run dev",
+    "build": "cd client && npm run build",
+    "start": "cd server && npm start",
+    "install:all": "cd client && npm install && cd ../server && npm install",
+    "seed": "cd server && npm run seed",
+    "backup": "cd server && npm run backup"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4",
-    "@types/node": "^20.19.43",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "eslint": "^9",
-    "eslint-config-next": "16.3.2",
-    "tailwindcss": "^4",
-    "typescript": "^5"
+    "concurrently": "^8.2.2"
   }
 }
