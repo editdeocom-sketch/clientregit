@@ -60,8 +60,8 @@ After running the seed script:
 npm run seed
 ```
 
-- Email: `admin@clientregit.com`
-- Password: `Admin@123`
+- Email: `******************`
+- Password: `********`
 
 Change credentials via environment variables in `server/.env` before seeding.
 
@@ -73,21 +73,7 @@ npm run backup
 
 Creates `backups/clientregit-YYYY-MM-DD.db`. Restore by copying a backup file over `data/clientregit.db` while the server is stopped.
 
-## Environment Variables
 
-**server/.env** (copy from `server/.env.example`):
-
-```
-PORT=5000
-JWT_SECRET=change_this_in_production_to_a_long_random_string
-CLIENT_URL=http://localhost:5173
-NODE_ENV=development
-ADMIN_NAME=Admin
-ADMIN_EMAIL=admin@clientregit.com
-ADMIN_PASSWORD=Admin@123
-```
-
-Never commit real secrets.
 
 ## API Endpoints
 
