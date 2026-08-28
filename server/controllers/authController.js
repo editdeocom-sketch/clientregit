@@ -4,10 +4,27 @@ const { queryAll, queryOne, runSql, saveDb } = require('../database/database');
 
 const generateToken = (id) => jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '30d' });
 
+const PASSWORD_MIN = 8;
+const PASSWORD_MAX = 64;
+
+function validatePassword(password) {
+  if (typeof password !== 'string') return 'Password is required';
+  if (password.length < PASSWORD_MIN) return `Password must be at least ${PASSWORD_MIN} characters`;
+  if (password.length > PASSWORD_MAX) return `Password must be at most ${PASSWORD_MAX} characters`;
+  if (!/[A-Z]/.test(password)) return 'Password must contain at least one uppercase letter';
+  if (!/[a-z]/.test(password)) return 'Password must contain at least one lowercase letter';
+  if (!/[0-9]/.test(password)) return 'Password must contain at least one number';
+  if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?`~]/.test(password)) return 'Password must contain at least one symbol';
+  return null;
+}
+
 exports.register = (req, res) => {
   try {
     const { name, email, password, role, phone } = req.body;
     if (!name || !email || !password) return res.status(400).json({ success: false, message: 'Please provide name, email, and password' });
+    if (role && role !== 'editor') return res.status(400).json({ success: false, message: 'Self-registration only supports the editor role' });
+    const passwordError = validatePassword(password);
+    if (passwordError) return res.status(400).json({ success: false, message: passwordError });
     const existing = queryOne('SELECT id FROM users WHERE email = ?', [email]);
     if (existing) return res.status(400).json({ success: false, message: 'User already exists' });
     const salt = bcrypt.genSaltSync(10);
@@ -79,6 +96,8 @@ exports.changePassword = (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;
     if (!currentPassword || !newPassword) return res.status(400).json({ success: false, message: 'Please provide current and new password' });
+    const passwordError = validatePassword(newPassword);
+    if (passwordError) return res.status(400).json({ success: false, message: passwordError });
     const user = queryOne('SELECT password_hash FROM users WHERE id = ?', [req.user.id]);
     if (!bcrypt.compareSync(currentPassword, user.password_hash)) return res.status(401).json({ success: false, message: 'Current password is incorrect' });
     const salt = bcrypt.genSaltSync(10);

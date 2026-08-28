@@ -14,8 +14,8 @@ import { usePreferences } from "@/contexts/PreferencesContext";
 
 function validatePassword(pw: string): { valid: boolean; errors: string[] } {
   const errors: string[] = [];
-  if (pw.length < 6) errors.push("At least 6 characters");
-  if (pw.length > 10) errors.push("Max 10 characters");
+  if (pw.length < 8) errors.push("At least 8 characters");
+  if (pw.length > 64) errors.push("Max 64 characters");
   if (!/[A-Z]/.test(pw)) errors.push("At least one uppercase letter");
   if (!/[a-z]/.test(pw)) errors.push("At least one lowercase letter");
   if (!/[0-9]/.test(pw)) errors.push("At least one number");
@@ -178,7 +178,7 @@ export default function SignupPage() {
             />
             {password.length > 0 && (
               <div className="space-y-1 mt-2">
-                <PasswordRequirement met={password.length >= 6 && password.length <= 10} text="6-10 characters" />
+                <PasswordRequirement met={password.length >= 8 && password.length <= 64} text="8-64 characters" />
                 <PasswordRequirement met={/[A-Z]/.test(password)} text="One uppercase letter" />
                 <PasswordRequirement met={/[a-z]/.test(password)} text="One lowercase letter" />
                 <PasswordRequirement met={/[0-9]/.test(password)} text="One number" />

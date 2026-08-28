@@ -52,18 +52,29 @@ cd server && npm run dev
 
 The SQLite database (`data/clientregit.db`) is created automatically on first startup — no manual database setup needed.
 
-## Default Admin
+## Creating the Admin Account
 
-After running the seed script:
+The initial admin account is created by the seed script:
 
 ```bash
 npm run seed
 ```
 
-- Email: `******************`
-- Password: `********`
+Before running it, set your admin email (required) and, optionally, a
+strong password in `server/.env`:
 
-Change credentials via environment variables in `server/.env` before seeding.
+```
+ADMIN_EMAIL=you@example.com
+ADMIN_PASSWORD=
+```
+
+- If `ADMIN_PASSWORD` is left empty, a strong **random** password is
+  generated, printed **once** to the terminal, and must be changed after
+  first login.
+- If you provide `ADMIN_PASSWORD`, it must be at least **12 characters**
+  and not a known default value.
+- **No default password is ever created.** There is no hard-coded admin
+  credential in the project.
 
 ## Database Backup
 
@@ -71,9 +82,39 @@ Change credentials via environment variables in `server/.env` before seeding.
 npm run backup
 ```
 
-Creates `backups/clientregit-YYYY-MM-DD.db`. Restore by copying a backup file over `data/clientregit.db` while the server is stopped.
+Creates a timestamped copy in `backups/`, e.g.
+`backups/clientregit-2026-08-28T06-41-19-100Z.db`.
 
+A rolling `data/clientregit.db.previous` copy of the previous good database
+is also kept automatically for recovery.
 
+**Restore:** stop the server, then copy a backup file over
+`data/clientregit.db` and restart. The server is stopped during restore to
+avoid writing to or overwriting the live database.
+
+## Environment Variables
+
+**server/.env** (copy from `server/.env.example`):
+
+```
+PORT=5000
+JWT_SECRET=<long random string, see below>
+CLIENT_URL=http://localhost:5173
+NODE_ENV=development
+ADMIN_NAME=Admin
+ADMIN_EMAIL=you@example.com
+ADMIN_PASSWORD=
+```
+
+Never commit the real `.env` file or any real secrets.
+
+Generate a strong `JWT_SECRET`:
+
+```bash
+node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
+```
+
+`JWT_SECRET` is validated at startup and must be at least 16 characters.
 
 ## API Endpoints
 
@@ -130,6 +171,13 @@ All protected endpoints require header: `Authorization: Bearer <token>`
 | GET | /api/invoices | List |
 | POST | /api/invoices | Create (auto invoice number) |
 | PUT/DELETE | /api/invoices/:id | Update / Delete |
+
+### Payments
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | /api/payments | List payments |
+| POST | /api/payments | Record a payment (client/project totals recalculated) |
+| GET/PUT/DELETE | /api/payments/:id | Read / Update / Delete |
 
 ### Dashboard
 | Method | Endpoint | Description |
