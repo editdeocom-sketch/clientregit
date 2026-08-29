@@ -95,13 +95,15 @@ const whoIsItFor = [
 
 const pricingPlans = [
   {
-    name: "Starter",
-    price: "Free",
+    name: "Free",
+    price: "₹0",
     period: "forever",
     description: "Perfect for freelancers getting started",
     features: [
-      "Up to 3 clients",
-      "Up to 5 projects",
+      "3 clients",
+      "10 active projects",
+      "10 tasks",
+      "1 GB video storage",
       "Basic video reviews",
       "Invoice tracking",
     ],
@@ -109,36 +111,39 @@ const pricingPlans = [
     popular: false,
   },
   {
-    name: "Professional",
-    price: "INR 999",
+    name: "Pro Monthly",
+    price: "₹599",
     period: "month",
     description: "For growing creative professionals",
     features: [
       "Unlimited clients",
       "Unlimited projects",
-      "Advanced video reviews",
-      "Priority support",
+      "Unlimited tasks",
+      "15 GB video storage",
+      "Professional invoices",
       "Custom branding",
-      "Team collaboration",
+      "Advanced dashboard",
+      "Client portal",
     ],
-    cta: "Start Free Trial",
-    popular: true,
+    cta: "Start Pro",
+    popular: false,
   },
   {
-    name: "Agency",
-    price: "INR 2,999",
-    period: "month",
-    description: "For creative teams and agencies",
+    name: "Pro Yearly",
+    price: "₹2,999",
+    period: "year",
+    description: "Best value for committed professionals",
     features: [
-      "Everything in Professional",
-      "Up to 10 team members",
-      "Client portal access",
-      "Advanced analytics",
-      "API access",
-      "Dedicated support",
+      "Everything in Pro Monthly",
+      "15 GB video storage",
+      "CSV export",
+      "Shareable video links",
+      "Multiple video versions",
+      "Advanced reports",
+      "Priority support",
     ],
-    cta: "Contact Sales",
-    popular: false,
+    cta: "Choose Yearly",
+    popular: true,
   },
 ];
 
@@ -553,7 +558,7 @@ export default function LandingPage() {
                       </li>
                     ))}
                   </ul>
-                  <Link to="/signup" className="block">
+                  <Link to="/pricing" className="block">
                     <Button
                       className={`w-full ${
                         plan.popular
@@ -568,10 +573,15 @@ export default function LandingPage() {
               </AnimatedSection>
             ))}
           </div>
+          <div className="text-center mt-8">
+            <Link to="/pricing">
+              <Button variant="ghost" className="text-muted-foreground hover:text-foreground">
+                See all plans, features, and international pricing →
+              </Button>
+            </Link>
+          </div>
         </div>
       </section>
-
-      {/* FAQ */}
       <section id="faq" className="py-24 px-6">
         <div className="mx-auto max-w-3xl">
           <AnimatedSection>
