@@ -1,4 +1,5 @@
 const { queryAll, queryOne, runSql, saveDb } = require('../database/database');
+const { sendServerError } = require('../utils/httpError');
 
 exports.getProjects = (req, res) => {
   try {
@@ -13,7 +14,7 @@ exports.getProjects = (req, res) => {
     const total = totalRow ? totalRow.count : 0;
     const projects = queryAll(`SELECT p.*, c.name as client_name, c.email as client_email FROM projects p LEFT JOIN clients c ON p.client_id = c.id ${where} ORDER BY p.created_at DESC LIMIT ? OFFSET ?`, [...params, parseInt(limit), (parseInt(page) - 1) * parseInt(limit)]);
     res.json({ success: true, data: projects, pagination: { page: parseInt(page), limit: parseInt(limit), total, pages: Math.ceil(total / parseInt(limit)) } });
-  } catch (error) { res.status(500).json({ success: false, message: error.message }); }
+  } catch (error) { sendServerError(res, error); }
 };
 
 exports.getProjectById = (req, res) => {
@@ -21,7 +22,7 @@ exports.getProjectById = (req, res) => {
     const project = queryOne('SELECT p.*, c.name as client_name, c.email as client_email, c.company as client_company, c.phone as client_phone FROM projects p LEFT JOIN clients c ON p.client_id = c.id WHERE p.id = ? AND p.created_by = ?', [req.params.id, req.user.id]);
     if (!project) return res.status(404).json({ success: false, message: 'Project not found' });
     res.json({ success: true, data: project });
-  } catch (error) { res.status(500).json({ success: false, message: error.message }); }
+  } catch (error) { sendServerError(res, error); }
 };
 
 exports.createProject = (req, res) => {
@@ -42,7 +43,7 @@ exports.createProject = (req, res) => {
     runSql('INSERT INTO activities (user_id, action, entity_type, entity_id, description) VALUES (?, ?, ?, ?, ?)', [req.user.id, 'created', 'project', project.id, `Created project ${project.name}`]);
     saveDb();
     res.status(201).json({ success: true, data: project });
-  } catch (error) { res.status(500).json({ success: false, message: error.message }); }
+  } catch (error) { sendServerError(res, error); }
 };
 
 exports.updateProject = (req, res) => {
@@ -69,11 +70,11 @@ exports.updateProject = (req, res) => {
     const result = runSql('UPDATE projects SET name=COALESCE(?,name), description=COALESCE(?,description), client_id=COALESCE(?,client_id), service=COALESCE(?,service), status=COALESCE(?,status), priority=COALESCE(?,priority), start_date=COALESCE(?,start_date), deadline=COALESCE(?,deadline), budget=COALESCE(?,budget), amount_paid=COALESCE(?,amount_paid), remaining_amount=?, progress=COALESCE(?,progress), notes=COALESCE(?,notes), updated_at=datetime(\'now\') WHERE id=? AND created_by=?',
       [name, description, client_id, service, status, priority, start_date, deadline, budget === undefined ? undefined : Number(budget), amount_paid === undefined ? undefined : Number(amount_paid), remaining, numericProgress, notes, req.params.id, req.user.id]);
     if (result.changes === 0) return res.status(404).json({ success: false, message: 'Project not found' });
-    const updated = queryOne('SELECT p.*, c.name as client_name FROM projects p LEFT JOIN clients c ON p.client_id = c.id WHERE p.id = ? AND p.created_by = ?', [req.params.id, req.user.id]);
     runSql('INSERT INTO activities (user_id, action, entity_type, entity_id, description) VALUES (?, ?, ?, ?, ?)', [req.user.id, 'updated', 'project', project.id, `Updated project ${project.name}`]);
     saveDb();
+    const updated = queryOne('SELECT p.*, c.name as client_name FROM projects p LEFT JOIN clients c ON p.client_id = c.id WHERE p.id = ? AND p.created_by = ?', [req.params.id, req.user.id]);
     res.json({ success: true, data: updated });
-  } catch (error) { res.status(500).json({ success: false, message: error.message }); }
+  } catch (error) { sendServerError(res, error); }
 };
 
 exports.deleteProject = (req, res) => {
@@ -85,5 +86,5 @@ exports.deleteProject = (req, res) => {
     runSql('INSERT INTO activities (user_id, action, entity_type, entity_id, description) VALUES (?, ?, ?, ?, ?)', [req.user.id, 'deleted', 'project', project.id, `Deleted project ${project.name}`]);
     saveDb();
     res.json({ success: true, data: {} });
-  } catch (error) { res.status(500).json({ success: false, message: error.message }); }
+  } catch (error) { sendServerError(res, error); }
 };

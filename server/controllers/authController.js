@@ -1,6 +1,8 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { queryAll, queryOne, runSql, saveDb } = require('../database/database');
+const { sendServerError } = require('../utils/httpError');
+const { ensureFreeSubscription } = require('../services/billingService');
 
 const generateToken = (id) => jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '30d' });
 
@@ -32,9 +34,10 @@ exports.register = (req, res) => {
     const result = runSql('INSERT INTO users (name, email, password_hash, role, phone) VALUES (?, ?, ?, ?, ?)', [name.trim(), email.trim().toLowerCase(), password_hash, 'editor', phone || '']);
     saveDb();
     const user = queryOne('SELECT id, name, email, role, avatar, phone FROM users WHERE id = ?', [result.lastInsertRowid]);
+    ensureFreeSubscription(user.id);
     const token = generateToken(user.id);
     res.status(201).json({ success: true, data: user, token });
-  } catch (error) { res.status(500).json({ success: false, message: error.message }); }
+  } catch (error) { sendServerError(res, error); }
 };
 
 exports.login = (req, res) => {
@@ -48,7 +51,7 @@ exports.login = (req, res) => {
     const token = generateToken(user.id);
     const { password_hash, ...userWithoutPassword } = user;
     res.json({ success: true, data: userWithoutPassword, token });
-  } catch (error) { res.status(500).json({ success: false, message: error.message }); }
+  } catch (error) { sendServerError(res, error); }
 };
 
 exports.getMe = (req, res) => { res.json({ success: true, data: req.user }); };
@@ -62,7 +65,7 @@ exports.getPreferences = (req, res) => {
       preferences = queryOne('SELECT country, currency, currency_symbol as currencySymbol, phone_code as phoneCode FROM settings WHERE user_id = ?', [req.user.id]);
     }
     res.json({ success: true, data: preferences });
-  } catch (error) { res.status(500).json({ success: false, message: error.message }); }
+  } catch (error) { sendServerError(res, error); }
 };
 
 exports.updatePreferences = (req, res) => {
@@ -75,7 +78,7 @@ exports.updatePreferences = (req, res) => {
     saveDb();
     const preferences = queryOne('SELECT country, currency, currency_symbol as currencySymbol, phone_code as phoneCode FROM settings WHERE user_id = ?', [req.user.id]);
     res.json({ success: true, data: preferences });
-  } catch (error) { res.status(500).json({ success: false, message: error.message }); }
+  } catch (error) { sendServerError(res, error); }
 };
 
 exports.updateProfile = (req, res) => {
@@ -89,7 +92,7 @@ exports.updateProfile = (req, res) => {
     saveDb();
     const user = queryOne('SELECT id, name, email, role, avatar, phone FROM users WHERE id = ?', [req.user.id]);
     res.json({ success: true, data: user });
-  } catch (error) { res.status(500).json({ success: false, message: error.message }); }
+  } catch (error) { sendServerError(res, error); }
 };
 
 exports.changePassword = (req, res) => {
@@ -105,7 +108,7 @@ exports.changePassword = (req, res) => {
     runSql('UPDATE users SET password_hash = ?, updated_at = datetime(\'now\') WHERE id = ?', [password_hash, req.user.id]);
     saveDb();
     res.json({ success: true, message: 'Password updated successfully' });
-  } catch (error) { res.status(500).json({ success: false, message: error.message }); }
+  } catch (error) { sendServerError(res, error); }
 };
 
 exports.deleteAccount = (req, res) => {
@@ -134,6 +137,6 @@ exports.deleteAccount = (req, res) => {
     res.json({ success: true, message: 'Account deleted successfully' });
   } catch (error) {
     try { runSql('ROLLBACK'); } catch (rollbackError) { /* preserve original error */ }
-    res.status(500).json({ success: false, message: 'Unable to delete account' });
+    sendServerError(res, error, 'Unable to delete account');
   }
 };

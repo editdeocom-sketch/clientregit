@@ -14,6 +14,7 @@ import VideoDetailPage from '@/pages/VideoDetailPage';
 import InvoicesPage from '@/pages/InvoicesPage';
 import SettingsPage from '@/pages/SettingsPage';
 import LandingPage from '@/pages/LandingPage';
+import PricingPage from '@/pages/PricingPage';
 import SharedVideoPage from '@/pages/SharedVideoPage';
 import RevisionsPage from '@/pages/RevisionsPage';
 import { PreferencesProvider } from '@/contexts/PreferencesContext';
@@ -35,6 +36,7 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="/" element={<LandingPage />} />
+      <Route path="/pricing" element={<PricingPage />} />
       <Route path="/blog" element={<BlogPage />} />
       <Route path="/blog/:slug" element={<BlogPostPage />} />
       <Route path="/about" element={<AboutPage />} />

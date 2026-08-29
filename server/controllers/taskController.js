@@ -1,4 +1,5 @@
 const { queryAll, queryOne, runSql, saveDb } = require('../database/database');
+const { sendServerError } = require('../utils/httpError');
 
 exports.getTasks = (req, res) => {
   try {
@@ -10,7 +11,7 @@ exports.getTasks = (req, res) => {
     if (priority) { where += ' AND t.priority = ?'; params.push(priority); }
     const tasks = queryAll(`SELECT t.*, p.name as project_name FROM tasks t LEFT JOIN projects p ON t.project_id = p.id ${where} ORDER BY t.created_at DESC`, params);
     res.json({ success: true, data: tasks });
-  } catch (error) { res.status(500).json({ success: false, message: error.message }); }
+  } catch (error) { sendServerError(res, error); }
 };
 
 exports.createTask = (req, res) => {
@@ -26,7 +27,7 @@ exports.createTask = (req, res) => {
     runSql('INSERT INTO activities (user_id, action, entity_type, entity_id, description) VALUES (?, ?, ?, ?, ?)', [req.user.id, 'created', 'task', task.id, `Created task ${task.title}`]);
     saveDb();
     res.status(201).json({ success: true, data: task });
-  } catch (error) { res.status(500).json({ success: false, message: error.message }); }
+  } catch (error) { sendServerError(res, error); }
 };
 
 exports.updateTask = (req, res) => {
@@ -43,7 +44,7 @@ exports.updateTask = (req, res) => {
     saveDb();
     const updated = queryOne('SELECT t.*, p.name as project_name FROM tasks t LEFT JOIN projects p ON t.project_id = p.id WHERE t.id = ?', [req.params.id]);
     res.json({ success: true, data: updated });
-  } catch (error) { res.status(500).json({ success: false, message: error.message }); }
+  } catch (error) { sendServerError(res, error); }
 };
 
 exports.deleteTask = (req, res) => {
@@ -54,5 +55,5 @@ exports.deleteTask = (req, res) => {
     if (result.changes === 0) return res.status(404).json({ success: false, message: 'Task not found' });
     saveDb();
     res.json({ success: true, data: {} });
-  } catch (error) { res.status(500).json({ success: false, message: error.message }); }
+  } catch (error) { sendServerError(res, error); }
 };

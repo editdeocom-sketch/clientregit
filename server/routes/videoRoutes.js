@@ -1,6 +1,7 @@
 const express = require('express');
 const { getVideos, getVideoById, createVideo, updateVideoStatus, deleteVideo, getComments, createComment, getShareLink, getSharedVideo, getSharedComments, createSharedComment, updateSharedStatus } = require('../controllers/videoController');
 const { protect } = require('../middleware/auth');
+const { enforceLimit, enforceVideoStorage } = require('../middleware/billing');
 const multer = require('multer');
 const path = require('path');
 const router = express.Router();
@@ -26,7 +27,7 @@ router.get('/shared/:token/comments', getSharedComments);
 router.post('/shared/:token/comments', createSharedComment);
 router.put('/shared/:token/status', updateSharedStatus);
 router.use(protect);
-router.route('/').get(getVideos).post(upload.single('file'), createVideo);
+router.route('/').get(getVideos).post(upload.single('file'), enforceLimit('videoUploadsMonthly'), enforceVideoStorage, createVideo);
 router.route('/:id').get(getVideoById).delete(deleteVideo);
 router.get('/:id/share', getShareLink);
 router.put('/:id/status', updateVideoStatus);

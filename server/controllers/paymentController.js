@@ -1,4 +1,5 @@
 const { queryAll, queryOne, runSql, saveDb } = require('../database/database');
+const { sendServerError } = require('../utils/httpError');
 
 const recalculateTotals = (clientId, projectId) => {
   const clientTotal = queryOne("SELECT COALESCE(SUM(amount), 0) as total FROM payments WHERE client_id = ? AND status = 'completed'", [clientId]);
@@ -29,7 +30,7 @@ exports.getPayments = (req, res) => {
       LEFT JOIN projects pr ON p.project_id = pr.id
       WHERE p.created_by = ? ORDER BY p.payment_date DESC, p.created_at DESC`, [req.user.id]);
     res.json({ success: true, data: payments });
-  } catch (error) { res.status(500).json({ success: false, message: error.message }); }
+  } catch (error) { sendServerError(res, error); }
 };
 
 exports.getPaymentById = (req, res) => {
@@ -39,7 +40,7 @@ exports.getPaymentById = (req, res) => {
       WHERE p.id = ? AND p.created_by = ?`, [req.params.id, req.user.id]);
     if (!payment) return res.status(404).json({ success: false, message: 'Payment not found' });
     res.json({ success: true, data: payment });
-  } catch (error) { res.status(500).json({ success: false, message: error.message }); }
+  } catch (error) { sendServerError(res, error); }
 };
 
 exports.createPayment = (req, res) => {
@@ -60,7 +61,7 @@ exports.createPayment = (req, res) => {
     res.status(201).json({ success: true, data: queryOne('SELECT * FROM payments WHERE id = ?', [result.lastInsertRowid]) });
   } catch (error) {
     try { runSql('ROLLBACK'); } catch (rollbackError) { /* preserve original error */ }
-    res.status(500).json({ success: false, message: error.message });
+    sendServerError(res, error);
   }
 };
 
@@ -87,7 +88,7 @@ exports.updatePayment = (req, res) => {
     res.json({ success: true, data: queryOne('SELECT * FROM payments WHERE id = ?', [req.params.id]) });
   } catch (error) {
     try { runSql('ROLLBACK'); } catch (rollbackError) { /* preserve original error */ }
-    res.status(500).json({ success: false, message: error.message });
+    sendServerError(res, error);
   }
 };
 
@@ -105,6 +106,6 @@ exports.deletePayment = (req, res) => {
     res.json({ success: true, data: {} });
   } catch (error) {
     try { runSql('ROLLBACK'); } catch (rollbackError) { /* preserve original error */ }
-    res.status(500).json({ success: false, message: error.message });
+    sendServerError(res, error);
   }
 };

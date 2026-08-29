@@ -1,6 +1,7 @@
 const initSqlJs = require('sql.js');
 const path = require('path');
 const fs = require('fs');
+const { PLAN_DEFINITIONS } = require('../config/billing');
 
 const DB_PATH = path.join(__dirname, '..', '..', 'data', 'clientregit.db');
 
@@ -32,6 +33,8 @@ function saveDb() {
   const displacedPath = `${DB_PATH}.${stamp}.previous`;
   let handle;
   let displaced = false;
+  let replacementInstalled = false;
+  let replacementVerified = false;
   try {
     handle = fs.openSync(tempPath, 'w');
     fs.writeSync(handle, buffer, 0, buffer.length, 0);
@@ -47,14 +50,24 @@ function saveDb() {
     }
     try {
       fs.renameSync(tempPath, DB_PATH);
+      replacementInstalled = true;
     } catch (replaceError) {
       if (displaced && !fs.existsSync(DB_PATH)) fs.renameSync(displacedPath, DB_PATH);
       throw replaceError;
     }
     if (!fs.existsSync(DB_PATH) || fs.statSync(DB_PATH).size === 0) throw new Error('Database replacement verification failed');
+    replacementVerified = true;
     if (displaced && fs.existsSync(displacedPath)) fs.unlinkSync(displacedPath);
   } catch (error) {
     if (handle !== undefined) fs.closeSync(handle);
+    if (replacementInstalled && !replacementVerified && displaced && fs.existsSync(displacedPath)) {
+      try {
+        if (fs.existsSync(DB_PATH)) fs.unlinkSync(DB_PATH);
+        fs.renameSync(displacedPath, DB_PATH);
+      } catch (restoreError) {
+        console.error('DATABASE_RESTORE_ERROR', { operation: 'saveDb', databasePath: DB_PATH, displacedPath, errorCode: restoreError.code || 'UNKNOWN' });
+      }
+    }
     try { fs.unlinkSync(tempPath); } catch (cleanupError) { /* preserve original error */ }
     console.error('DATABASE_PERSISTENCE_ERROR', { operation: 'saveDb', databasePath: DB_PATH, temporaryPath: tempPath, errorCode: error.code || 'UNKNOWN' });
     throw error;
@@ -226,6 +239,74 @@ function initializeDatabase(database) {
       FOREIGN KEY (user_id) REFERENCES users(id)
     )`);
 
+  database.run(`CREATE TABLE IF NOT EXISTS plans (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    slug TEXT UNIQUE NOT NULL,
+    name TEXT NOT NULL,
+    active INTEGER NOT NULL DEFAULT 1,
+    recurring INTEGER NOT NULL DEFAULT 0,
+    interval TEXT,
+    storage_bytes INTEGER NOT NULL,
+    prices_json TEXT NOT NULL DEFAULT '{}',
+    created_at TEXT DEFAULT (datetime('now')),
+    updated_at TEXT DEFAULT (datetime('now'))
+  )`);
+  database.run(`CREATE TABLE IF NOT EXISTS subscriptions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    plan_id INTEGER NOT NULL,
+    provider TEXT NOT NULL DEFAULT 'local',
+    provider_subscription_id TEXT,
+    status TEXT NOT NULL DEFAULT 'active',
+    currency TEXT NOT NULL DEFAULT 'INR',
+    amount REAL NOT NULL DEFAULT 0,
+    current_period_start TEXT,
+    current_period_end TEXT,
+    cancel_at_period_end INTEGER NOT NULL DEFAULT 0,
+    started_at TEXT DEFAULT (datetime('now')),
+    expires_at TEXT,
+    created_at TEXT DEFAULT (datetime('now')),
+    updated_at TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (plan_id) REFERENCES plans(id)
+  )`);
+  database.run(`CREATE TABLE IF NOT EXISTS billing_payments (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    plan_id INTEGER NOT NULL,
+    subscription_id INTEGER,
+    provider TEXT NOT NULL,
+    provider_payment_id TEXT,
+    provider_order_id TEXT,
+    currency TEXT NOT NULL,
+    amount REAL NOT NULL,
+    status TEXT NOT NULL,
+    payment_type TEXT NOT NULL,
+    paid_at TEXT,
+    created_at TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (plan_id) REFERENCES plans(id),
+    FOREIGN KEY (subscription_id) REFERENCES subscriptions(id)
+  )`);
+  database.run(`CREATE TABLE IF NOT EXISTS usage (
+    user_id INTEGER PRIMARY KEY,
+    video_uploads_month INTEGER NOT NULL DEFAULT 0,
+    video_storage_bytes INTEGER NOT NULL DEFAULT 0,
+    invoice_count_month INTEGER NOT NULL DEFAULT 0,
+    updated_at TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+  )`);
+  database.run(`CREATE TABLE IF NOT EXISTS webhook_events (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    provider TEXT NOT NULL,
+    event_id TEXT NOT NULL,
+    event_type TEXT NOT NULL,
+    payload_hash TEXT,
+    processed_at TEXT DEFAULT (datetime('now')),
+    UNIQUE(provider, event_id)
+  )`);
+  PLAN_DEFINITIONS.forEach((plan) => database.run('INSERT OR IGNORE INTO plans (slug, name, active, recurring, interval, storage_bytes, prices_json) VALUES (?, ?, 1, ?, ?, ?, ?)', [plan.slug, plan.name, plan.recurring ? 1 : 0, plan.interval || null, plan.storageBytes, JSON.stringify(plan.prices)]));
+
   database.run('CREATE INDEX IF NOT EXISTS idx_clients_created_by ON clients(created_by)');
   database.run('CREATE INDEX IF NOT EXISTS idx_clients_email ON clients(email)');
   database.run('CREATE INDEX IF NOT EXISTS idx_projects_created_by ON projects(created_by)');
@@ -242,6 +323,9 @@ function initializeDatabase(database) {
   database.run('CREATE INDEX IF NOT EXISTS idx_payments_client ON payments(client_id)');
   database.run('CREATE INDEX IF NOT EXISTS idx_activities_user ON activities(user_id)');
   database.run('CREATE INDEX IF NOT EXISTS idx_activities_created_at ON activities(created_at)');
+  database.run('CREATE INDEX IF NOT EXISTS idx_subscriptions_user ON subscriptions(user_id)');
+  database.run('CREATE INDEX IF NOT EXISTS idx_billing_payments_user ON billing_payments(user_id)');
+  database.run('CREATE INDEX IF NOT EXISTS idx_webhook_events_provider ON webhook_events(provider, event_id)');
 
   saveDb();
 }

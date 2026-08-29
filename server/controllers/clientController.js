@@ -1,4 +1,5 @@
 const { queryAll, queryOne, runSql, saveDb } = require('../database/database');
+const { sendServerError } = require('../utils/httpError');
 
 exports.getClients = (req, res) => {
   try {
@@ -11,7 +12,7 @@ exports.getClients = (req, res) => {
     const total = totalRow ? totalRow.count : 0;
     const clients = queryAll(`SELECT * FROM clients ${where} ORDER BY created_at DESC LIMIT ? OFFSET ?`, [...params, parseInt(limit), (parseInt(page) - 1) * parseInt(limit)]);
     res.json({ success: true, data: clients, pagination: { page: parseInt(page), limit: parseInt(limit), total, pages: Math.ceil(total / parseInt(limit)) } });
-  } catch (error) { res.status(500).json({ success: false, message: error.message }); }
+  } catch (error) { sendServerError(res, error); }
 };
 
 exports.getClientById = (req, res) => {
@@ -19,7 +20,7 @@ exports.getClientById = (req, res) => {
     const client = queryOne('SELECT * FROM clients WHERE id = ? AND created_by = ?', [req.params.id, req.user.id]);
     if (!client) return res.status(404).json({ success: false, message: 'Client not found' });
     res.json({ success: true, data: client });
-  } catch (error) { res.status(500).json({ success: false, message: error.message }); }
+  } catch (error) { sendServerError(res, error); }
 };
 
 exports.createClient = (req, res) => {
@@ -34,7 +35,7 @@ exports.createClient = (req, res) => {
     runSql('INSERT INTO activities (user_id, action, entity_type, entity_id, description) VALUES (?, ?, ?, ?, ?)', [req.user.id, 'created', 'client', client.id, `Created client ${client.name}`]);
     saveDb();
     res.status(201).json({ success: true, data: client });
-  } catch (error) { res.status(500).json({ success: false, message: error.message }); }
+  } catch (error) { sendServerError(res, error); }
 };
 
 exports.updateClient = (req, res) => {
@@ -52,7 +53,7 @@ exports.updateClient = (req, res) => {
     runSql('INSERT INTO activities (user_id, action, entity_type, entity_id, description) VALUES (?, ?, ?, ?, ?)', [req.user.id, 'updated', 'client', client.id, `Updated client ${client.name}`]);
     saveDb();
     res.json({ success: true, data: updated });
-  } catch (error) { res.status(500).json({ success: false, message: error.message }); }
+  } catch (error) { sendServerError(res, error); }
 };
 
 exports.deleteClient = (req, res) => {
@@ -64,5 +65,5 @@ exports.deleteClient = (req, res) => {
     runSql('INSERT INTO activities (user_id, action, entity_type, entity_id, description) VALUES (?, ?, ?, ?, ?)', [req.user.id, 'deleted', 'client', client.id, `Deleted client ${client.name}`]);
     saveDb();
     res.json({ success: true, data: {} });
-  } catch (error) { res.status(500).json({ success: false, message: error.message }); }
+  } catch (error) { sendServerError(res, error); }
 };

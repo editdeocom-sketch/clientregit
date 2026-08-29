@@ -24,7 +24,7 @@ const app = express();
   app.use(helmet({ contentSecurityPolicy: false }));
   app.use(morgan('dev'));
   app.use(cors({ origin: process.env.CLIENT_URL || 'http://localhost:5173', credentials: true }));
-  app.use(express.json({ limit: '10mb' }));
+  app.use(express.json({ limit: '10mb', verify: (req, res, buffer) => { req.rawBody = Buffer.from(buffer); } }));
   app.use(express.urlencoded({ extended: true }));
   app.use('/uploads/videos', express.static(videoUploadDir, { acceptRanges: true }));
 
@@ -37,7 +37,8 @@ const app = express();
       const data = await getExchangeRate(req.query.currency);
       res.json({ success: true, data });
     } catch (error) {
-      res.status(503).json({ success: false, message: error.message });
+      console.error('EXCHANGE_RATE_ERROR', error);
+      res.status(503).json({ success: false, message: 'Exchange rate service unavailable' });
     }
   });
 
@@ -48,6 +49,7 @@ const app = express();
   app.use('/api/videos', require('./routes/videoRoutes'));
   app.use('/api/invoices', require('./routes/invoiceRoutes'));
   app.use('/api/payments', require('./routes/paymentRoutes'));
+  app.use('/api/billing', require('./routes/billingRoutes'));
   app.use('/api/dashboard', require('./routes/dashboardRoutes'));
 
   if (process.env.NODE_ENV === 'production') {

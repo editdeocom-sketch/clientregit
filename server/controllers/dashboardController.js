@@ -1,4 +1,5 @@
 const { queryAll, queryOne } = require('../database/database');
+const { sendServerError } = require('../utils/httpError');
 
 exports.getStats = (req, res) => {
   try {
@@ -35,7 +36,7 @@ exports.getStats = (req, res) => {
         projectEarnings, recentClients, recentProjects, recentActivity,
       },
     });
-  } catch (error) { res.status(500).json({ success: false, message: error.message }); }
+  } catch (error) { sendServerError(res, error); }
 };
 
 exports.getRevisions = (req, res) => {
@@ -66,5 +67,5 @@ exports.getRevisions = (req, res) => {
     const combined = [...activityItems, ...comments, ...reviewQueue.filter((item) => !seen.has(`${item.video_id}-awaiting_review`))]
       .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
     res.json({ success: true, data: combined });
-  } catch (error) { res.status(500).json({ success: false, message: error.message }); }
+  } catch (error) { sendServerError(res, error); }
 };

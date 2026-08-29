@@ -1,8 +1,9 @@
 const express = require('express');
 const { getProjects, getProjectById, createProject, updateProject, deleteProject } = require('../controllers/projectController');
 const { protect } = require('../middleware/auth');
+const { enforceLimit } = require('../middleware/billing');
 const router = express.Router();
 router.use(protect);
-router.route('/').get(getProjects).post(createProject);
+router.route('/').get(getProjects).post(enforceLimit('activeProjects'), createProject);
 router.route('/:id').get(getProjectById).put(updateProject).delete(deleteProject);
 module.exports = router;

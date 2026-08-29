@@ -1,4 +1,5 @@
 const { queryAll, queryOne, runSql, saveDb } = require('../database/database');
+const { sendServerError } = require('../utils/httpError');
 
 exports.getInvoiceById = (req, res) => {
   try {
@@ -17,7 +18,7 @@ exports.getInvoices = (req, res) => {
     if (client) { where += ' AND i.client_id = ?'; params.push(client); }
     const invoices = queryAll(`SELECT i.*, c.name as client_name, c.email as client_email, c.phone as client_phone, c.company as client_company, c.address as client_address, c.city as client_city, c.state as client_state, c.country as client_country, c.website as client_website, p.name as project_name, u.name as editor_name, u.email as editor_email FROM invoices i LEFT JOIN clients c ON i.client_id = c.id LEFT JOIN projects p ON i.project_id = p.id LEFT JOIN users u ON i.created_by = u.id ${where} ORDER BY i.created_at DESC`, params);
     res.json({ success: true, data: invoices });
-  } catch (error) { res.status(500).json({ success: false, message: error.message }); }
+  } catch (error) { sendServerError(res, error); }
 };
 
 exports.createInvoice = (req, res) => {
@@ -45,7 +46,7 @@ exports.createInvoice = (req, res) => {
     runSql('INSERT INTO activities (user_id, action, entity_type, entity_id, description) VALUES (?, ?, ?, ?, ?)', [req.user.id, 'created', 'invoice', invoice.id, `Created invoice ${invoice.invoice_number}`]);
     saveDb();
     res.status(201).json({ success: true, data: invoice });
-  } catch (error) { res.status(500).json({ success: false, message: error.message }); }
+  } catch (error) { sendServerError(res, error); }
 };
 
 exports.updateInvoice = (req, res) => {
@@ -63,11 +64,11 @@ exports.updateInvoice = (req, res) => {
     const result = runSql('UPDATE invoices SET client_id=COALESCE(?,client_id), project_id=COALESCE(?,project_id), description=COALESCE(?,description), amount=COALESCE(?,amount), issue_date=COALESCE(?,issue_date), due_date=COALESCE(?,due_date), status=COALESCE(?,status), notes=COALESCE(?,notes), updated_at=datetime(\'now\') WHERE id=? AND created_by=?',
       [client_id, project_id, description, amount === undefined ? undefined : Number(amount), issue_date, due_date, normalizedStatus, notes, req.params.id, req.user.id]);
     if (result.changes === 0) return res.status(404).json({ success: false, message: 'Invoice not found' });
-    const updated = queryOne('SELECT i.*, c.name as client_name, c.email as client_email, c.phone as client_phone, c.company as client_company, c.address as client_address, c.city as client_city, c.state as client_state, c.country as client_country, c.website as client_website, u.name as editor_name, u.email as editor_email FROM invoices i LEFT JOIN clients c ON i.client_id = c.id LEFT JOIN users u ON i.created_by = u.id WHERE i.id = ?', [req.params.id]);
     runSql('INSERT INTO activities (user_id, action, entity_type, entity_id, description) VALUES (?, ?, ?, ?, ?)', [req.user.id, 'updated', 'invoice', invoice.id, `Updated invoice ${invoice.invoice_number}`]);
     saveDb();
+    const updated = queryOne('SELECT i.*, c.name as client_name, c.email as client_email, c.phone as client_phone, c.company as client_company, c.address as client_address, c.city as client_city, c.state as client_state, c.country as client_country, c.website as client_website, u.name as editor_name, u.email as editor_email FROM invoices i LEFT JOIN clients c ON i.client_id = c.id LEFT JOIN users u ON i.created_by = u.id WHERE i.id = ? AND i.created_by = ?', [req.params.id, req.user.id]);
     res.json({ success: true, data: updated });
-  } catch (error) { res.status(500).json({ success: false, message: error.message }); }
+  } catch (error) { sendServerError(res, error); }
 };
 
 exports.deleteInvoice = (req, res) => {
@@ -79,5 +80,5 @@ exports.deleteInvoice = (req, res) => {
     runSql('INSERT INTO activities (user_id, action, entity_type, entity_id, description) VALUES (?, ?, ?, ?, ?)', [req.user.id, 'deleted', 'invoice', invoice.id, `Deleted invoice ${invoice.invoice_number}`]);
     saveDb();
     res.json({ success: true, data: {} });
-  } catch (error) { res.status(500).json({ success: false, message: error.message }); }
+  } catch (error) { sendServerError(res, error); }
 };

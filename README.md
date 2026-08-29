@@ -18,7 +18,7 @@ REST API (/api)
     ↓
 Express.js
     ↓
-SQLite → data/clientregit.db
+SQLite → data/clientregit
 ```
 
 ## Installation
@@ -54,14 +54,14 @@ The SQLite database (`data/clientregit.db`) is created automatically on first st
 
 ## Creating the Admin Account
 
-The initial admin account is created by the seed script:
+Run the seed command and provide your own administrator credentials through
+`server/.env`:
 
 ```bash
 npm run seed
 ```
 
-Before running it, set your admin email (required) and, optionally, a
-strong password in `server/.env`:
+Set your admin email (required) and, optionally, a strong password:
 
 ```
 ADMIN_EMAIL=you@example.com
@@ -211,4 +211,7 @@ With `NODE_ENV=production`, Express serves the built React app from `client/dist
 
 ## Deployment Notes
 
-Designed for future deployment to Hostinger (Node.js + SQLite supported plans). No Vercel, Supabase, MongoDB, Render, or any paid cloud service is required.
+The application is portable and may work on a Hostinger plan that supports a
+persistent Node.js process and SQLite filesystem. Confirm those capabilities
+with the exact plan before deployment. No Vercel, Supabase, MongoDB, Render,
+or any paid cloud service is required.

@@ -9,13 +9,15 @@ import { PasswordInput } from "@/components/ui/password-input"
 import { getInitials, cn } from "@/lib/utils"
 import { toast } from "sonner"
 import {
-  User, Lock, Briefcase, Shield, Loader2, Pencil, Camera, Trash2,
-  CheckCircle2, XCircle, AlertCircle
+  User, Lock, Briefcase, Shield, CreditCard, Loader2, Pencil, Camera, Trash2,
+  CheckCircle2, XCircle, AlertCircle, Crown, ArrowUpRight, Zap
 } from "lucide-react"
 import { api } from "@/services/api"
 import { useAuth } from "@/contexts/AuthContext"
 import { usePreferences } from "@/contexts/PreferencesContext"
 import { countryOptions } from "@/lib/countryData"
+import { billingService, formatBytes, type Entitlements, type Usage, type BillingPayment, type PlanDefinition } from "@/services/billingService"
+import { Link } from "react-router-dom"
 
 function validatePassword(pw: string): { valid: boolean; errors: string[] } {
   const errors: string[] = []
@@ -39,6 +41,168 @@ function PasswordRequirement({ met, text }: { met: boolean; text: string }) {
       <span className={cn("transition-colors", met ? "text-green-600 dark:text-green-400" : "text-muted-foreground")}>
         {text}
       </span>
+    </div>
+  )
+}
+
+function BillingTabContent() {
+  const { preferences } = usePreferences()
+  const [subscription, setSubscription] = useState<{ subscription: any; plan: PlanDefinition; entitlements: Entitlements } | null>(null)
+  const [usage, setUsage] = useState<{ usage: Usage; limits: Record<string, number | null>; storageBytes: number } | null>(null)
+  const [payments, setPayments] = useState<BillingPayment[]>([])
+  const [loading, setLoading] = useState(true)
+  const [cancelling, setCancelling] = useState(false)
+
+  const loadBilling = useCallback(async () => {
+    try {
+      const [sub, useData, payData] = await Promise.all([
+        billingService.getSubscription(),
+        billingService.getUsage(),
+        billingService.getPayments(),
+      ])
+      setSubscription(sub)
+      setUsage(useData)
+      setPayments(payData)
+    } catch (err) {
+      toast.error("Failed to load billing info")
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => { loadBilling() }, [loadBilling])
+
+  const handleCancel = async () => {
+    if (!subscription?.subscription?.id) return
+    if (!window.confirm("Cancel your subscription? It will remain active until the end of the billing period.")) return
+    setCancelling(true)
+    try {
+      await billingService.cancelSubscription(subscription.subscription.id)
+      toast.success("Subscription will cancel at period end.")
+      await loadBilling()
+    } catch (err: any) {
+      toast.error(err.message || "Failed to cancel subscription")
+    } finally {
+      setCancelling(false)
+    }
+  }
+
+  if (loading) {
+    return <div className="flex items-center justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+  }
+
+  const plan = subscription?.plan
+  const entitlements = subscription?.entitlements
+  const usageData = usage?.usage
+  const limits = subscription?.plan?.limits || usage?.limits || {}
+  const isPro = entitlements?.plan !== "free"
+  const isRecurring = plan?.recurring === true
+
+  return (
+    <div className="space-y-6">
+      <GlassCard className="p-6">
+        <div className="flex items-start justify-between mb-6">
+          <div>
+            <h2 className="text-lg font-semibold text-foreground mb-1">Current Plan</h2>
+            <p className="text-sm text-muted-foreground">Your subscription and plan details.</p>
+          </div>
+          {!isPro && (
+            <Link to="/pricing">
+              <Button className="bg-primary text-primary-foreground hover:bg-primary/90 gap-2">
+                <ArrowUpRight className="h-4 w-4" /> Upgrade
+              </Button>
+            </Link>
+          )}
+        </div>
+        <div className="flex items-center gap-4 p-4 rounded-lg bg-muted/50 border border-border">
+          <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
+            {isPro ? <Crown className="h-6 w-6 text-primary" /> : <Zap className="h-6 w-6 text-muted-foreground" />}
+          </div>
+          <div className="flex-1">
+            <p className="font-semibold text-foreground">{plan?.name || "Free"}</p>
+            <p className="text-sm text-muted-foreground">
+              {subscription?.subscription?.status === "active" ? "Active" : subscription?.subscription?.status || "Active"}
+              {isPro && plan?.interval ? ` — ${plan.interval}` : ""}
+              {entitlements?.storageBytes ? ` — ${formatBytes(entitlements.storageBytes)} storage` : ""}
+            </p>
+          </div>
+          {isRecurring && (
+            <Button variant="outline" className="border-destructive/50 text-destructive hover:bg-destructive/10" onClick={handleCancel} disabled={cancelling}>
+              {cancelling ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              Cancel
+            </Button>
+          )}
+        </div>
+      </GlassCard>
+
+      {usageData && (
+        <GlassCard className="p-6">
+          <h3 className="text-base font-semibold text-foreground mb-4">Usage This Period</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {[
+              { label: "Clients", value: usageData.clients, limit: limits.clients },
+              { label: "Active Projects", value: usageData.activeProjects, limit: limits.activeProjects },
+              { label: "Tasks", value: usageData.tasks, limit: limits.tasks },
+              { label: "Invoices (month)", value: usageData.invoicesMonthly, limit: limits.invoicesMonthly },
+              { label: "Video Uploads (month)", value: usageData.videoUploadsMonthly, limit: limits.videoUploadsMonthly },
+              { label: "Storage", value: usageData.storageBytes, limit: usage?.storageBytes, isBytes: true },
+            ].map((item) => {
+              const max = item.limit ?? null
+              const pct = max ? Math.min(100, (item.value / max) * 100) : 0
+              const nearLimit = pct > 80
+              return (
+                <div key={item.label} className="p-3 rounded-lg bg-muted/50 border border-border">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs text-muted-foreground">{item.label}</span>
+                    <span className={`text-xs font-medium ${nearLimit ? "text-orange-500" : "text-muted-foreground"}`}>
+                      {item.isBytes ? formatBytes(item.value) : item.value}{max !== null ? ` / ${item.isBytes ? formatBytes(max) : max}` : ""}
+                    </span>
+                  </div>
+                  {max !== null && (
+                    <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                      <div className={`h-full rounded-full transition-all ${nearLimit ? "bg-orange-500" : "bg-primary"}`} style={{ width: `${pct}%` }} />
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        </GlassCard>
+      )}
+
+      <GlassCard className="p-6">
+        <h3 className="text-base font-semibold text-foreground mb-4">Payment History</h3>
+        {payments.length === 0 ? (
+          <p className="text-sm text-muted-foreground py-4 text-center">No payments yet.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border">
+                  <th className="text-left py-2 px-3 text-xs font-medium text-muted-foreground">Date</th>
+                  <th className="text-left py-2 px-3 text-xs font-medium text-muted-foreground">Plan</th>
+                  <th className="text-left py-2 px-3 text-xs font-medium text-muted-foreground">Amount</th>
+                  <th className="text-left py-2 px-3 text-xs font-medium text-muted-foreground">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {payments.map((p) => (
+                  <tr key={p.id} className="border-b border-border/50">
+                    <td className="py-2 px-3 text-foreground">{p.paid_at || p.created_at}</td>
+                    <td className="py-2 px-3 text-foreground">{p.plan_name}</td>
+                    <td className="py-2 px-3 text-foreground">{preferences.currencySymbol} {p.amount.toLocaleString()}</td>
+                    <td className="py-2 px-3">
+                      <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${p.status === "paid" ? "bg-green-500/10 text-green-600" : p.status === "created" ? "bg-yellow-500/10 text-yellow-600" : "bg-red-500/10 text-red-600"}`}>
+                        {p.status}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </GlassCard>
     </div>
   )
 }
@@ -268,6 +432,10 @@ export default function SettingsPage() {
             <TabsTrigger value="security" className="gap-2 data-[state=active]:bg-muted data-[state=active]:text-foreground text-muted-foreground hover:text-foreground">
               <Shield className="h-4 w-4" />
               Security
+            </TabsTrigger>
+            <TabsTrigger value="billing" className="gap-2 data-[state=active]:bg-muted data-[state=active]:text-foreground text-muted-foreground hover:text-foreground">
+              <CreditCard className="h-4 w-4" />
+              Billing
             </TabsTrigger>
           </TabsList>
         </GlassCard>
@@ -573,6 +741,11 @@ export default function SettingsPage() {
               </p>
             </div>
           </GlassCard>
+        </TabsContent>
+
+        {/* ========== BILLING TAB ========== */}
+        <TabsContent value="billing">
+          <BillingTabContent />
         </TabsContent>
       </Tabs>
     </div>

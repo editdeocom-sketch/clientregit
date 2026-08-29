@@ -8,6 +8,7 @@ import {
   FileText,
   MessageSquare,
   Settings,
+  CreditCard,
   ChevronLeft,
   ChevronRight,
 } from "lucide-react"
@@ -28,6 +29,7 @@ const navigation = [
 ]
 
 const systemNavigation = [
+  { name: "Billing", href: "/pricing", icon: CreditCard },
   { name: "Settings", href: "/settings", icon: Settings },
 ]
 

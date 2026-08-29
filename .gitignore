@@ -20,6 +20,7 @@ uploads/
 # Environment files — never commit secrets
 .env
 .env.local
+.env.*
 .env.*.local
 .env.production
 .env.development

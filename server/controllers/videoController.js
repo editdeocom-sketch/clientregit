@@ -1,4 +1,5 @@
 const { queryAll, queryOne, runSql, saveDb } = require('../database/database');
+const { sendServerError } = require('../utils/httpError');
 const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
@@ -12,7 +13,7 @@ exports.getVideos = (req, res) => {
     if (status) { where += ' AND v.status = ?'; params.push(status); }
     const videos = queryAll(`SELECT v.*, p.name as project_name FROM videos v LEFT JOIN projects p ON v.project_id = p.id ${where} ORDER BY v.created_at DESC`, params);
     res.json({ success: true, data: videos });
-  } catch (error) { res.status(500).json({ success: false, message: error.message }); }
+  } catch (error) { sendServerError(res, error); }
 };
 
 exports.getVideoById = (req, res) => {
@@ -20,7 +21,7 @@ exports.getVideoById = (req, res) => {
     const video = queryOne('SELECT v.*, p.name as project_name, u.name as uploaded_by_name FROM videos v LEFT JOIN projects p ON v.project_id = p.id LEFT JOIN users u ON v.uploaded_by = u.id WHERE v.id = ? AND v.uploaded_by = ?', [req.params.id, req.user.id]);
     if (!video) return res.status(404).json({ success: false, message: 'Video not found' });
     res.json({ success: true, data: video });
-  } catch (error) { res.status(500).json({ success: false, message: error.message }); }
+  } catch (error) { sendServerError(res, error); }
 };
 
 exports.createVideo = (req, res) => {
@@ -41,7 +42,7 @@ exports.createVideo = (req, res) => {
     runSql('INSERT INTO activities (user_id, action, entity_type, entity_id, description) VALUES (?, ?, ?, ?, ?)', [req.user.id, 'uploaded', 'video', video.id, `Uploaded video ${video.title} v${video.version}`]);
     saveDb();
     res.status(201).json({ success: true, data: video });
-  } catch (error) { res.status(500).json({ success: false, message: error.message }); }
+  } catch (error) { sendServerError(res, error); }
 };
 
 exports.updateVideoStatus = (req, res) => {
@@ -55,7 +56,7 @@ exports.updateVideoStatus = (req, res) => {
     runSql('INSERT INTO activities (user_id, action, entity_type, entity_id, description) VALUES (?, ?, ?, ?, ?)', [req.user.id, 'updated', 'video', video.id, `Updated video ${video.title} status to ${req.body.status}`]);
     saveDb();
     res.json({ success: true, data: updated });
-  } catch (error) { res.status(500).json({ success: false, message: error.message }); }
+  } catch (error) { sendServerError(res, error); }
 };
 
 exports.deleteVideo = (req, res) => {
@@ -70,7 +71,7 @@ exports.deleteVideo = (req, res) => {
       if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
     }
     res.json({ success: true, data: {} });
-  } catch (error) { res.status(500).json({ success: false, message: error.message }); }
+  } catch (error) { sendServerError(res, error); }
 };
 
 exports.getShareLink = (req, res) => {
@@ -84,7 +85,7 @@ exports.getShareLink = (req, res) => {
     }
     const origin = `${req.protocol}://${req.get('host')}`;
     res.json({ success: true, data: { token: video.share_token, url: `${origin}/shared/videos/${video.share_token}` } });
-  } catch (error) { res.status(500).json({ success: false, message: error.message }); }
+  } catch (error) { sendServerError(res, error); }
 };
 
 exports.getSharedVideo = (req, res) => {
@@ -92,7 +93,7 @@ exports.getSharedVideo = (req, res) => {
     const video = queryOne('SELECT v.id, v.title, v.version, v.file_url, v.file_name, v.status, v.created_at, p.id as project_id, p.name as project_name, p.description as project_description, p.status as project_status, p.progress as project_progress, p.deadline as project_deadline FROM videos v LEFT JOIN projects p ON v.project_id = p.id WHERE v.share_token = ?', [req.params.token]);
     if (!video) return res.status(404).json({ success: false, message: 'Share link is invalid or expired' });
     res.json({ success: true, data: video });
-  } catch (error) { res.status(500).json({ success: false, message: error.message }); }
+  } catch (error) { sendServerError(res, error); }
 };
 
 exports.getSharedComments = (req, res) => {
@@ -101,7 +102,7 @@ exports.getSharedComments = (req, res) => {
     if (!video) return res.status(404).json({ success: false, message: 'Share link is invalid or expired' });
     const comments = queryAll('SELECT vc.id, vc.timestamp, vc.comment, vc.created_at, COALESCE(NULLIF(vc.guest_name, \'\'), u.name, \'Client\') as user_name FROM video_comments vc LEFT JOIN users u ON vc.user_id = u.id WHERE vc.video_id = ? ORDER BY vc.timestamp ASC', [video.id]);
     res.json({ success: true, data: comments });
-  } catch (error) { res.status(500).json({ success: false, message: error.message }); }
+  } catch (error) { sendServerError(res, error); }
 };
 
 exports.createSharedComment = (req, res) => {
@@ -115,7 +116,7 @@ exports.createSharedComment = (req, res) => {
     runSql('INSERT INTO activities (user_id, action, entity_type, entity_id, description) VALUES (?, ?, ?, ?, ?)', [video.uploaded_by, 'commented', 'video', video.id, `${String(guest_name || 'Client').trim()} commented on ${video.title}${video.project_name ? ` (${video.project_name})` : ''}`]);
     saveDb();
     res.status(201).json({ success: true, data: created });
-  } catch (error) { res.status(500).json({ success: false, message: error.message }); }
+  } catch (error) { sendServerError(res, error); }
 };
 
 exports.updateSharedStatus = (req, res) => {
@@ -130,14 +131,14 @@ exports.updateSharedStatus = (req, res) => {
     runSql('INSERT INTO activities (user_id, action, entity_type, entity_id, description) VALUES (?, ?, ?, ?, ?)', [video.uploaded_by, status, 'video', video.id, `${String(guest_name || 'Client')} ${action} video ${video.title}${video.project_name ? ` (${video.project_name})` : ''}`]);
     saveDb();
     res.json({ success: true, data: { id: video.id, status } });
-  } catch (error) { res.status(500).json({ success: false, message: error.message }); }
+  } catch (error) { sendServerError(res, error); }
 };
 
 exports.getComments = (req, res) => {
   try {
     const comments = queryAll('SELECT vc.*, u.name as user_name, u.email as user_email, u.avatar as user_avatar FROM video_comments vc LEFT JOIN users u ON vc.user_id = u.id WHERE vc.video_id = ? AND EXISTS (SELECT 1 FROM videos v WHERE v.id = vc.video_id AND v.uploaded_by = ?) ORDER BY vc.timestamp ASC', [req.params.id, req.user.id]);
     res.json({ success: true, data: comments });
-  } catch (error) { res.status(500).json({ success: false, message: error.message }); }
+  } catch (error) { sendServerError(res, error); }
 };
 
 exports.createComment = (req, res) => {
@@ -150,5 +151,5 @@ exports.createComment = (req, res) => {
     saveDb();
     const newComment = queryOne('SELECT vc.*, u.name as user_name, u.email as user_email, u.avatar as user_avatar FROM video_comments vc LEFT JOIN users u ON vc.user_id = u.id WHERE vc.id = ?', [result.lastInsertRowid]);
     res.status(201).json({ success: true, data: newComment });
-  } catch (error) { res.status(500).json({ success: false, message: error.message }); }
+  } catch (error) { sendServerError(res, error); }
 };
