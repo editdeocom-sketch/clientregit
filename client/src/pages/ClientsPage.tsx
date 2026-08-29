@@ -24,6 +24,7 @@ import {
 import { Users, Plus, Pencil, Trash2, Search } from "lucide-react"
 import { toast } from "sonner"
 import api from "@/services/api"
+import { useUpgradeModal } from "@/contexts/UpgradeModalContext"
 
 interface ClientData {
   id: string
@@ -45,6 +46,7 @@ const emptyForm: { name: string; email: string; company: string; phone: string; 
 }
 
 export default function ClientsPage() {
+  const { showUpgrade } = useUpgradeModal()
   const [clients, setClients] = useState<ClientData[]>([])
   const [filteredClients, setFilteredClients] = useState<ClientData[]>([])
   const [search, setSearch] = useState("")
@@ -139,7 +141,11 @@ export default function ClientsPage() {
       await loadClients()
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "An unexpected error occurred."
-      toast.error(message)
+      if (message.includes("PLAN_LIMIT_REACHED") || message.includes("Free plan limit")) {
+        showUpgrade("You've reached your Free plan limit. Upgrade to Pro for unlimited clients.")
+      } else {
+        toast.error(message)
+      }
     } finally {
       setSaving(false)
     }

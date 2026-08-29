@@ -125,6 +125,9 @@ function BillingTabContent() {
               {isPro && plan?.interval ? ` — ${plan.interval}` : ""}
               {entitlements?.storageBytes ? ` — ${formatBytes(entitlements.storageBytes)} storage` : ""}
             </p>
+            {subscription?.subscription?.currency && (
+              <p className="text-xs text-muted-foreground mt-1">Currency: {subscription.subscription.currency}</p>
+            )}
             {isPro && subscription?.subscription?.current_period_end && (
               <p className="text-xs text-muted-foreground mt-1">
                 {subscription?.subscription?.cancel_at_period_end ? "Cancels" : "Renews"}: {subscription.subscription.current_period_end}
@@ -189,6 +192,7 @@ function BillingTabContent() {
                 <tr className="border-b border-border">
                   <th className="text-left py-2 px-3 text-xs font-medium text-muted-foreground">Date</th>
                   <th className="text-left py-2 px-3 text-xs font-medium text-muted-foreground">Plan</th>
+                  <th className="text-left py-2 px-3 text-xs font-medium text-muted-foreground">Currency</th>
                   <th className="text-left py-2 px-3 text-xs font-medium text-muted-foreground">Amount</th>
                   <th className="text-left py-2 px-3 text-xs font-medium text-muted-foreground">Status</th>
                   <th className="text-left py-2 px-3 text-xs font-medium text-muted-foreground">Payment ID</th>
@@ -199,7 +203,8 @@ function BillingTabContent() {
                   <tr key={p.id} className="border-b border-border/50">
                     <td className="py-2 px-3 text-foreground">{p.paid_at || p.created_at}</td>
                     <td className="py-2 px-3 text-foreground">{p.plan_name}</td>
-                    <td className="py-2 px-3 text-foreground">{preferences.currencySymbol} {p.amount.toLocaleString()}</td>
+                    <td className="py-2 px-3 text-xs text-muted-foreground">{p.currency}</td>
+                    <td className="py-2 px-3 text-foreground">{p.amount.toLocaleString()}</td>
                     <td className="py-2 px-3">
                       <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${p.status === "paid" ? "bg-green-500/10 text-green-600" : p.status === "created" ? "bg-yellow-500/10 text-yellow-600" : "bg-red-500/10 text-red-600"}`}>
                         {p.status}

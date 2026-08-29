@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/dialog"
 import { CheckSquare, Plus, Calendar, GripVertical, Trash2 } from "lucide-react"
 import { toast } from "sonner"
+import { useUpgradeModal } from "@/contexts/UpgradeModalContext"
 
 interface TaskData {
   id: string
@@ -60,6 +61,7 @@ const emptyForm = {
 
 export default function TasksPage() {
   const { user } = useAuth()
+  const { showUpgrade } = useUpgradeModal()
   const [tasks, setTasks] = useState<TaskData[]>([])
   const [projects, setProjects] = useState<ProjectOption[]>([])
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -167,7 +169,11 @@ await api.post("/tasks", {
       await loadTasks()
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Failed to create task."
-      toast.error(message)
+      if (message.includes("PLAN_LIMIT_REACHED") || message.includes("Free plan limit")) {
+        showUpgrade("You've reached your Free plan limit. Upgrade to Pro to continue.")
+      } else {
+        toast.error(message)
+      }
     } finally {
       setSaving(false)
     }

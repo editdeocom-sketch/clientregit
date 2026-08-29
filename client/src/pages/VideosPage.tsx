@@ -25,6 +25,7 @@ import { Video as VideoIcon, Play, ExternalLink, Plus, Upload, X, AlertCircle, C
 import { formatDate } from "@/lib/utils"
 import { Link } from "react-router-dom"
 import { toast } from "sonner"
+import { useUpgradeModal } from "@/contexts/UpgradeModalContext"
 
 const MAX_FILE_SIZE_MB = 300
 const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024
@@ -53,6 +54,7 @@ const statusConfig: Record<string, { label: string; className: string }> = {
 
 export default function VideosPage() {
   const { user } = useAuth()
+  const { showUpgrade } = useUpgradeModal()
   const [videos, setVideos] = useState<VideoData[]>([])
   const [projects, setProjects] = useState<ProjectData[]>([])
   const [uploadOpen, setUploadOpen] = useState(false)
@@ -156,8 +158,13 @@ export default function VideosPage() {
       setUploadForm({ title: "", project_id: "", description: "" })
       
       window.location.reload()
-    } catch (err) {
-      toast.error("An error occurred during upload")
+    } catch (err: any) {
+      const message = err?.message || "An error occurred during upload"
+      if (message.includes("PLAN_LIMIT_REACHED") || message.includes("Free plan limit")) {
+        showUpgrade("You've reached your Free plan limit. Upgrade to Pro to continue.")
+      } else {
+        toast.error(message)
+      }
     } finally {
       setUploading(false)
     }

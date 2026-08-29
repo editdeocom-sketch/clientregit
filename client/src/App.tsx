@@ -15,9 +15,11 @@ import InvoicesPage from '@/pages/InvoicesPage';
 import SettingsPage from '@/pages/SettingsPage';
 import LandingPage from '@/pages/LandingPage';
 import PricingPage from '@/pages/PricingPage';
+import PaymentSuccessPage from '@/pages/PaymentSuccessPage';
 import SharedVideoPage from '@/pages/SharedVideoPage';
 import RevisionsPage from '@/pages/RevisionsPage';
 import { PreferencesProvider } from '@/contexts/PreferencesContext';
+import { UpgradeModalProvider } from '@/contexts/UpgradeModalContext';
 import BlogPage from '@/pages/BlogPage';
 import BlogPostPage from '@/pages/BlogPostPage';
 import { AboutPage, ContactPage, PrivacyPage, TermsPage, CookiesPage } from '@/pages/MarketingContentPage';
@@ -37,6 +39,7 @@ function AppRoutes() {
     <Routes>
       <Route path="/" element={<LandingPage />} />
       <Route path="/pricing" element={<PricingPage />} />
+      <Route path="/payment-success" element={<PaymentSuccessPage />} />
       <Route path="/blog" element={<BlogPage />} />
       <Route path="/blog/:slug" element={<BlogPostPage />} />
       <Route path="/about" element={<AboutPage />} />
@@ -66,8 +69,10 @@ export default function App() {
     <BrowserRouter>
       <AuthProvider>
         <PreferencesProvider>
-          <AppRoutes />
-          <Toaster />
+          <UpgradeModalProvider>
+            <AppRoutes />
+            <Toaster />
+          </UpgradeModalProvider>
         </PreferencesProvider>
       </AuthProvider>
     </BrowserRouter>

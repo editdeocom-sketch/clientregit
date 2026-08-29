@@ -45,4 +45,9 @@ function checkLimit(userId, resource, additional = 1) {
   return { allowed: true, entitlements, usage, limit };
 }
 
-module.exports = { ensurePlans, ensureFreeSubscription, getUserPlan, getUserEntitlements, getUsage, checkLimit, CURRENCIES };
+function hasFeature(userId, featureName) {
+  const entitlements = getUserEntitlements(userId);
+  return entitlements.features[featureName] === true;
+}
+
+module.exports = { ensurePlans, ensureFreeSubscription, getUserPlan, getUserEntitlements, getUsage, checkLimit, hasFeature, CURRENCIES };

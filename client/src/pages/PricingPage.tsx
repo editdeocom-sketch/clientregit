@@ -12,21 +12,43 @@ import { useAuth } from "@/contexts/AuthContext"
 import { usePreferences } from "@/contexts/PreferencesContext"
 import { MarketingFooter } from "@/components/marketing/footer"
 
-const CURRENCY_LABELS: Record<string, { symbol: string; name: string }> = {
-  INR: { symbol: "₹", name: "Indian Rupee" },
-  USD: { symbol: "$", name: "US Dollar" },
-  GBP: { symbol: "£", name: "British Pound" },
-  EUR: { symbol: "€", name: "Euro" },
-  AED: { symbol: "د.إ", name: "UAE Dirham" },
-  AUD: { symbol: "A$", name: "Australian Dollar" },
-  CAD: { symbol: "C$", name: "Canadian Dollar" },
-  SGD: { symbol: "S$", name: "Singapore Dollar" },
-  NZD: { symbol: "NZ$", name: "New Zealand Dollar" },
-  JPY: { symbol: "¥", name: "Japanese Yen" },
-  KRW: { symbol: "₩", name: "Korean Won" },
-  SAR: { symbol: "﷼", name: "Saudi Riyal" },
-  BRL: { symbol: "R$", name: "Brazilian Real" },
-  MXN: { symbol: "Mex$", name: "Mexican Peso" },
+const CURRENCY_LABELS: Record<string, { symbol: string; name: string; flag: string }> = {
+  INR: { symbol: "₹", name: "Indian Rupee", flag: "🇮🇳" },
+  USD: { symbol: "$", name: "US Dollar", flag: "🇺🇸" },
+  GBP: { symbol: "£", name: "British Pound", flag: "🇬🇧" },
+  EUR: { symbol: "€", name: "Euro", flag: "🇪🇺" },
+  AED: { symbol: "د.إ", name: "UAE Dirham", flag: "🇦🇪" },
+  AUD: { symbol: "A$", name: "Australian Dollar", flag: "🇦🇺" },
+  CAD: { symbol: "C$", name: "Canadian Dollar", flag: "🇨🇦" },
+  SGD: { symbol: "S$", name: "Singapore Dollar", flag: "🇸🇬" },
+  NZD: { symbol: "NZ$", name: "New Zealand Dollar", flag: "🇳🇿" },
+  JPY: { symbol: "¥", name: "Japanese Yen", flag: "🇯🇵" },
+  KRW: { symbol: "₩", name: "Korean Won", flag: "🇰🇷" },
+  SAR: { symbol: "﷼", name: "Saudi Riyal", flag: "🇸🇦" },
+  BRL: { symbol: "R$", name: "Brazilian Real", flag: "🇧🇷" },
+  MXN: { symbol: "Mex$", name: "Mexican Peso", flag: "🇲🇽" },
+}
+
+function detectInitialCurrency(savedCurrency?: string): string {
+  if (savedCurrency) return savedCurrency
+  const stored = localStorage.getItem("billing_currency")
+  if (stored) return stored
+  const locale = navigator.language || navigator.languages?.[0] || ""
+  const localeUpper = locale.toUpperCase()
+  if (localeUpper.startsWith("EN-IN") || localeUpper === "IN") return "INR"
+  if (localeUpper.startsWith("EN-GB") || localeUpper === "GB") return "GBP"
+  if (localeUpper.startsWith("DE") || localeUpper.startsWith("FR") || localeUpper.startsWith("IT") || localeUpper.startsWith("ES") || localeUpper.startsWith("NL") || localeUpper.startsWith("IE") || localeUpper.startsWith("PT")) return "EUR"
+  if (localeUpper.startsWith("EN-AU")) return "AUD"
+  if (localeUpper.startsWith("EN-CA") || localeUpper.startsWith("FR-CA")) return "CAD"
+  if (localeUpper.startsWith("EN-SG")) return "SGD"
+  if (localeUpper.startsWith("EN-NZ")) return "NZD"
+  if (localeUpper.startsWith("JA") || localeUpper === "JP") return "JPY"
+  if (localeUpper.startsWith("KO") || localeUpper === "KR") return "KRW"
+  if (localeUpper.startsWith("PT-BR")) return "BRL"
+  if (localeUpper.startsWith("ES-MX")) return "MXN"
+  if (localeUpper.startsWith("AR-AE")) return "AED"
+  if (localeUpper.startsWith("AR-SA")) return "SAR"
+  return "USD"
 }
 
 function formatPrice(amount: number, currency: string): string {
@@ -78,7 +100,7 @@ export default function PricingPage() {
   const { preferences } = usePreferences()
   const [plans, setPlans] = useState<PlansResponse | null>(null)
   const [currentPlan, setCurrentPlan] = useState<Entitlements | null>(null)
-  const [currency, setCurrency] = useState(preferences.currency || "INR")
+  const [currency, setCurrency] = useState(() => detectInitialCurrency(preferences.currency))
   const [loading, setLoading] = useState(true)
   const [purchasing, setPurchasing] = useState<string | null>(null)
   const [scriptLoaded, setScriptLoaded] = useState(false)
@@ -116,9 +138,7 @@ export default function PricingPage() {
         const rzp = new (window as any).Razorpay({ key: subData.keyId, subscription_id: subData.subscription.id, name: "ClientRegit", description: plan.name, handler: async (response: any) => {
           try {
             await billingService.verifySubscription(subData.subscription.id, response.razorpay_payment_id, response.razorpay_signature)
-            toast.success(`${plan.name} activated!`)
-            const updated = await billingService.getSubscription()
-            setCurrentPlan(updated.entitlements)
+            window.location.href = `/payment-success?plan=${plan.slug}&currency=${currency}&payment_id=${response.razorpay_payment_id}&status=active`
           } catch { toast.error("Payment verification failed. Contact support.") }
         }, prefill: { email: user.email }, theme: { color: "#6366f1" }, modal: { ondismiss: () => setPurchasing(null) } })
         rzp.open()
@@ -127,9 +147,7 @@ export default function PricingPage() {
         const rzp = new (window as any).Razorpay({ key: orderData.keyId, amount: orderData.amount * (["JPY", "KRW"].includes(currency) ? 1 : 100), currency, name: "ClientRegit", description: plan.name, order_id: orderData.order.id, handler: async (response: any) => {
           try {
             await billingService.verifyPayment(orderData.order.id, response.razorpay_payment_id, response.razorpay_signature)
-            toast.success(`${plan.name} activated!`)
-            const updated = await billingService.getSubscription()
-            setCurrentPlan(updated.entitlements)
+            window.location.href = `/payment-success?plan=${plan.slug}&currency=${currency}&amount=${orderData.amount}&payment_id=${response.razorpay_payment_id}&status=active`
           } catch { toast.error("Payment verification failed. Contact support.") }
         }, prefill: { email: user.email }, theme: { color: "#6366f1" }, modal: { ondismiss: () => setPurchasing(null) } })
         rzp.open()
@@ -179,13 +197,13 @@ export default function PricingPage() {
 
           <div className="flex items-center justify-center gap-3 mb-12">
             <span className="text-sm text-muted-foreground">Currency:</span>
-            <Select value={currency} onValueChange={setCurrency}>
-              <SelectTrigger className="w-[200px] bg-muted border-border">
+            <Select value={currency} onValueChange={(c) => { setCurrency(c); localStorage.setItem("billing_currency", c) }}>
+              <SelectTrigger className="w-[220px] bg-muted border-border">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 {(plans?.currencies || []).map((c) => (
-                  <SelectItem key={c} value={c}>{CURRENCY_LABELS[c]?.symbol} {c} — {CURRENCY_LABELS[c]?.name}</SelectItem>
+                  <SelectItem key={c} value={c}>{CURRENCY_LABELS[c]?.flag} {c} — {CURRENCY_LABELS[c]?.name}</SelectItem>
                 ))}
               </SelectContent>
             </Select>

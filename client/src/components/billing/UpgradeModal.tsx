@@ -10,6 +10,12 @@ import { billingService, type PlanDefinition, type PlansResponse, formatBytes, g
 import { useAuth } from "@/contexts/AuthContext"
 import { usePreferences } from "@/contexts/PreferencesContext"
 
+const CURRENCY_FLAGS: Record<string, string> = {
+  INR: "🇮🇳", USD: "🇺🇸", GBP: "🇬🇧", EUR: "🇪🇺", AED: "🇦🇪", AUD: "🇦🇺",
+  CAD: "🇨🇦", SGD: "🇸🇬", NZD: "🇳🇿", JPY: "🇯🇵", KRW: "🇰🇷", SAR: "🇸🇦",
+  BRL: "🇧🇷", MXN: "🇲🇽",
+}
+
 const CURRENCY_SYMBOLS: Record<string, string> = {
   INR: "₹", USD: "$", GBP: "£", EUR: "€", AED: "د.إ", AUD: "A$",
   CAD: "C$", SGD: "S$", NZD: "NZ$", JPY: "¥", KRW: "₩", SAR: "﷼",
@@ -74,9 +80,7 @@ export function UpgradeModal({ open, onOpenChange, message }: UpgradeModalProps)
         const rzp = new (window as any).Razorpay({ key: subData.keyId, subscription_id: subData.subscription.id, name: "ClientRegit", description: plan.name, handler: async (response: any) => {
           try {
             await billingService.verifySubscription(subData.subscription.id, response.razorpay_payment_id, response.razorpay_signature)
-            toast.success(`${plan.name} activated!`)
-            onOpenChange(false)
-            window.location.reload()
+            window.location.href = `/payment-success?plan=${plan.slug}&currency=${currency}&payment_id=${response.razorpay_payment_id}&status=active`
           } catch { toast.error("Verification failed. Contact support.") }
         }, prefill: { email: user.email }, theme: { color: "#6366f1" }, modal: { ondismiss: () => setPurchasing(null) } })
         rzp.open()
@@ -85,9 +89,7 @@ export function UpgradeModal({ open, onOpenChange, message }: UpgradeModalProps)
         const rzp = new (window as any).Razorpay({ key: orderData.keyId, amount: orderData.amount * (["JPY", "KRW"].includes(currency) ? 1 : 100), currency, name: "ClientRegit", description: plan.name, order_id: orderData.order.id, handler: async (response: any) => {
           try {
             await billingService.verifyPayment(orderData.order.id, response.razorpay_payment_id, response.razorpay_signature)
-            toast.success(`${plan.name} activated!`)
-            onOpenChange(false)
-            window.location.reload()
+            window.location.href = `/payment-success?plan=${plan.slug}&currency=${currency}&amount=${orderData.amount}&payment_id=${response.razorpay_payment_id}&status=active`
           } catch { toast.error("Verification failed. Contact support.") }
         }, prefill: { email: user.email }, theme: { color: "#6366f1" }, modal: { ondismiss: () => setPurchasing(null) } })
         rzp.open()
@@ -120,7 +122,7 @@ export function UpgradeModal({ open, onOpenChange, message }: UpgradeModalProps)
                 </SelectTrigger>
                 <SelectContent>
                   {(plans?.currencies || []).map((c) => (
-                    <SelectItem key={c} value={c}>{CURRENCY_SYMBOLS[c]} {c}</SelectItem>
+                    <SelectItem key={c} value={c}>{CURRENCY_FLAGS[c]} {c}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -163,6 +165,9 @@ export function UpgradeModal({ open, onOpenChange, message }: UpgradeModalProps)
                 View all plans and features
               </Button>
             </Link>
+            <Button variant="ghost" className="w-full text-sm text-muted-foreground hover:text-foreground" onClick={() => onOpenChange(false)}>
+              Maybe Later
+            </Button>
           </div>
         )}
       </DialogContent>

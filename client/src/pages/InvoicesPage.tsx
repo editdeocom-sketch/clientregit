@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/dialog"
 import { FileText, Plus, Trash2, Pencil, Eye, Share2, Mail, Phone, MessageCircle } from "lucide-react"
 import { toast } from "sonner"
+import { useUpgradeModal } from "@/contexts/UpgradeModalContext"
 import { formatDate } from "@/lib/utils"
 import { usePreferences } from "@/contexts/PreferencesContext"
 import { useSearchParams } from "react-router-dom"
@@ -142,6 +143,7 @@ function createInvoicePdf(invoice: InvoiceData, formatAmount: (amount: number) =
 export default function InvoicesPage() {
   const { user } = useAuth()
   const { formatAmount, fromBaseAmount, toBaseAmount, preferences } = usePreferences()
+  const { showUpgrade } = useUpgradeModal()
   const [searchParams] = useSearchParams()
   const [invoices, setInvoices] = useState<InvoiceData[]>([])
   const [clients, setClients] = useState<ClientOption[]>([])
@@ -265,7 +267,11 @@ export default function InvoicesPage() {
       await loadInvoices()
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Failed to create invoice."
-      toast.error(message)
+      if (message.includes("PLAN_LIMIT_REACHED") || message.includes("Free plan limit")) {
+        showUpgrade("You've reached your Free plan limit. Upgrade to Pro to continue.")
+      } else {
+        toast.error(message)
+      }
     } finally {
       setSaving(false)
     }

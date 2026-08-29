@@ -26,6 +26,7 @@ import { FolderKanban, Plus, Search, MoreHorizontal, Trash2, Pencil } from "luci
 import { formatDate } from "@/lib/utils"
 import { usePreferences } from "@/contexts/PreferencesContext"
 import { toast } from "sonner"
+import { useUpgradeModal } from "@/contexts/UpgradeModalContext"
 
 interface ProjectData {
   id: string
@@ -77,6 +78,7 @@ const emptyForm = {
 export default function ProjectsPage() {
   const { user } = useAuth()
   const { formatAmount, toBaseAmount, preferences } = usePreferences()
+  const { showUpgrade } = useUpgradeModal()
   const [projects, setProjects] = useState<ProjectData[]>([])
   const [filtered, setFiltered] = useState<ProjectData[]>([])
   const [search, setSearch] = useState("")
@@ -156,7 +158,6 @@ export default function ProjectsPage() {
         )
       }
     } catch (err) {
-      console.error("Load projects exception:", err)
       setProjects([])
     }
   }
@@ -189,7 +190,12 @@ export default function ProjectsPage() {
       setForm(emptyForm)
       await loadProjects()
     } catch (err: any) {
-      toast.error(err?.message || "Failed to create project.")
+      const message = err?.message || "Failed to create project."
+      if (message.includes("PLAN_LIMIT_REACHED") || message.includes("Free plan limit")) {
+        showUpgrade("You've reached your Free plan limit. Upgrade to Pro to continue.")
+      } else {
+        toast.error(message)
+      }
     } finally {
       setSaving(false)
     }
