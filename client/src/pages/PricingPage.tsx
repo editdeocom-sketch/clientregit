@@ -195,7 +195,7 @@ export default function PricingPage() {
 
       <section className="pb-24 px-6">
         <div className="mx-auto max-w-6xl">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             {freePlan && (
               <GlassCard variant="subtle" className="p-6 flex flex-col">
                 <div className="mb-6">
@@ -228,10 +228,12 @@ export default function PricingPage() {
               const Icon = PLAN_ICONS[plan.slug] || Crown
               const price = getPlanPrice(plan, currency)
               const isCurrent = currentPlan?.plan === plan.slug
-              const isPopular = plan.slug === "pro_monthly"
+              const isPopular = plan.slug === "pro_yearly"
+              const isBestValue = plan.slug === "pro_quarterly"
               return (
                 <GlassCard key={plan.slug} variant={isPopular ? "default" : "subtle"} className={`p-6 flex flex-col relative ${isPopular ? "ring-2 ring-primary" : ""}`}>
                   {isPopular && <Badge className="absolute -top-3 left-1/2 -translate-x-1/2">Most Popular</Badge>}
+                  {isBestValue && <Badge variant="secondary" className="absolute -top-3 left-1/2 -translate-x-1/2">Best Value</Badge>}
                   <div className="mb-6">
                     <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center mb-3"><Icon className="h-5 w-5 text-primary" /></div>
                     <h3 className="text-lg font-semibold">{plan.name}</h3>

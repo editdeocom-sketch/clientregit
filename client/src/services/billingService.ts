@@ -52,6 +52,8 @@ export interface BillingPayment {
   id: number
   plan_name: string
   provider: string
+  provider_payment_id: string | null
+  provider_order_id: string | null
   currency: string
   amount: number
   status: string

@@ -126,7 +126,7 @@ export function UpgradeModal({ open, onOpenChange, message }: UpgradeModalProps)
               </Select>
             </div>
 
-            {proPlans.slice(0, 2).map((plan) => {
+            {proPlans.map((plan) => {
               const price = getPlanPrice(plan, currency)
               return (
                 <div key={plan.slug} className="flex items-center justify-between p-3 rounded-lg border border-border bg-muted/50">

@@ -114,7 +114,7 @@ function BillingTabContent() {
             </Link>
           )}
         </div>
-        <div className="flex items-center gap-4 p-4 rounded-lg bg-muted/50 border border-border">
+          <div className="flex items-center gap-4 p-4 rounded-lg bg-muted/50 border border-border">
           <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
             {isPro ? <Crown className="h-6 w-6 text-primary" /> : <Zap className="h-6 w-6 text-muted-foreground" />}
           </div>
@@ -125,6 +125,14 @@ function BillingTabContent() {
               {isPro && plan?.interval ? ` — ${plan.interval}` : ""}
               {entitlements?.storageBytes ? ` — ${formatBytes(entitlements.storageBytes)} storage` : ""}
             </p>
+            {isPro && subscription?.subscription?.current_period_end && (
+              <p className="text-xs text-muted-foreground mt-1">
+                {subscription?.subscription?.cancel_at_period_end ? "Cancels" : "Renews"}: {subscription.subscription.current_period_end}
+              </p>
+            )}
+            {isPro && subscription?.subscription?.expires_at && (
+              <p className="text-xs text-muted-foreground mt-1">Expires: {subscription.subscription.expires_at}</p>
+            )}
           </div>
           {isRecurring && (
             <Button variant="outline" className="border-destructive/50 text-destructive hover:bg-destructive/10" onClick={handleCancel} disabled={cancelling}>
@@ -183,6 +191,7 @@ function BillingTabContent() {
                   <th className="text-left py-2 px-3 text-xs font-medium text-muted-foreground">Plan</th>
                   <th className="text-left py-2 px-3 text-xs font-medium text-muted-foreground">Amount</th>
                   <th className="text-left py-2 px-3 text-xs font-medium text-muted-foreground">Status</th>
+                  <th className="text-left py-2 px-3 text-xs font-medium text-muted-foreground">Payment ID</th>
                 </tr>
               </thead>
               <tbody>
@@ -196,6 +205,7 @@ function BillingTabContent() {
                         {p.status}
                       </span>
                     </td>
+                    <td className="py-2 px-3 text-xs text-muted-foreground font-mono">{p.provider_payment_id || p.provider_order_id || "—"}</td>
                   </tr>
                 ))}
               </tbody>

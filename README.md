@@ -215,3 +215,73 @@ The application is portable and may work on a Hostinger plan that supports a
 persistent Node.js process and SQLite filesystem. Confirm those capabilities
 with the exact plan before deployment. No Vercel, Supabase, MongoDB, Render,
 or any paid cloud service is required.
+
+## Billing & Monetization
+
+ClientRegit includes a complete global billing system with Free, Pro, and Lifetime plans.
+
+### Plans
+
+| Plan | Price (INR) | Storage | Limits |
+|------|------------|---------|--------|
+| Free | ₹0 | 1 GB | 3 clients, 10 projects, 10 tasks, 3 invoices/mo, 5 video uploads/mo |
+| Pro Monthly | ₹599/mo | 15 GB | Unlimited (except storage) |
+| Pro Quarterly | ₹999/3mo | 15 GB | Unlimited (except storage) |
+| Pro Yearly | ₹2,999/yr | 15 GB | Unlimited (except storage) |
+| Lifetime | ₹10,999 one-time | 50 GB | Unlimited (except storage) |
+
+### International Pricing
+
+Localized prices for 14 currencies: INR, USD, GBP, EUR, AED, AUD, CAD, SGD, NZD, JPY, KRW, SAR, BRL, MXN. Prices are server-side configured (not live exchange rate conversions).
+
+### Currency Detection Priority
+
+1. Logged-in user's saved currency
+2. Manual selection on pricing page
+3. Country detection from user preferences
+4. Browser locale
+5. USD fallback
+
+### Razorpay Integration
+
+Set up in `server/.env`:
+
+```
+RAZORPAY_KEY_ID=rzp_test_...
+RAZORPAY_KEY_SECRET=...
+RAZORPAY_WEBHOOK_SECRET=...
+
+# Recurring subscription plan IDs (created in Razorpay Dashboard)
+RAZORPAY_PLAN_ID_INR_MONTHLY=plan_...
+RAZORPAY_PLAN_ID_INR_QUARTERLY=plan_...
+RAZORPAY_PLAN_ID_INR_YEARLY=plan_...
+```
+
+- **Lifetime** uses Razorpay one-time Order (not subscription)
+- **Monthly/Quarterly/Yearly** use Razorpay Subscriptions
+- Webhook URL: `POST /api/billing/webhook/razorpay`
+- Without Razorpay configured, the app works perfectly — Free plan is always available
+
+### Billing API Endpoints
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| GET | /api/billing/plans | No | List plans + currencies |
+| GET | /api/billing/subscription | Yes | Current subscription + entitlements |
+| GET | /api/billing/usage | Yes | Resource usage |
+| GET | /api/billing/payments | Yes | Payment history |
+| POST | /api/billing/create-order | Yes | Create Razorpay order (lifetime) |
+| POST | /api/billing/create-subscription | Yes | Create Razorpay subscription (recurring) |
+| POST | /api/billing/verify-payment | Yes | Verify lifetime payment signature |
+| POST | /api/billing/verify-subscription | Yes | Verify subscription payment |
+| POST | /api/billing/subscription/:id/cancel | Yes | Cancel subscription at period end |
+| POST | /api/billing/webhook/razorpay | No | Razorpay webhook (HMAC verified) |
+
+### Security
+
+- All prices determined server-side (never trust frontend)
+- HMAC-SHA256 webhook verification with timing-safe comparison
+- Idempotent webhook processing (no duplicate activations)
+- All billing queries scoped to authenticated user
+- Free plan always functional without payment configuration
+- Client invoice payments are separate from subscription billing
