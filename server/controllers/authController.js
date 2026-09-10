@@ -2,7 +2,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { queryAll, queryOne, runSql, saveDb } = require('../database/database');
 const { sendServerError } = require('../utils/httpError');
-const { ensureFreeSubscription } = require('../services/billingService');
+const { ensureFreeSubscription, restoreSubscriptionForEmail, archiveSubscriptionsForEmail } = require('../services/billingService');
 
 const generateToken = (id) => jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '30d' });
 
@@ -24,17 +24,20 @@ exports.register = (req, res) => {
   try {
     const { name, email, password, role, phone } = req.body;
     if (!name || !email || !password) return res.status(400).json({ success: false, message: 'Please provide name, email, and password' });
-    if (role && role !== 'editor') return res.status(400).json({ success: false, message: 'Self-registration only supports the editor role' });
+    if (role && role !== 'user') return res.status(400).json({ success: false, message: 'Self-registration only supports the user role' });
     const passwordError = validatePassword(password);
     if (passwordError) return res.status(400).json({ success: false, message: passwordError });
     const existing = queryOne('SELECT id FROM users WHERE email = ?', [email]);
     if (existing) return res.status(400).json({ success: false, message: 'User already exists' });
     const salt = bcrypt.genSaltSync(10);
     const password_hash = bcrypt.hashSync(password, salt);
-    const result = runSql('INSERT INTO users (name, email, password_hash, role, phone) VALUES (?, ?, ?, ?, ?)', [name.trim(), email.trim().toLowerCase(), password_hash, 'editor', phone || '']);
+    const userCurrency = (req.body.currency && typeof req.body.currency === 'string') ? req.body.currency.toUpperCase() : 'INR';
+    const result = runSql('INSERT INTO users (name, email, password_hash, role, phone) VALUES (?, ?, ?, ?, ?)', [name.trim(), email.trim().toLowerCase(), password_hash, 'user', phone || '']);
     saveDb();
     const user = queryOne('SELECT id, name, email, role, avatar, phone FROM users WHERE id = ?', [result.lastInsertRowid]);
-    ensureFreeSubscription(user.id);
+    const restored = restoreSubscriptionForEmail(user.id, user.email);
+    if (!restored) ensureFreeSubscription(user.id, userCurrency);
+    saveDb();
     const token = generateToken(user.id);
     res.status(201).json({ success: true, data: user, token });
   } catch (error) { sendServerError(res, error); }
@@ -48,6 +51,7 @@ exports.login = (req, res) => {
     if (!user) return res.status(401).json({ success: false, message: 'Invalid email or password' });
     const isMatch = bcrypt.compareSync(password, user.password_hash);
     if (!isMatch) return res.status(401).json({ success: false, message: 'Invalid email or password' });
+    if (user.is_disabled) return res.status(403).json({ success: false, message: 'Account has been disabled. Contact support.' });
     const token = generateToken(user.id);
     const { password_hash, ...userWithoutPassword } = user;
     res.json({ success: true, data: userWithoutPassword, token });
@@ -72,9 +76,11 @@ exports.updatePreferences = (req, res) => {
   try {
     const { country, currency, currencySymbol, phoneCode } = req.body;
     if (!country || !currency || !currencySymbol || !phoneCode) return res.status(400).json({ success: false, message: 'Country and currency details are required' });
+    const { CURRENCIES } = require('../config/billing');
+    const safeCurrency = CURRENCIES.includes(String(currency).toUpperCase()) ? String(currency).toUpperCase() : 'INR';
     runSql(`INSERT INTO settings (user_id, country, currency, currency_symbol, phone_code, updated_at)
       VALUES (?, ?, ?, ?, ?, datetime('now'))
-      ON CONFLICT(user_id) DO UPDATE SET country=excluded.country, currency=excluded.currency, currency_symbol=excluded.currency_symbol, phone_code=excluded.phone_code, updated_at=datetime('now')`, [req.user.id, country, currency, currencySymbol, phoneCode]);
+      ON CONFLICT(user_id) DO UPDATE SET country=excluded.country, currency=excluded.currency, currency_symbol=excluded.currency_symbol, phone_code=excluded.phone_code, updated_at=datetime('now')`, [req.user.id, String(country).slice(0, 100), safeCurrency, String(currencySymbol).slice(0, 10), String(phoneCode).slice(0, 10)]);
     saveDb();
     const preferences = queryOne('SELECT country, currency, currency_symbol as currencySymbol, phone_code as phoneCode FROM settings WHERE user_id = ?', [req.user.id]);
     res.json({ success: true, data: preferences });
@@ -115,7 +121,6 @@ exports.deleteAccount = (req, res) => {
   try {
     const userId = req.user.id;
     runSql('BEGIN');
-    // Remove owned records first because the legacy schema has mixed FK actions.
     runSql('DELETE FROM video_comments WHERE user_id = ?', [userId]);
     runSql('DELETE FROM video_comments WHERE video_id IN (SELECT id FROM videos WHERE uploaded_by = ?)', [userId]);
     runSql('DELETE FROM videos WHERE uploaded_by = ?', [userId]);
@@ -127,6 +132,11 @@ exports.deleteAccount = (req, res) => {
     runSql('DELETE FROM clients WHERE created_by = ?', [userId]);
     runSql('DELETE FROM activities WHERE user_id = ?', [userId]);
     runSql('DELETE FROM settings WHERE user_id = ?', [userId]);
+    archiveSubscriptionsForEmail(userId, req.user.email);
+    runSql('DELETE FROM coupon_redemptions WHERE user_id = ?', [userId]);
+    runSql('DELETE FROM billing_payments WHERE user_id = ?', [userId]);
+    runSql('DELETE FROM webhook_events WHERE provider = ? AND payload_hash IN (SELECT payload_hash FROM webhook_events WHERE event_id IN (SELECT event_id FROM webhook_events WHERE provider = ?))', ['razorpay', 'razorpay']);
+    runSql('DELETE FROM subscriptions WHERE user_id = ?', [userId]);
     const result = runSql('DELETE FROM users WHERE id = ?', [userId]);
     if (result.changes === 0) {
       runSql('ROLLBACK');

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { Navigate } from "react-router-dom"
+import { Navigate, useLocation } from "react-router-dom"
 import { useAuth } from "@/contexts/AuthContext"
 import { Sidebar } from "@/components/layout/sidebar"
 import { Topbar } from "@/components/layout/topbar"
@@ -11,6 +11,7 @@ export default function DashboardLayout({
   children: React.ReactNode
 }) {
   const { user, loading: authLoading } = useAuth()
+  const location = useLocation()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
 
@@ -59,7 +60,7 @@ export default function DashboardLayout({
         </div>
       )}
 
-      <div className={`flex-1 flex flex-col overflow-hidden ${sidebarCollapsed ? "lg:ml-20" : "lg:ml-72"}`}>
+      <div className={`flex-1 flex flex-col overflow-hidden ${sidebarCollapsed ? "lg:ml-20" : "lg:ml-60"}`}>
         <Topbar
           user={{
             full_name: user.name || null,
@@ -69,7 +70,7 @@ export default function DashboardLayout({
           }}
           onMenuToggle={() => setSidebarOpen(!sidebarOpen)}
         />
-        <main className="flex-1 overflow-y-auto">
+        <main key={location.pathname} className="flex-1 overflow-y-auto animate-fade-in">
           {children}
         </main>
       </div>

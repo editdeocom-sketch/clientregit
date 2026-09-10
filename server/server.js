@@ -5,7 +5,9 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const path = require('path');
 const fs = require('fs');
+const rateLimit = require('express-rate-limit');
 const { getDb, initializeDatabase, saveDb } = require('./database/database');
+const { initAdminTables } = require('./database/adminSchema');
 const getExchangeRate = require('./utils/exchangeRate');
 
 const app = express();
@@ -14,6 +16,7 @@ const app = express();
   if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 16) throw new Error('JWT_SECRET must be configured with at least 16 characters');
   const database = await getDb();
   initializeDatabase(database);
+  initAdminTables(database);
   app.locals.db = database;
   app.locals.saveDb = saveDb;
 
@@ -23,10 +26,11 @@ const app = express();
 
   app.use(helmet({ contentSecurityPolicy: false }));
   app.use(morgan('dev'));
-  app.use(cors({ origin: process.env.CLIENT_URL || 'http://localhost:5173', credentials: true }));
+  const allowedOrigins = [process.env.CLIENT_URL || 'http://localhost:5173'];
+  if (process.env.NODE_ENV !== 'production') allowedOrigins.push('http://localhost:5000');
+  app.use(cors({ origin: allowedOrigins, credentials: true }));
   app.use(express.json({ limit: '10mb', verify: (req, res, buffer) => { req.rawBody = Buffer.from(buffer); } }));
   app.use(express.urlencoded({ extended: true }));
-  app.use('/uploads/videos', express.static(videoUploadDir, { acceptRanges: true }));
 
   app.get('/api/health', (req, res) => {
     res.json({ success: true, message: 'ClientRegit API is running' });
@@ -42,6 +46,20 @@ const app = express();
     }
   });
 
+  const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 20, standardHeaders: true, legacyHeaders: false, message: { success: false, message: 'Too many attempts, please try again later' } });
+  const billingLimiter = rateLimit({ windowMs: 60 * 1000, max: 30, standardHeaders: true, legacyHeaders: false, message: { success: false, message: 'Too many requests, please try again later' } });
+  const adminLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 200, standardHeaders: true, legacyHeaders: false, message: { success: false, message: 'Too many admin requests' } });
+  const uploadLimiter = rateLimit({ windowMs: 60 * 1000, max: 10, standardHeaders: true, legacyHeaders: false, message: { success: false, message: 'Too many uploads' } });
+
+  app.use('/api/auth/login', authLimiter);
+  app.use('/api/auth/register', authLimiter);
+  app.use('/api/billing/create-order', billingLimiter);
+  app.use('/api/billing/create-subscription', billingLimiter);
+  app.use('/api/billing/validate-coupon', billingLimiter);
+  app.use('/api/billing/verify-payment', billingLimiter);
+  app.use('/api/billing/verify-subscription', billingLimiter);
+  app.use('/api/admin', adminLimiter);
+
   app.use('/api/auth', require('./routes/authRoutes'));
   app.use('/api/clients', require('./routes/clientRoutes'));
   app.use('/api/projects', require('./routes/projectRoutes'));
@@ -49,14 +67,19 @@ const app = express();
   app.use('/api/videos', require('./routes/videoRoutes'));
   app.use('/api/invoices', require('./routes/invoiceRoutes'));
   app.use('/api/payments', require('./routes/paymentRoutes'));
+
   app.use('/api/billing', require('./routes/billingRoutes'));
   app.use('/api/dashboard', require('./routes/dashboardRoutes'));
+  app.use('/api/public', require('./routes/publicPageRoutes'));
+  app.use('/api/admin', require('./routes/adminRoutes'));
 
-  if (process.env.NODE_ENV === 'production') {
-    app.use(express.static(path.join(__dirname, '..', 'client', 'dist')));
-    app.get('*', (req, res) => {
-      res.sendFile(path.join(__dirname, '..', 'client', 'dist', 'index.html'));
-    });
+  const { protect } = require('./middleware/auth');
+  app.use('/uploads/videos', protect, express.static(videoUploadDir, { acceptRanges: true }));
+
+  const clientDist = path.join(__dirname, '..', 'client', 'dist');
+  const hasClient = fs.existsSync(clientDist);
+  if (hasClient) {
+    app.use(express.static(clientDist));
   }
 
   app.use((err, req, res, next) => {
@@ -66,10 +89,25 @@ const app = express();
     res.status(err.statusCode || 500).json({ success: false, message: process.env.NODE_ENV === 'production' ? 'Internal server error' : (err.message || 'Internal server error') });
   });
 
+  if (hasClient) {
+    app.get('*', (req, res) => {
+      if (req.path.startsWith('/api')) return res.status(404).json({ success: false, message: 'Not found' });
+      res.sendFile(path.join(clientDist, 'index.html'));
+    });
+  }
+
   const PORT = process.env.PORT || 5000;
-  app.listen(PORT, () => {
+  const server = app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
   });
+
+  const shutdown = () => {
+    console.log('Shutting down...');
+    server.close(() => { saveDb(); process.exit(0); });
+    setTimeout(() => { saveDb(); process.exit(1); }, 5000);
+  };
+  process.on('SIGTERM', shutdown);
+  process.on('SIGINT', shutdown);
 })().catch((error) => {
   console.error('ClientRegit failed to start:', error);
   process.exitCode = 1;

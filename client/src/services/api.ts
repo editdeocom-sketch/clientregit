@@ -42,7 +42,7 @@ class ApiClient {
       }
       throw new Error(data.message || `Request failed with status ${response.status}`);
     }
-    return data;
+    return data as T;
   }
 
   async get<T>(endpoint: string, options?: FetchOptions): Promise<T> {

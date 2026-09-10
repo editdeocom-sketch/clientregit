@@ -27,8 +27,14 @@ exports.getVideoById = (req, res) => {
 exports.createVideo = (req, res) => {
   try {
     const { project_id, title, file_path, file_url, file_name, file_size } = req.body;
-    if (!title || !req.file) return res.status(400).json({ success: false, message: 'A video file and title are required' });
-    if (project_id && !queryOne('SELECT id FROM projects WHERE id = ? AND created_by = ?', [project_id, req.user.id])) return res.status(404).json({ success: false, message: 'Project not found' });
+    if (!title || !req.file) {
+      if (req.file && req.file.path) { try { fs.unlinkSync(req.file.path); } catch (e) { /* cleanup */ } }
+      return res.status(400).json({ success: false, message: 'A video file and title are required' });
+    }
+    if (project_id && !queryOne('SELECT id FROM projects WHERE id = ? AND created_by = ?', [project_id, req.user.id])) {
+      if (req.file && req.file.path) { try { fs.unlinkSync(req.file.path); } catch (e) { /* cleanup */ } }
+      return res.status(404).json({ success: false, message: 'Project not found' });
+    }
     let version = 1;
     if (project_id) {
       const latest = queryOne('SELECT version FROM videos WHERE project_id = ? ORDER BY version DESC LIMIT 1', [project_id]);
@@ -36,12 +42,17 @@ exports.createVideo = (req, res) => {
     }
     const storedPath = req.file.filename;
     const shareToken = crypto.randomBytes(24).toString('hex');
-    const result = runSql('INSERT INTO videos (title, project_id, version, file_path, file_url, file_name, file_size, share_token, uploaded_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-      [title, project_id || null, version, storedPath, `/uploads/videos/${encodeURIComponent(storedPath)}`, req.file.originalname, req.file.size, shareToken, req.user.id]);
-    const video = queryOne('SELECT v.*, p.name as project_name FROM videos v LEFT JOIN projects p ON v.project_id = p.id WHERE v.id = ?', [result.lastInsertRowid]);
-    runSql('INSERT INTO activities (user_id, action, entity_type, entity_id, description) VALUES (?, ?, ?, ?, ?)', [req.user.id, 'uploaded', 'video', video.id, `Uploaded video ${video.title} v${video.version}`]);
-    saveDb();
-    res.status(201).json({ success: true, data: video });
+    try {
+      const result = runSql('INSERT INTO videos (title, project_id, version, file_path, file_url, file_name, file_size, share_token, uploaded_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        [title, project_id || null, version, storedPath, `/uploads/videos/${encodeURIComponent(storedPath)}`, req.file.originalname, req.file.size, shareToken, req.user.id]);
+      const video = queryOne('SELECT v.*, p.name as project_name FROM videos v LEFT JOIN projects p ON v.project_id = p.id WHERE v.id = ?', [result.lastInsertRowid]);
+      runSql('INSERT INTO activities (user_id, action, entity_type, entity_id, description) VALUES (?, ?, ?, ?, ?)', [req.user.id, 'uploaded', 'video', video.id, `Uploaded video ${video.title} v${video.version}`]);
+      saveDb();
+      res.status(201).json({ success: true, data: video });
+    } catch (dbError) {
+      if (req.file && req.file.path) { try { fs.unlinkSync(req.file.path); } catch (e) { /* cleanup */ } }
+      throw dbError;
+    }
   } catch (error) { sendServerError(res, error); }
 };
 

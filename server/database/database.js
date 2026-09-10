@@ -81,7 +81,7 @@ function initializeDatabase(database) {
       name TEXT NOT NULL,
       email TEXT UNIQUE NOT NULL,
       password_hash TEXT NOT NULL,
-      role TEXT DEFAULT 'editor',
+      role TEXT DEFAULT 'user',
       avatar TEXT DEFAULT '',
       phone TEXT DEFAULT '',
       created_at TEXT DEFAULT (datetime('now')),
@@ -282,6 +282,8 @@ function initializeDatabase(database) {
     amount REAL NOT NULL,
     status TEXT NOT NULL,
     payment_type TEXT NOT NULL,
+    coupon_code TEXT,
+    discount_amount REAL DEFAULT 0,
     paid_at TEXT,
     created_at TEXT DEFAULT (datetime('now')),
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
@@ -305,7 +307,44 @@ function initializeDatabase(database) {
     processed_at TEXT DEFAULT (datetime('now')),
     UNIQUE(provider, event_id)
   )`);
+  database.run(`CREATE TABLE IF NOT EXISTS subscription_recovery (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    email TEXT NOT NULL UNIQUE,
+    subscription_json TEXT NOT NULL,
+    created_at TEXT DEFAULT (datetime('now'))
+  )`);
+  database.run(`CREATE TABLE IF NOT EXISTS coupons (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    code TEXT NOT NULL UNIQUE,
+    description TEXT,
+    discount_type TEXT NOT NULL CHECK(discount_type IN ('percent', 'fixed')),
+    discount_value REAL NOT NULL,
+    currency TEXT,
+    plan_slugs TEXT,
+    max_uses INTEGER,
+    used_count INTEGER NOT NULL DEFAULT 0,
+    valid_from TEXT DEFAULT (datetime('now')),
+    valid_until TEXT,
+    active INTEGER NOT NULL DEFAULT 1,
+    created_at TEXT DEFAULT (datetime('now'))
+  )`);
+  database.run(`CREATE TABLE IF NOT EXISTS coupon_redemptions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    coupon_id INTEGER NOT NULL,
+    user_id INTEGER NOT NULL,
+    order_id TEXT,
+    discount_amount REAL NOT NULL,
+    created_at TEXT DEFAULT (datetime('now')),
+    UNIQUE(coupon_id, user_id)
+  )`);
   PLAN_DEFINITIONS.forEach((plan) => database.run('INSERT OR IGNORE INTO plans (slug, name, active, recurring, interval, storage_bytes, prices_json) VALUES (?, ?, 1, ?, ?, ?, ?)', [plan.slug, plan.name, plan.recurring ? 1 : 0, plan.interval || null, plan.storageBytes, JSON.stringify(plan.prices)]));
+
+  // Seed sample coupons only in development
+  if (process.env.NODE_ENV !== 'production') {
+    database.run("INSERT OR IGNORE INTO coupons (code, description, discount_type, discount_value, max_uses, valid_until) VALUES (?, ?, ?, ?, ?, ?)", ['WELCOME20', '20% off first payment', 'percent', 20, 100, '2027-12-31']);
+    database.run("INSERT OR IGNORE INTO coupons (code, description, discount_type, discount_value, max_uses, valid_until) VALUES (?, ?, ?, ?, ?, ?)", ['FLAT100', '₹100 off on any plan', 'fixed', 100, 50, '2027-12-31']);
+    database.run("INSERT OR IGNORE INTO coupons (code, description, discount_type, discount_value, currency, plan_slugs, max_uses, valid_until) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", ['YEARLY50', '50% off Yearly plan', 'percent', 50, null, 'pro_yearly', 20, '2027-12-31']);
+  }
 
   database.run('CREATE INDEX IF NOT EXISTS idx_clients_created_by ON clients(created_by)');
   database.run('CREATE INDEX IF NOT EXISTS idx_clients_email ON clients(email)');
@@ -326,6 +365,14 @@ function initializeDatabase(database) {
   database.run('CREATE INDEX IF NOT EXISTS idx_subscriptions_user ON subscriptions(user_id)');
   database.run('CREATE INDEX IF NOT EXISTS idx_billing_payments_user ON billing_payments(user_id)');
   database.run('CREATE INDEX IF NOT EXISTS idx_webhook_events_provider ON webhook_events(provider, event_id)');
+  database.run('CREATE INDEX IF NOT EXISTS idx_subscription_recovery_email ON subscription_recovery(email)');
+
+  // Add coupon columns if missing (for existing databases)
+  try { database.run("ALTER TABLE billing_payments ADD COLUMN coupon_code TEXT"); } catch (e) { /* column exists */ }
+  try { database.run("ALTER TABLE billing_payments ADD COLUMN discount_amount REAL DEFAULT 0"); } catch (e) { /* column exists */ }
+  try { database.run("ALTER TABLE billing_payments ADD COLUMN original_amount REAL"); } catch (e) { /* column exists */ }
+  try { database.run("ALTER TABLE subscriptions ADD COLUMN provider_plan_id TEXT"); } catch (e) { /* column exists */ }
+  try { database.run("ALTER TABLE users ADD COLUMN is_disabled INTEGER DEFAULT 0"); } catch (e) { /* column exists */ }
 
   saveDb();
 }

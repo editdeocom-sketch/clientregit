@@ -25,6 +25,7 @@ import { Video as VideoIcon, Play, ExternalLink, Plus, Upload, X, AlertCircle, C
 import { formatDate } from "@/lib/utils"
 import { Link } from "react-router-dom"
 import { toast } from "sonner"
+import { Skeleton } from "@/components/ui/skeleton"
 import { useUpgradeModal } from "@/contexts/UpgradeModalContext"
 
 const MAX_FILE_SIZE_MB = 300
@@ -56,6 +57,7 @@ export default function VideosPage() {
   const { user } = useAuth()
   const { showUpgrade } = useUpgradeModal()
   const [videos, setVideos] = useState<VideoData[]>([])
+  const [loading, setLoading] = useState(true)
   const [projects, setProjects] = useState<ProjectData[]>([])
   const [uploadOpen, setUploadOpen] = useState(false)
   const [uploading, setUploading] = useState(false)
@@ -94,6 +96,8 @@ export default function VideosPage() {
         }
       } catch {
         setVideos([])
+      } finally {
+        setLoading(false)
       }
     }
 
@@ -223,7 +227,13 @@ export default function VideosPage() {
         </Button>
       </div>
 
-      {videos.length === 0 ? (
+      {loading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-28" />
+          ))}
+        </div>
+      ) : videos.length === 0 ? (
         <GlassCard className="p-16 text-center">
           <VideoIcon className="h-12 w-12 text-muted-foreground/30 mx-auto mb-3" />
           <p className="text-muted-foreground mb-4">No videos yet. Upload your first video to get started.</p>

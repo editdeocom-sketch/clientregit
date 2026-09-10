@@ -36,11 +36,15 @@ function LoginForm() {
       return;
     }
 
-    navigate("/dashboard");
+    if (result.user?.role === 'admin') {
+      navigate("/admin");
+    } else {
+      navigate("/dashboard");
+    }
   }
 
   return (
-    <div className="w-full max-w-md bg-card/60 backdrop-blur-lg border border-border rounded-2xl p-8">
+    <div className="w-full max-w-md bg-card border border-border shadow-sm rounded-lg p-8">
       <div className="flex flex-col items-center mb-8">
         <div className="mb-2">
           <Logo size="md" />

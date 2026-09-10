@@ -182,7 +182,7 @@ export default function DashboardPage() {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         {statCards.map((card) => (
-          <GlassCard key={card.label} className={`p-5 hover-lift transition-all duration-300 ${card.view ? "cursor-pointer" : ""}`} onClick={() => card.view && setFinancialView(card.view)}>
+          <GlassCard key={card.label} className={`p-5 transition-colors hover:bg-muted/40 ${card.view ? "cursor-pointer" : ""}`} onClick={() => card.view && setFinancialView(card.view)}>
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">{card.label}</p>

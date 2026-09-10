@@ -9,6 +9,7 @@ router.use(protect);
 router.get('/subscription', billing.getSubscription);
 router.get('/usage', billing.getUsage);
 router.get('/payments', billing.getBillingPayments);
+router.post('/validate-coupon', billing.validateCoupon);
 router.post('/create-order', billing.createOrder);
 router.post('/create-subscription', billing.createSubscription);
 router.post('/verify-payment', billing.verifyPayment);

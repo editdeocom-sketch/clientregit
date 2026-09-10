@@ -25,13 +25,38 @@ export default {
         ring: "var(--ring)",
         sidebar: { DEFAULT: "var(--sidebar)", foreground: "var(--sidebar-foreground)", border: "var(--sidebar-border)", active: "var(--sidebar-active)" },
       },
+      boxShadow: {
+        sm: "var(--shadow-sm)",
+        DEFAULT: "var(--shadow)",
+        md: "var(--shadow-md)",
+        lg: "var(--shadow-lg)",
+      },
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
       },
       fontFamily: {
-        sans: ["Inter", "system-ui", "sans-serif"],
+        sans: ["Inter", "system-ui", "-apple-system", "sans-serif"],
+      },
+      animation: {
+        "dropdown-in": "dropdownIn 0.15s ease-out",
+        "modal-in": "modalIn 0.2s ease-out",
+        "float": "float 6s ease-in-out infinite",
+      },
+      keyframes: {
+        dropdownIn: {
+          "0%": { opacity: "0", transform: "translateY(-4px)" },
+          "100%": { opacity: "1", transform: "translateY(0)" },
+        },
+        modalIn: {
+          "0%": { opacity: "0", transform: "translateY(8px) scale(0.98)" },
+          "100%": { opacity: "1", transform: "translateY(0) scale(1)" },
+        },
+        float: {
+          "0%, 100%": { transform: "translateY(0)" },
+          "50%": { transform: "translateY(-8px)" },
+        },
       },
     },
   },

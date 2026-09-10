@@ -172,7 +172,7 @@ export default function ClientsPage() {
           <h1 className="text-2xl font-bold text-foreground">Clients</h1>
           <p className="text-muted-foreground mt-1">Manage your client directory.</p>
         </div>
-        <Button onClick={openAddDialog} className="bg-gradient-to-r from-[#3A506B] to-[#5C7A9B] hover:from-[#4A607B] hover:to-[#6C8AAB] text-white">
+        <Button onClick={openAddDialog}>
           <Plus className="h-4 w-4 mr-2" />
           Add Client
         </Button>
@@ -196,7 +196,7 @@ export default function ClientsPage() {
               {search ? "No clients match your search." : "No clients yet. Add your first client to get started."}
             </p>
             {!search && (
-              <Button onClick={openAddDialog} variant="glass" size="sm">
+              <Button onClick={openAddDialog} variant="outline" size="sm">
                 <Plus className="h-4 w-4 mr-2" />
                 Add Client
               </Button>
@@ -335,7 +335,6 @@ export default function ClientsPage() {
             <Button
               onClick={handleSave}
               disabled={!form.name || !form.email || saving}
-              className="bg-gradient-to-r from-[#3A506B] to-[#5C7A9B] text-white"
             >
               {saving ? "Saving..." : editingClient ? "Update" : "Add Client"}
             </Button>

@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom"
 import { Logo } from "@/components/layout/logo"
+import { Settings } from "lucide-react"
 
 const productLinks = [
   { label: "Features", href: "/#features" },
@@ -16,9 +17,17 @@ const legalLinks = [
   { label: "Privacy Policy", href: "/privacy" },
   { label: "Terms & Conditions", href: "/terms" },
   { label: "Cookie Policy", href: "/cookies" },
+  { label: "Refund Policy", href: "/refund-policy" },
+  { label: "Acceptable Use", href: "/acceptable-use" },
+  { label: "Security", href: "/security" },
+  { label: "Advertising Policy", href: "/advertising-policy" },
 ]
 
 export function MarketingFooter() {
+  const handleManageCookies = () => {
+    window.dispatchEvent(new CustomEvent("open-cookie-consent"));
+  };
+
   return (
     <footer className="border-t border-border py-16 px-6 bg-card">
       <div className="mx-auto max-w-6xl">
@@ -83,6 +92,15 @@ export function MarketingFooter() {
                   </Link>
                 </li>
               ))}
+              <li>
+                <button
+                  onClick={handleManageCookies}
+                  className="text-sm text-muted-foreground hover:text-foreground transition-colors duration-200 inline-flex items-center gap-1.5"
+                >
+                  <Settings className="h-3.5 w-3.5" />
+                  Manage Cookies
+                </button>
+              </li>
             </ul>
           </div>
         </div>

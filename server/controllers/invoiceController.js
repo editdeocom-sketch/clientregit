@@ -71,6 +71,18 @@ exports.updateInvoice = (req, res) => {
   } catch (error) { sendServerError(res, error); }
 };
 
+exports.getUninvoicedAmount = (req, res) => {
+  try {
+    const { client_id } = req.query;
+    if (!client_id) return res.json({ success: true, data: { total: 0 } });
+    const client = queryOne('SELECT id FROM clients WHERE id = ? AND created_by = ?', [client_id, req.user.id]);
+    if (!client) return res.status(404).json({ success: false, message: 'Client not found' });
+    const projects = queryAll('SELECT p.budget, p.amount_paid, p.remaining_amount FROM projects p WHERE p.client_id = ? AND p.created_by = ?', [client_id, req.user.id]);
+    const total = projects.reduce((sum, p) => sum + (p.remaining_amount || Math.max(0, (p.budget || 0) - (p.amount_paid || 0))), 0);
+    res.json({ success: true, data: { total } });
+  } catch (error) { sendServerError(res, error); }
+};
+
 exports.deleteInvoice = (req, res) => {
   try {
     const invoice = queryOne('SELECT * FROM invoices WHERE id = ? AND created_by = ?', [req.params.id, req.user.id]);

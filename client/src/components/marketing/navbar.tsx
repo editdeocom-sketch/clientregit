@@ -15,7 +15,7 @@ export function MarketingNavbar() {
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-border">
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-card border-b border-border">
       <div className="mx-auto max-w-7xl flex items-center justify-between px-6 py-4">
         <Link to="/" className="flex items-center">
           <Logo size="sm" showText={false} />
@@ -58,7 +58,7 @@ export function MarketingNavbar() {
       </div>
 
       {mobileNavOpen && (
-        <div className="md:hidden border-t border-border bg-background/95 backdrop-blur-md px-6 py-4 space-y-4 animate-slide-up">
+        <div className="md:hidden border-t border-border bg-card px-6 py-4 space-y-4 animate-slide-up">
           {navLinks.map((link) => (
             <Link
               key={link.label}

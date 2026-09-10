@@ -303,7 +303,7 @@ export default function ProjectsPage() {
             className="pl-10"
           />
         </div>
-        <div className="flex gap-1 p-1 rounded-lg bg-muted border border-border">
+        <div className="flex gap-1 p-1 rounded-lg bg-muted border border-border overflow-x-auto scrollbar-none">
           {statuses.map((s) => (
             <button
               key={s}
@@ -389,7 +389,7 @@ export default function ProjectsPage() {
                     <td className="py-4 px-5 text-right">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Project actions">
                             <MoreHorizontal className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>

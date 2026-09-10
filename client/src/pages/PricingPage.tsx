@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from "react"
-import { Link } from "react-router-dom"
+import { useState, useEffect } from "react"
+import { Link, useNavigate } from "react-router-dom"
 import { Check, Crown, Zap, Infinity, Loader2, AlertCircle } from "lucide-react"
 import { GlassCard } from "@/components/layout/glass-card"
 import { Logo } from "@/components/layout/logo"
@@ -83,39 +83,21 @@ const FEATURE_LIST = [
   { label: "Advanced Reports", free: false, pro: true, lifetime: true },
 ]
 
-function loadRazorpayScript(): Promise<boolean> {
-  return new Promise((resolve) => {
-    if (document.getElementById("razorpay-script")) { resolve(true); return }
-    const script = document.createElement("script")
-    script.id = "razorpay-script"
-    script.src = "https://checkout.razorpay.com/v1/checkout.js"
-    script.onload = () => resolve(true)
-    script.onerror = () => resolve(false)
-    document.body.appendChild(script)
-  })
-}
-
 export default function PricingPage() {
+  const navigate = useNavigate()
   const { user } = useAuth()
   const { preferences } = usePreferences()
   const [plans, setPlans] = useState<PlansResponse | null>(null)
   const [currentPlan, setCurrentPlan] = useState<Entitlements | null>(null)
   const [currency, setCurrency] = useState(() => detectInitialCurrency(preferences.currency))
   const [loading, setLoading] = useState(true)
-  const [purchasing, setPurchasing] = useState<string | null>(null)
-  const [scriptLoaded, setScriptLoaded] = useState(false)
 
   useEffect(() => {
     billingService.getPlans()
-      .then((data) => { setPlans(data); setScriptLoaded(data.razorpayConfigured) })
+      .then((data) => setPlans(data))
       .catch(() => toast.error("Failed to load plans"))
       .finally(() => setLoading(false))
   }, [])
-
-  useEffect(() => {
-    if (!plans?.razorpayConfigured) return
-    loadRazorpayScript().then(setScriptLoaded)
-  }, [plans?.razorpayConfigured])
 
   useEffect(() => {
     if (!user) return
@@ -124,38 +106,12 @@ export default function PricingPage() {
       .catch(() => undefined)
   }, [user])
 
-  const handlePurchase = useCallback(async (plan: PlanDefinition) => {
-    if (!user) { window.location.href = "/signup"; return }
+  const handleSelectPlan = (plan: PlanDefinition) => {
+    if (!user) { navigate("/signup"); return }
     if (plan.slug === "free") { toast.info("You're already on the Free plan"); return }
-    const price = getPlanPrice(plan, currency)
-    if (price === null) { toast.error(`This plan is not available in ${currency}`); return }
-    if (!scriptLoaded || !plans?.razorpayConfigured) { toast.error("Payments are not configured yet. Contact support."); return }
-
-    setPurchasing(plan.slug)
-    try {
-      if (plan.recurring) {
-        const subData = await billingService.createSubscription(plan.slug, currency)
-        const rzp = new (window as any).Razorpay({ key: subData.keyId, subscription_id: subData.subscription.id, name: "ClientRegit", description: plan.name, handler: async (response: any) => {
-          try {
-            await billingService.verifySubscription(subData.subscription.id, response.razorpay_payment_id, response.razorpay_signature)
-            window.location.href = `/payment-success?plan=${plan.slug}&currency=${currency}&payment_id=${response.razorpay_payment_id}&status=active`
-          } catch { toast.error("Payment verification failed. Contact support.") }
-        }, prefill: { email: user.email }, theme: { color: "#6366f1" }, modal: { ondismiss: () => setPurchasing(null) } })
-        rzp.open()
-      } else {
-        const orderData = await billingService.createOrder(plan.slug, currency)
-        const rzp = new (window as any).Razorpay({ key: orderData.keyId, amount: orderData.amount * (["JPY", "KRW"].includes(currency) ? 1 : 100), currency, name: "ClientRegit", description: plan.name, order_id: orderData.order.id, handler: async (response: any) => {
-          try {
-            await billingService.verifyPayment(orderData.order.id, response.razorpay_payment_id, response.razorpay_signature)
-            window.location.href = `/payment-success?plan=${plan.slug}&currency=${currency}&amount=${orderData.amount}&payment_id=${response.razorpay_payment_id}&status=active`
-          } catch { toast.error("Payment verification failed. Contact support.") }
-        }, prefill: { email: user.email }, theme: { color: "#6366f1" }, modal: { ondismiss: () => setPurchasing(null) } })
-        rzp.open()
-      }
-    } catch (err: any) {
-      toast.error(err.message || "Failed to start checkout")
-    } finally { setPurchasing(null) }
-  }, [user, currency, scriptLoaded, plans])
+    localStorage.setItem("billing_currency", currency)
+    navigate(`/checkout?plan=${plan.slug}&currency=${currency}`)
+  }
 
   const displayPlans = plans?.plans.filter((p) => p.slug !== "free") || []
   const freePlan = plans?.plans.find((p) => p.slug === "free")
@@ -170,7 +126,7 @@ export default function PricingPage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-card/80 backdrop-blur-md border-b border-border">
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-card border-b border-border">
         <div className="mx-auto max-w-7xl flex items-center justify-between px-6 py-4">
           <Link to="/" className="flex items-center">
             <Logo size="sm" showText={false} />
@@ -214,6 +170,7 @@ export default function PricingPage() {
       <section className="pb-24 px-6">
         <div className="mx-auto max-w-6xl">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            {/* Free Plan */}
             {freePlan && (
               <GlassCard variant="subtle" className="p-6 flex flex-col">
                 <div className="mb-6">
@@ -242,20 +199,30 @@ export default function PricingPage() {
               </GlassCard>
             )}
 
+            {/* Pro + Lifetime Plans */}
             {displayPlans.map((plan) => {
               const Icon = PLAN_ICONS[plan.slug] || Crown
               const price = getPlanPrice(plan, currency)
               const isCurrent = currentPlan?.plan === plan.slug
               const isPopular = plan.slug === "pro_yearly"
               const isBestValue = plan.slug === "pro_quarterly"
+              const isLifetime = plan.slug === "lifetime"
+
               return (
-                <GlassCard key={plan.slug} variant={isPopular ? "default" : "subtle"} className={`p-6 flex flex-col relative ${isPopular ? "ring-2 ring-primary" : ""}`}>
-                  {isPopular && <Badge className="absolute -top-3 left-1/2 -translate-x-1/2">Most Popular</Badge>}
+                <GlassCard
+                  key={plan.slug}
+                  variant={isPopular ? "default" : "subtle"}
+                  className={`p-6 flex flex-col relative ${isPopular ? "ring-2 ring-primary shadow-lg shadow-primary/10" : ""} ${isLifetime ? "border-primary/20 bg-primary/5" : ""}`}
+                >
+                  {isPopular && <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground">Most Popular</Badge>}
                   {isBestValue && <Badge variant="secondary" className="absolute -top-3 left-1/2 -translate-x-1/2">Best Value</Badge>}
-                  <div className="mb-6">
-                    <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center mb-3"><Icon className="h-5 w-5 text-primary" /></div>
+                  {isLifetime && <Badge variant="secondary" className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary/10 text-primary border border-primary/20">One-time</Badge>}
+                  <div className="mb-4">
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-3 ${isPopular ? "bg-primary/15" : isLifetime ? "bg-primary/10" : "bg-primary/10"}`}>
+                      <Icon className={`h-5 w-5 ${isPopular ? "text-primary" : "text-primary/80"}`} />
+                    </div>
                     <h3 className="text-lg font-semibold">{plan.name}</h3>
-                    <div className="flex items-baseline gap-1 mt-2">
+                    <div className="flex items-baseline gap-1 mt-2 min-h-[40px]">
                       {price !== null ? (
                         <>
                           <span className="text-4xl font-bold">{formatPrice(price, currency)}</span>
@@ -265,30 +232,42 @@ export default function PricingPage() {
                         <span className="text-4xl font-bold text-muted-foreground">—</span>
                       )}
                     </div>
-                    <p className="text-sm text-muted-foreground mt-2">For growing creative professionals</p>
                   </div>
                   <ul className="space-y-2.5 mb-8 flex-1">
-                    <li className="flex items-center gap-2 text-sm"><Check className="h-4 w-4 text-primary" />Unlimited clients</li>
-                    <li className="flex items-center gap-2 text-sm"><Check className="h-4 w-4 text-primary" />Unlimited projects</li>
-                    <li className="flex items-center gap-2 text-sm"><Check className="h-4 w-4 text-primary" />Unlimited tasks</li>
-                    <li className="flex items-center gap-2 text-sm"><Check className="h-4 w-4 text-primary" />Unlimited invoices</li>
-                    <li className="flex items-center gap-2 text-sm"><Check className="h-4 w-4 text-primary" />Unlimited video uploads</li>
-                    <li className="flex items-center gap-2 text-sm"><Check className="h-4 w-4 text-primary" />{formatBytes(plan.storageBytes)} storage</li>
-                    <li className="flex items-center gap-2 text-sm"><Check className="h-4 w-4 text-primary" />Professional invoices</li>
-                    <li className="flex items-center gap-2 text-sm"><Check className="h-4 w-4 text-primary" />Custom branding</li>
-                    <li className="flex items-center gap-2 text-sm"><Check className="h-4 w-4 text-primary" />Advanced dashboard</li>
-                    <li className="flex items-center gap-2 text-sm"><Check className="h-4 w-4 text-primary" />CSV export</li>
-                    <li className="flex items-center gap-2 text-sm"><Check className="h-4 w-4 text-primary" />Client portal</li>
-                    <li className="flex items-center gap-2 text-sm"><Check className="h-4 w-4 text-primary" />Shareable video links</li>
+                    {isLifetime ? (
+                      <>
+                        <li className="flex items-center gap-2 text-sm"><Check className="h-4 w-4 text-primary" />Everything in Pro</li>
+                        <li className="flex items-center gap-2 text-sm"><Check className="h-4 w-4 text-primary" />50 GB storage</li>
+                        <li className="flex items-center gap-2 text-sm"><Check className="h-4 w-4 text-primary" />No recurring payments</li>
+                        <li className="flex items-center gap-2 text-sm"><Check className="h-4 w-4 text-primary" />Lifetime updates</li>
+                      </>
+                    ) : (
+                      <>
+                        <li className="flex items-center gap-2 text-sm"><Check className="h-4 w-4 text-primary" />Unlimited clients</li>
+                        <li className="flex items-center gap-2 text-sm"><Check className="h-4 w-4 text-primary" />Unlimited projects</li>
+                        <li className="flex items-center gap-2 text-sm"><Check className="h-4 w-4 text-primary" />Unlimited tasks</li>
+                        <li className="flex items-center gap-2 text-sm"><Check className="h-4 w-4 text-primary" />Unlimited invoices</li>
+                        <li className="flex items-center gap-2 text-sm"><Check className="h-4 w-4 text-primary" />Unlimited video uploads</li>
+                        <li className="flex items-center gap-2 text-sm"><Check className="h-4 w-4 text-primary" />{formatBytes(plan.storageBytes)} storage</li>
+                        <li className="flex items-center gap-2 text-sm"><Check className="h-4 w-4 text-primary" />Professional invoices</li>
+                        <li className="flex items-center gap-2 text-sm"><Check className="h-4 w-4 text-primary" />Custom branding</li>
+                        <li className="flex items-center gap-2 text-sm"><Check className="h-4 w-4 text-primary" />Advanced dashboard</li>
+                        <li className="flex items-center gap-2 text-sm"><Check className="h-4 w-4 text-primary" />CSV export</li>
+                        <li className="flex items-center gap-2 text-sm"><Check className="h-4 w-4 text-primary" />Client portal</li>
+                        <li className="flex items-center gap-2 text-sm"><Check className="h-4 w-4 text-primary" />Shareable video links</li>
+                      </>
+                    )}
                   </ul>
                   {isCurrent ? (
                     <Button className="w-full bg-primary/20 text-primary" disabled>Current Plan</Button>
                   ) : price === null ? (
                     <Button className="w-full bg-muted text-foreground" disabled>Not available in {currency}</Button>
                   ) : (
-                    <Button className={`w-full ${isPopular ? "bg-primary text-primary-foreground hover:bg-primary/90" : "bg-muted text-foreground hover:bg-muted/80"}`} onClick={() => handlePurchase(plan)} disabled={purchasing === plan.slug}>
-                      {purchasing === plan.slug ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                      {plan.slug === "lifetime" ? "Get Lifetime Access" : plan.slug === "pro_yearly" ? "Choose Yearly" : plan.slug === "pro_quarterly" ? "Choose Quarterly" : "Start Pro"}
+                    <Button
+                      className={`w-full ${isPopular || isLifetime ? "bg-primary text-primary-foreground hover:bg-primary/90" : "bg-muted text-foreground hover:bg-muted/80"}`}
+                      onClick={() => handleSelectPlan(plan)}
+                    >
+                      {isLifetime ? "Get Lifetime Access" : isPopular ? "Choose Yearly" : isBestValue ? "Choose Quarterly" : "Start Pro"}
                     </Button>
                   )}
                 </GlassCard>
@@ -305,6 +284,7 @@ export default function PricingPage() {
         </div>
       </section>
 
+      {/* Compare Features */}
       <section className="pb-24 px-6">
         <div className="mx-auto max-w-4xl">
           <h2 className="text-2xl font-bold text-center mb-8">Compare all features</h2>

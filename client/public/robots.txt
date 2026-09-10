@@ -1,0 +1,28 @@
+User-agent: *
+Allow: /
+Allow: /pricing
+Allow: /features
+Allow: /about
+Allow: /contact
+Allow: /faq
+Allow: /privacy
+Allow: /terms
+Allow: /cookies
+Allow: /refund-policy
+Allow: /acceptable-use
+Allow: /security
+Allow: /advertising-policy
+
+Disallow: /admin
+Disallow: /api
+Disallow: /dashboard
+Disallow: /account
+Disallow: /settings
+Disallow: /billing
+Disallow: /clients
+Disallow: /projects
+Disallow: /tasks
+Disallow: /invoices
+Disallow: /videos
+
+Sitemap: https://clientregit.com/sitemap.xml

@@ -1,4 +1,4 @@
-﻿import { useEffect, useState, useCallback } from "react"
+﻿import { useEffect, useState, useCallback, useRef } from "react"
 import api from "@/services/api"
 import { useAuth } from "@/contexts/AuthContext"
 import { GlassCard } from "@/components/layout/glass-card"
@@ -140,6 +140,89 @@ export default function TasksPage() {
     e.dataTransfer.dropEffect = "move"
   }
 
+  // Touch drag-and-drop for mobile
+  const touchDragRef = useRef<{ taskId: string; el: HTMLElement; ghost: HTMLElement | null; startX: number; startY: number } | null>(null)
+  const columnRefs = useRef<Map<string, HTMLDivElement>>(new Map())
+
+  function handleTouchStart(e: React.TouchEvent, taskId: string) {
+    const touch = e.touches[0]
+    const target = e.currentTarget as HTMLElement
+    touchDragRef.current = { taskId, el: target, ghost: null, startX: touch.clientX, startY: touch.clientY }
+  }
+
+  function handleTouchMove(e: React.TouchEvent) {
+    if (!touchDragRef.current) return
+    const touch = e.touches[0]
+    const { el, ghost, startX, startY } = touchDragRef.current
+    const dx = Math.abs(touch.clientX - startX)
+    const dy = Math.abs(touch.clientY - startY)
+
+    if (!ghost && (dx > 10 || dy > 10)) {
+      el.style.opacity = "0.4"
+      const rect = el.getBoundingClientRect()
+      const g = el.cloneNode(true) as HTMLElement
+      g.style.position = "fixed"
+      g.style.zIndex = "9999"
+      g.style.width = rect.width + "px"
+      g.style.pointerEvents = "none"
+      g.style.opacity = "0.85"
+      g.style.transform = "rotate(2deg) scale(1.03)"
+      g.style.boxShadow = "0 8px 24px rgba(0,0,0,0.18)"
+      document.body.appendChild(g)
+      touchDragRef.current.ghost = g
+    }
+
+    if (ghost) {
+      e.preventDefault()
+      ghost.style.left = (touch.clientX - 40) + "px"
+      ghost.style.top = (touch.clientY - 20) + "px"
+
+      columnRefs.current.forEach((colEl, colKey) => {
+        const r = colEl.getBoundingClientRect()
+        if (touch.clientX >= r.left && touch.clientX <= r.right && touch.clientY >= r.top && touch.clientY <= r.bottom) {
+          colEl.style.background = "rgba(59,130,246,0.08)"
+          colEl.style.borderColor = "rgba(59,130,246,0.3)"
+        } else {
+          colEl.style.background = ""
+          colEl.style.borderColor = ""
+        }
+      })
+    }
+  }
+
+  function handleTouchEnd(e: React.TouchEvent) {
+    if (!touchDragRef.current) return
+    const { taskId, el, ghost } = touchDragRef.current
+
+    if (ghost) {
+      ghost.remove()
+      el.style.opacity = ""
+
+      const touch = e.changedTouches[0]
+      let targetCol: string | null = null
+      columnRefs.current.forEach((colEl, colKey) => {
+        colEl.style.background = ""
+        colEl.style.borderColor = ""
+        const r = colEl.getBoundingClientRect()
+        if (touch.clientX >= r.left && touch.clientX <= r.right && touch.clientY >= r.top && touch.clientY <= r.bottom) {
+          targetCol = colKey
+        }
+      })
+
+      if (targetCol) {
+        const task = tasks.find((t) => String(t.id) === taskId)
+        if (task && task.status !== targetCol) {
+          setTasks((prev) => prev.map((t) => (String(t.id) === taskId ? { ...t, status: targetCol as TaskData["status"] } : t)))
+          api.put(`/tasks/${taskId}`, { status: targetCol, updated_at: new Date().toISOString() })
+            .then(() => toast.success("Task status updated."))
+            .catch(() => { toast.error("Failed to update task status."); loadTasks() })
+        }
+      }
+    }
+
+    touchDragRef.current = null
+  }
+
   async function handleSave() {
     setSaving(true)
     try {
@@ -207,7 +290,7 @@ await api.post("/tasks", {
           <h1 className="text-2xl font-bold text-foreground">Tasks</h1>
           <p className="text-muted-foreground mt-1">Drag and drop tasks between columns.</p>
         </div>
-        <Button onClick={() => { setForm(emptyForm); setDialogOpen(true) }} className="bg-gradient-to-r from-[#3A506B] to-[#5C7A9B] hover:from-[#4A607B] hover:to-[#6C8AAB] text-white">
+        <Button onClick={() => { setForm(emptyForm); setDialogOpen(true) }}>
           <Plus className="h-4 w-4 mr-2" />
           Add Task
         </Button>
@@ -217,7 +300,7 @@ await api.post("/tasks", {
         <GlassCard className="p-16 text-center">
           <CheckSquare className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
           <p className="text-muted-foreground mb-4">No tasks yet. Create tasks to track your work.</p>
-          <Button onClick={() => { setForm(emptyForm); setDialogOpen(true) }} variant="glass" size="sm">
+          <Button onClick={() => { setForm(emptyForm); setDialogOpen(true) }} variant="outline" size="sm">
             <Plus className="h-4 w-4 mr-2" />
             Add Task
           </Button>
@@ -229,7 +312,8 @@ await api.post("/tasks", {
             return (
               <div
                 key={col.key}
-                className={`rounded-xl border-t-2 ${col.color} bg-card p-3 space-y-3 min-h-[200px]`}
+                ref={(el) => { if (el) columnRefs.current.set(col.key, el) }}
+                className={`rounded-xl border-t-2 ${col.color} bg-card p-3 space-y-3 min-h-[200px] transition-colors`}
                 onDrop={(e) => handleDrop(e, col.key)}
                 onDragOver={handleDragOver}
               >
@@ -245,9 +329,12 @@ await api.post("/tasks", {
                   {colTasks.map((task) => (
                     <GlassCard
                       key={task.id}
-                      className="p-3 cursor-grab active:cursor-grabbing hover:bg-muted transition-colors"
+                      className="p-3 cursor-grab active:cursor-grabbing hover:bg-muted transition-colors select-none"
                       draggable
                       onDragStart={(e) => handleDragStart(e, task.id)}
+                      onTouchStart={(e) => handleTouchStart(e, task.id)}
+                      onTouchMove={handleTouchMove}
+                      onTouchEnd={handleTouchEnd}
                     >
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex items-start gap-2 flex-1 min-w-0">
@@ -375,7 +462,6 @@ await api.post("/tasks", {
             <Button
               onClick={handleSave}
               disabled={!form.title || !form.project_id || saving}
-              className="bg-gradient-to-r from-[#3A506B] to-[#5C7A9B] text-white"
             >
               {saving ? "Creating..." : "Create Task"}
             </Button>

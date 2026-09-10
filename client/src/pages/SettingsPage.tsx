@@ -121,7 +121,11 @@ function BillingTabContent() {
           <div className="flex-1">
             <p className="font-semibold text-foreground">{plan?.name || "Free"}</p>
             <p className="text-sm text-muted-foreground">
-              {subscription?.subscription?.status === "active" ? "Active" : subscription?.subscription?.status || "Active"}
+              {isPro
+                ? subscription?.subscription?.cancel_at_period_end
+                  ? `Active until ${new Date(subscription.subscription.current_period_end || "").toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })}`
+                  : subscription?.subscription?.status === "active" ? "Active" : subscription?.subscription?.status || "Active"
+                : "Free"}
               {isPro && plan?.interval ? ` — ${plan.interval}` : ""}
               {entitlements?.storageBytes ? ` — ${formatBytes(entitlements.storageBytes)} storage` : ""}
             </p>
@@ -130,11 +134,11 @@ function BillingTabContent() {
             )}
             {isPro && subscription?.subscription?.current_period_end && (
               <p className="text-xs text-muted-foreground mt-1">
-                {subscription?.subscription?.cancel_at_period_end ? "Cancels" : "Renews"}: {subscription.subscription.current_period_end}
+                {subscription?.subscription?.cancel_at_period_end ? "Cancels" : "Renews"}: {new Date(subscription.subscription.current_period_end).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })}
               </p>
             )}
             {isPro && subscription?.subscription?.expires_at && (
-              <p className="text-xs text-muted-foreground mt-1">Expires: {subscription.subscription.expires_at}</p>
+              <p className="text-xs text-muted-foreground mt-1">Expires: {new Date(subscription.subscription.expires_at).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })}</p>
             )}
           </div>
           {isRecurring && (
@@ -430,25 +434,25 @@ export default function SettingsPage() {
       </div>
 
       <Tabs defaultValue="profile" className="w-full">
-        <GlassCard className="p-1 mb-6">
-          <TabsList className="w-full justify-start gap-1 bg-transparent p-1">
-            <TabsTrigger value="profile" className="gap-2 data-[state=active]:bg-muted data-[state=active]:text-foreground text-muted-foreground hover:text-foreground">
+        <GlassCard className="p-1 mb-6 overflow-x-auto scrollbar-none">
+          <TabsList className="w-max min-w-full justify-start gap-1 bg-transparent p-1">
+            <TabsTrigger value="profile" className="shrink-0 whitespace-nowrap gap-2 data-[state=active]:bg-muted data-[state=active]:text-foreground text-muted-foreground hover:text-foreground">
               <User className="h-4 w-4" />
               Profile
             </TabsTrigger>
-            <TabsTrigger value="account" className="gap-2 data-[state=active]:bg-muted data-[state=active]:text-foreground text-muted-foreground hover:text-foreground">
+            <TabsTrigger value="account" className="shrink-0 whitespace-nowrap gap-2 data-[state=active]:bg-muted data-[state=active]:text-foreground text-muted-foreground hover:text-foreground">
               <Lock className="h-4 w-4" />
               Account
             </TabsTrigger>
-            <TabsTrigger value="workspace" className="gap-2 data-[state=active]:bg-muted data-[state=active]:text-foreground text-muted-foreground hover:text-foreground">
+            <TabsTrigger value="workspace" className="shrink-0 whitespace-nowrap gap-2 data-[state=active]:bg-muted data-[state=active]:text-foreground text-muted-foreground hover:text-foreground">
               <Briefcase className="h-4 w-4" />
               Workspace
             </TabsTrigger>
-            <TabsTrigger value="security" className="gap-2 data-[state=active]:bg-muted data-[state=active]:text-foreground text-muted-foreground hover:text-foreground">
+            <TabsTrigger value="security" className="shrink-0 whitespace-nowrap gap-2 data-[state=active]:bg-muted data-[state=active]:text-foreground text-muted-foreground hover:text-foreground">
               <Shield className="h-4 w-4" />
               Security
             </TabsTrigger>
-            <TabsTrigger value="billing" className="gap-2 data-[state=active]:bg-muted data-[state=active]:text-foreground text-muted-foreground hover:text-foreground">
+            <TabsTrigger value="billing" className="shrink-0 whitespace-nowrap gap-2 data-[state=active]:bg-muted data-[state=active]:text-foreground text-muted-foreground hover:text-foreground">
               <CreditCard className="h-4 w-4" />
               Billing
             </TabsTrigger>

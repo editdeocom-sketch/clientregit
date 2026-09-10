@@ -312,10 +312,10 @@ export default function VideoDetailPage() {
                   <div className="h-full bg-white rounded-full" style={{ width: `${progress}%` }} />
                 </div>
                 <span className="text-sm font-mono">{formatVideoTime(duration)}</span>
-                <Button variant="ghost" size="icon" className="h-8 w-8 text-white hover:bg-white/20" onClick={() => videoRef.current?.requestFullscreen()}>
+                <Button variant="ghost" size="icon" className="h-8 w-8 text-white hover:bg-white/20" onClick={() => videoRef.current?.requestFullscreen()} aria-label="Mute or unmute">
                   <Volume2 className="h-4 w-4" />
                 </Button>
-                <Button variant="ghost" size="icon" className="h-8 w-8 text-white hover:bg-white/20">
+                <Button variant="ghost" size="icon" className="h-8 w-8 text-white hover:bg-white/20" aria-label="Toggle fullscreen" onClick={() => videoRef.current?.requestFullscreen()}>
                   <Maximize2 className="h-4 w-4" />
                 </Button>
               </div>

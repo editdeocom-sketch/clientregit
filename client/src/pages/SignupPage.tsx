@@ -74,7 +74,7 @@ export default function SignupPage() {
     setLoading(true);
 
     const fullPhone = phone.trim() ? `${phoneCode} ${phone.trim()}` : "";
-    const result = await register(fullName, email, password, "editor", fullPhone);
+    const result = await register(fullName, email, password, "user", fullPhone);
 
     if (!result.success) {
       toast.error(result.error || "Registration failed.");
@@ -88,7 +88,11 @@ export default function SignupPage() {
       toast.error("Account created, but regional preferences could not be saved.");
     }
     toast.success("Account created successfully!");
-    navigate("/dashboard");
+    if (result.user?.role === 'admin') {
+      navigate("/admin");
+    } else {
+      navigate("/dashboard");
+    }
     setLoading(false);
   }
 
@@ -103,7 +107,7 @@ export default function SignupPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4 py-8">
-      <div className="w-full max-w-md bg-card/60 backdrop-blur-lg border border-border rounded-2xl p-8">
+      <div className="w-full max-w-md bg-card border border-border shadow-sm rounded-lg p-8">
         <div className="flex flex-col items-center mb-8">
           <div className="mb-2">
             <Logo size="md" />

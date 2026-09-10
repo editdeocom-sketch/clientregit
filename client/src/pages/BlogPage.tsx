@@ -18,7 +18,7 @@ export default function BlogPage() {
         <h1 className="mt-3 text-4xl font-bold tracking-tight">Ideas for better creative operations</h1>
         <p className="mt-4 max-w-2xl text-lg text-muted-foreground">Practical guidance for managing clients, projects, reviews, and payments.</p>
         <div className="mt-10 grid gap-5 md:grid-cols-3">
-          {posts.map((post) => <GlassCard key={post.slug} className="p-6 hover-lift">
+          {posts.map((post) => <GlassCard key={post.slug} className="p-6 transition-colors hover:border-primary/30">
             <p className="text-xs font-semibold uppercase tracking-wider text-primary">Guide</p>
             <h2 className="mt-3 text-xl font-semibold text-foreground">{post.title}</h2>
             <p className="mt-3 text-sm leading-6 text-muted-foreground">{post.description}</p>

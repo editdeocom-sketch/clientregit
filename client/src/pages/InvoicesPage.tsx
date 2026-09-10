@@ -219,6 +219,19 @@ export default function InvoicesPage() {
     setDialogOpen(true)
   }
 
+  async function handleClientChange(clientId: string) {
+    setForm({ ...form, clientId })
+    if (!clientId) return
+    try {
+      const res = await api.get<{ success: boolean; data: { total: number } }>(`/invoices/uninvoiced-amount?client_id=${clientId}`)
+      if (res.success && res.data.total > 0 && !form.amount) {
+        setForm((prev) => ({ ...prev, clientId, amount: String(fromBaseAmount(res.data.total)) }))
+      }
+    } catch {
+      // silently ignore
+    }
+  }
+
   const openEditDialog = (invoice: InvoiceData) => {
     setEditingInvoice(invoice)
     setForm({
@@ -376,7 +389,7 @@ export default function InvoicesPage() {
           <h1 className="text-2xl font-bold text-foreground">Invoices</h1>
           <p className="text-muted-foreground mt-1">Track billing and payments.</p>
         </div>
-        <Button onClick={openCreateDialog} className="bg-gradient-to-r from-[#3A506B] to-[#5C7A9B] hover:from-[#4A607B] hover:to-[#6C8AAB] text-white">
+        <Button onClick={openCreateDialog}>
           <Plus className="h-4 w-4 mr-2" />
           Create Invoice
         </Button>
@@ -402,7 +415,7 @@ export default function InvoicesPage() {
           <div className="text-center py-16">
             <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
             <p className="text-muted-foreground mb-4">No invoices yet. Create your first invoice.</p>
-             <Button onClick={openCreateDialog} variant="glass" size="sm">
+             <Button onClick={openCreateDialog} variant="outline" size="sm">
               <Plus className="h-4 w-4 mr-2" />
               Create Invoice
             </Button>
@@ -513,7 +526,7 @@ export default function InvoicesPage() {
               <Label className="text-muted-foreground">Client *</Label>
               <select
                 value={form.clientId}
-                onChange={(e) => setForm({ ...form, clientId: e.target.value })}
+                onChange={(e) => handleClientChange(e.target.value)}
                 className="flex h-10 w-full rounded-md border border-border bg-muted px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-border"
               >
                 <option value="">Select a client</option>
@@ -586,7 +599,6 @@ export default function InvoicesPage() {
             <Button
               onClick={handleSave}
               disabled={!form.clientId || !form.amount || !form.dueDate || saving}
-              className="bg-gradient-to-r from-[#3A506B] to-[#5C7A9B] text-white"
             >
               {saving ? "Saving..." : editingInvoice ? "Update Invoice" : "Create Invoice"}
             </Button>

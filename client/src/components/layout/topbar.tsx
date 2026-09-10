@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
-import { Bell, Moon, Sun, Menu, Search, Check, Command, LogOut } from "lucide-react"
+import { Bell, Moon, Sun, Menu, Search, Check, Command, LogOut, Crown } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu"
@@ -8,6 +8,7 @@ import { getInitials, cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
 import { useAuth } from "@/contexts/AuthContext"
 import { api } from "@/services/api"
+import { billingService } from "@/services/billingService"
 
 interface TopbarProps {
   user: {
@@ -27,6 +28,7 @@ export function Topbar({ user, onMenuToggle }: TopbarProps) {
   const [dark, setDark] = useState(false)
   const [reviewCount, setReviewCount] = useState(0)
   const [reviewItems, setReviewItems] = useState<{ id: number; description: string; created_at: string }[]>([])
+  const [planName, setPlanName] = useState<string | null>(null)
 
   useEffect(() => {
     setMounted(true)
@@ -48,6 +50,12 @@ export function Topbar({ user, onMenuToggle }: TopbarProps) {
     return () => { active = false }
   }, [user.email])
 
+  useEffect(() => {
+    billingService.getSubscription()
+      .then((data) => setPlanName(data.plan?.name || "Free"))
+      .catch(() => undefined)
+  }, [])
+
   const toggleTheme = () => {
     const next = !dark
     setDark(next)
@@ -60,7 +68,7 @@ export function Topbar({ user, onMenuToggle }: TopbarProps) {
   }
 
   return (
-    <header className="sticky top-0 z-30 h-16 bg-card/80 backdrop-blur-md border-b border-border">
+    <header className="sticky top-0 z-30 h-16 bg-card border-b border-border">
       <div className="flex h-full items-center justify-between px-6">
         <div className="flex items-center gap-4">
           <Button
@@ -108,11 +116,13 @@ export function Topbar({ user, onMenuToggle }: TopbarProps) {
           {/* Notifications */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground relative">
+              <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground relative" aria-label="Notifications">
                 <Bell className="h-5 w-5" />
-                <Badge className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-[10px] bg-primary text-primary-foreground">
-                  {reviewCount}
-                </Badge>
+                {reviewCount > 0 && (
+                  <Badge className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-[10px] bg-primary text-primary-foreground">
+                    {reviewCount}
+                  </Badge>
+                )}
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-80 bg-card border-border">
@@ -138,6 +148,18 @@ export function Topbar({ user, onMenuToggle }: TopbarProps) {
               </div>
             </DropdownMenuContent>
           </DropdownMenu>
+
+          {/* Pro badge */}
+          {planName && planName !== "Free" && (
+            <button
+              onClick={() => navigate("/settings")}
+              className="flex items-center gap-1.5 rounded-full bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/30 px-2.5 py-1 text-xs font-semibold text-amber-600 dark:text-amber-400 hover:from-amber-500/20 hover:to-orange-500/20 transition-all cursor-pointer"
+              title="View billing"
+            >
+              <Crown className="h-3.5 w-3.5" />
+              Pro
+            </button>
+          )}
 
           {/* User menu */}
           <DropdownMenu>

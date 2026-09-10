@@ -1,7 +1,7 @@
 import { cn } from "@/lib/utils"
 
 interface GlassCardProps extends React.HTMLAttributes<HTMLDivElement> {
-  variant?: "default" | "strong" | "subtle"
+  variant?: "default" | "strong" | "subtle" | "ghost"
 }
 
 export function GlassCard({
@@ -11,15 +11,16 @@ export function GlassCard({
   ...props
 }: GlassCardProps) {
   const variants = {
-    default: "bg-card/80 backdrop-blur-md border border-border",
-    strong: "bg-card backdrop-blur-lg border border-border",
-    subtle: "bg-card/50 backdrop-blur-sm border border-border/50",
+    default: "bg-card border border-border shadow-sm",
+    strong: "bg-card border border-border shadow-md",
+    subtle: "bg-muted/40 border border-border/60",
+    ghost: "bg-transparent border border-transparent",
   }
 
   return (
     <div
       className={cn(
-        "rounded-xl",
+        "rounded-lg",
         variants[variant],
         className
       )}

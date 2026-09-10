@@ -89,6 +89,17 @@ export function getIntervalLabel(interval: string | null): string {
   return interval.charAt(0).toUpperCase() + interval.slice(1)
 }
 
+export interface CouponValidation {
+  code: string
+  description: string
+  discountType: "percent" | "fixed"
+  discountValue: number
+  originalPrice: number
+  discountAmount: number
+  finalAmount: number
+  currency: string
+}
+
 export const billingService = {
   async getPlans(): Promise<PlansResponse> {
     const res = await api.get<{ data: PlansResponse }>("/billing/plans")
@@ -110,13 +121,18 @@ export const billingService = {
     return res.data
   },
 
-  async createOrder(planSlug: string, currency: string) {
-    const res = await api.post<{ data: { order: any; keyId: string; plan: string; currency: string; amount: number } }>("/billing/create-order", { plan_slug: planSlug, currency })
+  async validateCoupon(code: string, planSlug: string, currency: string): Promise<CouponValidation> {
+    const res = await api.post<{ data: CouponValidation }>("/billing/validate-coupon", { code, plan_slug: planSlug, currency })
+    return res.data
+  },
+
+  async createOrder(planSlug: string, currency: string, couponCode?: string) {
+    const res = await api.post<{ data: { order: any; keyId: string; plan: string; currency: string; amount: number; originalPrice: number; discount: number; couponCode: string | null } }>("/billing/create-order", { plan_slug: planSlug, currency, coupon_code: couponCode || undefined })
     return res.data
   },
 
   async createSubscription(planSlug: string, currency: string) {
-    const res = await api.post<{ data: { subscription: any; keyId: string; plan: string; currency: string; amount: number } }>("/billing/create-subscription", { plan_slug: planSlug, currency })
+    const res = await api.post<{ data: { subscription: any; keyId: string; plan: string; currency: string; amount: number; originalPrice: number; discount: number; couponCode: string | null } }>("/billing/create-subscription", { plan_slug: planSlug, currency })
     return res.data
   },
 
