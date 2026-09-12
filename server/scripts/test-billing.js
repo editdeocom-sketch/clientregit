@@ -43,17 +43,16 @@ function section(name) { console.log(`\n=== ${name} ===`); }
 
 // ===== PLAN DEFINITIONS =====
 section('Plan Definitions');
-assertEqual(PLAN_DEFINITIONS.length, 5, '5 plans defined');
+assertEqual(PLAN_DEFINITIONS.length, 4, '4 plans defined');
 assertEqual(getPlan('free').slug, 'free', 'Free plan exists');
-assertEqual(getPlan('lifetime').slug, 'lifetime', 'Lifetime plan exists');
+assertEqual(getPlan('lifetime').slug, 'free', 'Lifetime plan no longer exists (falls back to free)');
 assertEqual(getPlan('pro_monthly').slug, 'pro_monthly', 'Pro Monthly plan exists');
 assertEqual(getPlan('pro_quarterly').slug, 'pro_quarterly', 'Pro Quarterly plan exists');
 assertEqual(getPlan('pro_yearly').slug, 'pro_yearly', 'Pro Yearly plan exists');
 assert(getPlan('free').storageBytes === 1e9, 'Free: 1GB storage');
 assert(getPlan('pro_monthly').storageBytes === 15e9, 'Pro: 15GB storage');
-assert(getPlan('lifetime').storageBytes === 50e9, 'Lifetime: 50GB storage');
 assert(!getPlan('free').recurring, 'Free: not recurring');
-assert(!getPlan('lifetime').recurring, 'Lifetime: not recurring');
+assert(!PLAN_DEFINITIONS.some((p) => p.slug === 'lifetime'), 'Lifetime removed from plan definitions');
 assert(getPlan('pro_monthly').recurring, 'Pro Monthly: recurring');
 assert(getPlan('pro_quarterly').recurring, 'Pro Quarterly: recurring');
 assert(getPlan('pro_yearly').recurring, 'Pro Yearly: recurring');
@@ -71,8 +70,8 @@ assert(CURRENCIES.includes('KRW'), 'KRW supported');
 
 // ===== PRICES =====
 section('Prices');
-assertEqual(getPrice('lifetime', 'INR'), 10999, 'Lifetime INR price = 10999');
-assertEqual(getPrice('lifetime', 'USD'), 149.99, 'Lifetime USD price = 149.99');
+assertEqual(getPrice('lifetime', 'INR'), null, 'Removed lifetime plan has no price');
+assertEqual(getPrice('lifetime', 'USD'), null, 'Removed lifetime plan has no USD price');
 assertEqual(getPrice('pro_monthly', 'INR'), 599, 'Pro Monthly INR = 599');
 assertEqual(getPrice('pro_yearly', 'INR'), 2999, 'Pro Yearly INR = 2999');
 assertEqual(getPrice('pro_monthly', 'JPY'), 1200, 'Pro Monthly JPY = 1200');
@@ -88,11 +87,9 @@ assertEqual(freePlan.limits.tasks, 10, 'Free: 10 tasks');
 assertEqual(freePlan.limits.invoicesMonthly, 3, 'Free: 3 invoices/month');
 assertEqual(freePlan.limits.videoUploadsMonthly, 5, 'Free: 5 video uploads/month');
 
-// ===== PRO / LIFETIME LIMITS =====
-section('Pro & Lifetime Limits');
+// ===== PRO LIMITS =====
+section('Pro Limits');
 assertEqual(getPlan('pro_monthly').limits, undefined, 'Pro: no limits key (unlimited)');
-assertEqual(getPlan('lifetime').limits, undefined, 'Lifetime: no limits key (unlimited)');
-assertEqual(getPlan('lifetime').storageBytes, 50e9, 'Lifetime: 50GB storage');
 
 // ===== ENTITLEMENT LOGIC (Code Analysis) =====
 section('Entitlement Logic (Code Review)');

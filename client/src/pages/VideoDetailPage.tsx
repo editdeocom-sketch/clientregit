@@ -13,6 +13,7 @@ import {
 import { Textarea } from "@/components/ui/textarea"
 import { Input } from "@/components/ui/input"
 import { GlassCard } from "@/components/layout/glass-card"
+import { EmptyState, ErrorState, SuccessBanner } from "@/components/ui/feedback"
 import {
   Play,
   Pause,
@@ -28,6 +29,7 @@ import {
   Volume2,
   History,
   FileVideo,
+  AlertTriangle,
 } from "lucide-react"
 import { Link } from "react-router-dom"
 import { toast } from "sonner"
@@ -67,77 +69,52 @@ export default function VideoDetailPage() {
   const [revisionOpen, setRevisionOpen] = useState(false)
   const [revisionText, setRevisionText] = useState("")
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState(false)
   const [showVersions, setShowVersions] = useState(false)
   const [mediaError, setMediaError] = useState(false)
   const videoRef = useRef<HTMLVideoElement>(null)
   const [mediaDuration, setMediaDuration] = useState(0)
 
-  useEffect(() => {
-    async function loadVideo() {
-      try {
-        const videoRes = await api.get<{ data: Record<string, unknown> }>(`/videos/${id}`)
-        const video = videoRes.data
+  async function loadVideo() {
+    setLoading(true)
+    setLoadError(false)
+    try {
+      const videoRes = await api.get<{ data: Record<string, unknown> | null }>(`/videos/${id}`)
+      const video = videoRes.data
 
-        if (!video) {
-          setVideoData({
-            id: id!,
-            title: "YouTube Episode 42 - Final Cut",
-            project: "YouTube Episode 42",
-            version: 3,
-            status: "awaiting_review",
-            uploadedAt: "Dec 10, 2026",
-            duration: 155,
-             file_path: "",
-             file_url: "",
-          })
-          setComments([
-            { id: "1", user: "Rahul", timestamp: 14, comment: "Make the title sequence bigger and more prominent" },
-            { id: "2", user: "Rahul", timestamp: 27, comment: "Replace this shot with the alternative take" },
-            { id: "3", user: "Rahul", timestamp: 65, comment: "Great transition here, keep this!" },
-            { id: "4", user: "Alex", timestamp: 105, comment: "Can we add background music starting from here?" },
-          ])
-        } else {
-          setVideoData({
-            id: String(video.id),
-            title: String(video.title || ""),
-            project: video.project_name ? String(video.project_name) : "No project",
-            version: Number(video.version || 1),
-            status: String(video.status || "awaiting_review"),
-            uploadedAt: video.created_at ? new Date(video.created_at as string).toLocaleDateString() : "Unknown",
-            duration: 155,
-            file_path: String(video.file_path || ""),
-            file_url: String(video.file_url || ""),
-          })
-          setStatus(String(video.status || "awaiting_review"))
-        }
-      } catch {
-        setVideoData({
-          id: id!,
-          title: "YouTube Episode 42 - Final Cut",
-          project: "YouTube Episode 42",
-          version: 3,
-          status: "awaiting_review",
-          uploadedAt: "Dec 10, 2026",
-          duration: 155,
-          file_path: "",
-          file_url: "",
-        })
-        setComments([
-          { id: "1", user: "Rahul", timestamp: 14, comment: "Make the title sequence bigger and more prominent" },
-          { id: "2", user: "Rahul", timestamp: 27, comment: "Replace this shot with the alternative take" },
-          { id: "3", user: "Rahul", timestamp: 65, comment: "Great transition here, keep this!" },
-          { id: "4", user: "Alex", timestamp: 105, comment: "Can we add background music starting from here?" },
-        ])
-      } finally {
-        setLoading(false)
+      if (!video) {
+        setLoadError(true)
+        return
       }
-    }
 
+      setVideoData({
+        id: String(video.id),
+        title: String(video.title || ""),
+        project: video.project_name ? String(video.project_name) : "No project",
+        version: Number(video.version || 1),
+        status: String(video.status || "awaiting_review"),
+        uploadedAt: video.created_at ? new Date(video.created_at as string).toLocaleDateString() : "Unknown",
+        duration: 155,
+        file_path: String(video.file_path || ""),
+        file_url: String(video.file_url || ""),
+      })
+      setStatus(String(video.status || "awaiting_review"))
+    } catch {
+      setLoadError(true)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
     loadVideo()
   }, [id])
 
+  const [commentsError, setCommentsError] = useState(false)
+
   useEffect(() => {
     async function loadComments() {
+      setCommentsError(false)
       try {
         const res = await api.get<{ data: Array<Record<string, unknown>> }>(`/videos/${id}/comments`)
         if (res.data) {
@@ -149,7 +126,7 @@ export default function VideoDetailPage() {
           })))
         }
       } catch {
-        // Keep demo comments if API fails
+        setCommentsError(true)
       }
     }
 
@@ -223,6 +200,27 @@ export default function VideoDetailPage() {
     } catch {
       toast.error("Unable to request changes")
     }
+  }
+
+  if (loadError) {
+    return (
+      <div className="min-h-screen bg-background p-6 lg:p-8">
+        <div className="mx-auto max-w-7xl">
+          <Link
+            to="/videos"
+            className="mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to Videos
+          </Link>
+          <ErrorState
+            title="Couldn't load this video"
+            description="The video may have been removed, or the server is temporarily unavailable."
+            onRetry={loadVideo}
+          />
+        </div>
+      </div>
+    )
   }
 
   if (loading) {
@@ -386,6 +384,23 @@ export default function VideoDetailPage() {
           </div>
         </GlassCard>
 
+        {/* Approval status banner */}
+        {status === "approved" && (
+          <SuccessBanner
+            title="Approved"
+            description="This version was approved. You can still request changes if needed."
+          />
+        )}
+        {status === "revision_requested" && (
+          <div className="flex items-start gap-3 rounded-lg border border-amber-500/30 bg-amber-500/10 p-4">
+            <AlertTriangle className="mt-0.5 h-5 w-5 flex-shrink-0 text-amber-600 dark:text-amber-400" />
+            <div>
+              <p className="text-sm font-semibold text-foreground">Changes requested</p>
+              <p className="mt-0.5 text-sm text-muted-foreground">This version needs revisions. Reply to comments below.</p>
+            </div>
+          </div>
+        )}
+
         {/* Content Grid */}
         <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
           {/* Comments Section */}
@@ -400,10 +415,19 @@ export default function VideoDetailPage() {
 
             <div className="space-y-3 max-h-[400px] overflow-y-auto pr-1">
               {comments.length === 0 ? (
-                <div className="text-center py-8">
-                  <MessageSquare className="h-12 w-12 text-muted-foreground/30 mx-auto mb-3" />
-                  <p className="text-muted-foreground">No comments yet. Be the first to leave feedback!</p>
-                </div>
+                commentsError ? (
+                  <EmptyState
+                    icon={AlertTriangle}
+                    title="Couldn't load comments"
+                    description="Comments could not be loaded right now."
+                  />
+                ) : (
+                  <EmptyState
+                    icon={MessageSquare}
+                    title="No comments yet"
+                    description="Leave feedback at a specific timestamp using the box below."
+                  />
+                )
               ) : (
                 comments
                   .sort((a, b) => a.timestamp - b.timestamp)

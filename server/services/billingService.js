@@ -10,6 +10,7 @@ function ensurePlans() {
       runSql('INSERT INTO plans (slug, name, active, recurring, interval, storage_bytes, prices_json) VALUES (?, ?, 1, ?, ?, ?, ?)', [plan.slug, plan.name, plan.recurring ? 1 : 0, plan.interval || null, plan.storageBytes, JSON.stringify(plan.prices)]);
     }
   });
+  runSql("UPDATE plans SET active = 0 WHERE slug NOT IN ('free', 'pro_monthly', 'pro_quarterly', 'pro_yearly')");
 }
 
 function ensureFreeSubscription(userId, currency) {
@@ -83,10 +84,13 @@ function resolveEffectiveSubscription(userId) {
   return ensureFreeSubscription(userId);
 }
 
+const LEGACY_LIFETIME_PLAN = { slug: 'lifetime', name: 'Lifetime', recurring: false, storageBytes: 50e9, limits: undefined, prices: {} };
+
 function getUserPlan(userId) {
   const subscription = resolveEffectiveSubscription(userId);
   const planRow = queryOne('SELECT * FROM plans WHERE id = ?', [subscription.plan_id]);
-  return { subscription, plan: getPlan(planRow?.slug), planRow };
+  const plan = planRow?.slug === 'lifetime' ? LEGACY_LIFETIME_PLAN : getPlan(planRow?.slug);
+  return { subscription, plan, planRow };
 }
 
 function getUserEntitlements(userId) {

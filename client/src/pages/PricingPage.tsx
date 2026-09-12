@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react"
 import { Link, useNavigate } from "react-router-dom"
-import { Check, Crown, Zap, Infinity, Loader2, AlertCircle } from "lucide-react"
+import { Check, Crown, Zap, AlertCircle } from "lucide-react"
 import { GlassCard } from "@/components/layout/glass-card"
 import { Logo } from "@/components/layout/logo"
 import { Button } from "@/components/ui/button"
@@ -10,6 +10,7 @@ import { toast } from "sonner"
 import { billingService, type PlanDefinition, type PlansResponse, type Entitlements, formatBytes, getPlanPrice } from "@/services/billingService"
 import { useAuth } from "@/contexts/AuthContext"
 import { usePreferences } from "@/contexts/PreferencesContext"
+import { PageLoader } from "@/components/ui/page-loader"
 import { MarketingFooter } from "@/components/marketing/footer"
 
 const CURRENCY_LABELS: Record<string, { symbol: string; name: string; flag: string }> = {
@@ -63,24 +64,23 @@ const PLAN_ICONS: Record<string, typeof Check> = {
   pro_monthly: Crown,
   pro_quarterly: Crown,
   pro_yearly: Crown,
-  lifetime: Infinity,
 }
 
 const FEATURE_LIST = [
-  { label: "Clients", free: "3", pro: "Unlimited", lifetime: "Unlimited" },
-  { label: "Active Projects", free: "10", pro: "Unlimited", lifetime: "Unlimited" },
-  { label: "Tasks", free: "10", pro: "Unlimited", lifetime: "Unlimited" },
-  { label: "Invoices / month", free: "3", pro: "Unlimited", lifetime: "Unlimited" },
-  { label: "Video Uploads / month", free: "5", pro: "Unlimited", lifetime: "Unlimited" },
-  { label: "Storage", free: "1 GB", pro: "15 GB", lifetime: "50 GB" },
-  { label: "Professional Invoices", free: false, pro: true, lifetime: true },
-  { label: "Custom Branding", free: false, pro: true, lifetime: true },
-  { label: "Advanced Dashboard", free: false, pro: true, lifetime: true },
-  { label: "CSV Export", free: false, pro: true, lifetime: true },
-  { label: "Client Portal", free: false, pro: true, lifetime: true },
-  { label: "Shareable Video Links", free: false, pro: true, lifetime: true },
-  { label: "Multiple Video Versions", free: false, pro: true, lifetime: true },
-  { label: "Advanced Reports", free: false, pro: true, lifetime: true },
+  { label: "Clients", free: "3", pro: "Unlimited" },
+  { label: "Active Projects", free: "10", pro: "Unlimited" },
+  { label: "Tasks", free: "10", pro: "Unlimited" },
+  { label: "Invoices / month", free: "3", pro: "Unlimited" },
+  { label: "Video Uploads / month", free: "5", pro: "Unlimited" },
+  { label: "Storage", free: "1 GB", pro: "15 GB" },
+  { label: "Professional Invoices", free: false, pro: true },
+  { label: "Custom Branding", free: false, pro: true },
+  { label: "Advanced Dashboard", free: false, pro: true },
+  { label: "CSV Export", free: false, pro: true },
+  { label: "Client Portal", free: false, pro: true },
+  { label: "Shareable Video Links", free: false, pro: true },
+  { label: "Multiple Video Versions", free: false, pro: true },
+  { label: "Advanced Reports", free: false, pro: true },
 ]
 
 export default function PricingPage() {
@@ -117,11 +117,7 @@ export default function PricingPage() {
   const freePlan = plans?.plans.find((p) => p.slug === "free")
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
-    )
+    return <PageLoader />
   }
 
   return (
@@ -199,34 +195,32 @@ export default function PricingPage() {
               </GlassCard>
             )}
 
-            {/* Pro + Lifetime Plans */}
+            {/* Pro Plans */}
             {displayPlans.map((plan) => {
               const Icon = PLAN_ICONS[plan.slug] || Crown
               const price = getPlanPrice(plan, currency)
               const isCurrent = currentPlan?.plan === plan.slug
               const isPopular = plan.slug === "pro_yearly"
               const isBestValue = plan.slug === "pro_quarterly"
-              const isLifetime = plan.slug === "lifetime"
 
               return (
                 <GlassCard
                   key={plan.slug}
                   variant={isPopular ? "default" : "subtle"}
-                  className={`p-6 flex flex-col relative ${isPopular ? "ring-2 ring-primary shadow-lg shadow-primary/10" : ""} ${isLifetime ? "border-primary/20 bg-primary/5" : ""}`}
+                  className={`p-6 flex flex-col relative ${isPopular ? "ring-2 ring-primary shadow-lg shadow-primary/10" : ""}`}
                 >
                   {isPopular && <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground">Most Popular</Badge>}
                   {isBestValue && <Badge variant="secondary" className="absolute -top-3 left-1/2 -translate-x-1/2">Best Value</Badge>}
-                  {isLifetime && <Badge variant="secondary" className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary/10 text-primary border border-primary/20">One-time</Badge>}
                   <div className="mb-4">
-                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-3 ${isPopular ? "bg-primary/15" : isLifetime ? "bg-primary/10" : "bg-primary/10"}`}>
-                      <Icon className={`h-5 w-5 ${isPopular ? "text-primary" : "text-primary/80"}`} />
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-3 bg-primary/10`}>
+                      <Icon className="h-5 w-5 text-primary/80" />
                     </div>
                     <h3 className="text-lg font-semibold">{plan.name}</h3>
                     <div className="flex items-baseline gap-1 mt-2 min-h-[40px]">
                       {price !== null ? (
                         <>
                           <span className="text-4xl font-bold">{formatPrice(price, currency)}</span>
-                          <span className="text-muted-foreground">/{plan.interval === "monthly" ? "mo" : plan.interval === "quarterly" ? "3 mo" : plan.interval === "yearly" ? "yr" : "one-time"}</span>
+                          <span className="text-muted-foreground">/{plan.interval === "monthly" ? "mo" : plan.interval === "quarterly" ? "3 mo" : "yr"}</span>
                         </>
                       ) : (
                         <span className="text-4xl font-bold text-muted-foreground">—</span>
@@ -234,29 +228,18 @@ export default function PricingPage() {
                     </div>
                   </div>
                   <ul className="space-y-2.5 mb-8 flex-1">
-                    {isLifetime ? (
-                      <>
-                        <li className="flex items-center gap-2 text-sm"><Check className="h-4 w-4 text-primary" />Everything in Pro</li>
-                        <li className="flex items-center gap-2 text-sm"><Check className="h-4 w-4 text-primary" />50 GB storage</li>
-                        <li className="flex items-center gap-2 text-sm"><Check className="h-4 w-4 text-primary" />No recurring payments</li>
-                        <li className="flex items-center gap-2 text-sm"><Check className="h-4 w-4 text-primary" />Lifetime updates</li>
-                      </>
-                    ) : (
-                      <>
-                        <li className="flex items-center gap-2 text-sm"><Check className="h-4 w-4 text-primary" />Unlimited clients</li>
-                        <li className="flex items-center gap-2 text-sm"><Check className="h-4 w-4 text-primary" />Unlimited projects</li>
-                        <li className="flex items-center gap-2 text-sm"><Check className="h-4 w-4 text-primary" />Unlimited tasks</li>
-                        <li className="flex items-center gap-2 text-sm"><Check className="h-4 w-4 text-primary" />Unlimited invoices</li>
-                        <li className="flex items-center gap-2 text-sm"><Check className="h-4 w-4 text-primary" />Unlimited video uploads</li>
-                        <li className="flex items-center gap-2 text-sm"><Check className="h-4 w-4 text-primary" />{formatBytes(plan.storageBytes)} storage</li>
-                        <li className="flex items-center gap-2 text-sm"><Check className="h-4 w-4 text-primary" />Professional invoices</li>
-                        <li className="flex items-center gap-2 text-sm"><Check className="h-4 w-4 text-primary" />Custom branding</li>
-                        <li className="flex items-center gap-2 text-sm"><Check className="h-4 w-4 text-primary" />Advanced dashboard</li>
-                        <li className="flex items-center gap-2 text-sm"><Check className="h-4 w-4 text-primary" />CSV export</li>
-                        <li className="flex items-center gap-2 text-sm"><Check className="h-4 w-4 text-primary" />Client portal</li>
-                        <li className="flex items-center gap-2 text-sm"><Check className="h-4 w-4 text-primary" />Shareable video links</li>
-                      </>
-                    )}
+                    <li className="flex items-center gap-2 text-sm"><Check className="h-4 w-4 text-primary" />Unlimited clients</li>
+                    <li className="flex items-center gap-2 text-sm"><Check className="h-4 w-4 text-primary" />Unlimited projects</li>
+                    <li className="flex items-center gap-2 text-sm"><Check className="h-4 w-4 text-primary" />Unlimited tasks</li>
+                    <li className="flex items-center gap-2 text-sm"><Check className="h-4 w-4 text-primary" />Unlimited invoices</li>
+                    <li className="flex items-center gap-2 text-sm"><Check className="h-4 w-4 text-primary" />Unlimited video uploads</li>
+                    <li className="flex items-center gap-2 text-sm"><Check className="h-4 w-4 text-primary" />{formatBytes(plan.storageBytes)} storage</li>
+                    <li className="flex items-center gap-2 text-sm"><Check className="h-4 w-4 text-primary" />Professional invoices</li>
+                    <li className="flex items-center gap-2 text-sm"><Check className="h-4 w-4 text-primary" />Custom branding</li>
+                    <li className="flex items-center gap-2 text-sm"><Check className="h-4 w-4 text-primary" />Advanced dashboard</li>
+                    <li className="flex items-center gap-2 text-sm"><Check className="h-4 w-4 text-primary" />CSV export</li>
+                    <li className="flex items-center gap-2 text-sm"><Check className="h-4 w-4 text-primary" />Client portal</li>
+                    <li className="flex items-center gap-2 text-sm"><Check className="h-4 w-4 text-primary" />Shareable video links</li>
                   </ul>
                   {isCurrent ? (
                     <Button className="w-full bg-primary/20 text-primary" disabled>Current Plan</Button>
@@ -264,10 +247,10 @@ export default function PricingPage() {
                     <Button className="w-full bg-muted text-foreground" disabled>Not available in {currency}</Button>
                   ) : (
                     <Button
-                      className={`w-full ${isPopular || isLifetime ? "bg-primary text-primary-foreground hover:bg-primary/90" : "bg-muted text-foreground hover:bg-muted/80"}`}
+                      className={`w-full ${isPopular ? "bg-primary text-primary-foreground hover:bg-primary/90" : "bg-muted text-foreground hover:bg-muted/80"}`}
                       onClick={() => handleSelectPlan(plan)}
                     >
-                      {isLifetime ? "Get Lifetime Access" : isPopular ? "Choose Yearly" : isBestValue ? "Choose Quarterly" : "Start Pro"}
+                      {isPopular ? "Choose Yearly" : isBestValue ? "Choose Quarterly" : "Start Pro"}
                     </Button>
                   )}
                 </GlassCard>
@@ -295,14 +278,13 @@ export default function PricingPage() {
                   <th className="text-left py-3 px-4 text-muted-foreground font-medium">Feature</th>
                   <th className="text-center py-3 px-4 text-muted-foreground font-medium">Free</th>
                   <th className="text-center py-3 px-4 text-primary font-medium">Pro</th>
-                  <th className="text-center py-3 px-4 text-primary font-medium">Lifetime</th>
                 </tr>
               </thead>
               <tbody>
                 {FEATURE_LIST.map((row) => (
                   <tr key={row.label} className="border-b border-border/50">
                     <td className="py-3 px-4 text-foreground">{row.label}</td>
-                    {(["free", "pro", "lifetime"] as const).map((tier) => {
+                    {(["free", "pro"] as const).map((tier) => {
                       const val = row[tier]
                       return (
                         <td key={tier} className="py-3 px-4 text-center">

@@ -4,6 +4,14 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { GlassCard } from "@/components/layout/glass-card"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { PasswordInput } from "@/components/ui/password-input"
 import { getInitials, cn } from "@/lib/utils"
@@ -52,6 +60,7 @@ function BillingTabContent() {
   const [payments, setPayments] = useState<BillingPayment[]>([])
   const [loading, setLoading] = useState(true)
   const [cancelling, setCancelling] = useState(false)
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false)
 
   const loadBilling = useCallback(async () => {
     try {
@@ -74,7 +83,6 @@ function BillingTabContent() {
 
   const handleCancel = async () => {
     if (!subscription?.subscription?.id) return
-    if (!window.confirm("Cancel your subscription? It will remain active until the end of the billing period.")) return
     setCancelling(true)
     try {
       await billingService.cancelSubscription(subscription.subscription.id)
@@ -84,6 +92,7 @@ function BillingTabContent() {
       toast.error(err.message || "Failed to cancel subscription")
     } finally {
       setCancelling(false)
+      setCancelDialogOpen(false)
     }
   }
 
@@ -141,14 +150,35 @@ function BillingTabContent() {
               <p className="text-xs text-muted-foreground mt-1">Expires: {new Date(subscription.subscription.expires_at).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })}</p>
             )}
           </div>
-          {isRecurring && (
-            <Button variant="outline" className="border-destructive/50 text-destructive hover:bg-destructive/10" onClick={handleCancel} disabled={cancelling}>
+{isRecurring && (
+            <Button variant="outline" className="border-destructive/50 text-destructive hover:bg-destructive/10" onClick={() => setCancelDialogOpen(true)} disabled={cancelling}>
               {cancelling ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
               Cancel
             </Button>
           )}
         </div>
       </GlassCard>
+
+      <Dialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
+        <DialogContent className="bg-card border-border text-foreground">
+          <DialogHeader>
+            <DialogTitle>Cancel Subscription?</DialogTitle>
+            <DialogDescription className="text-muted-foreground">
+              Your subscription will remain active until the end of the billing period,
+              then automatically cancel.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setCancelDialogOpen(false)} className="text-muted-foreground hover:text-foreground">
+              Keep Plan
+            </Button>
+            <Button variant="destructive" onClick={handleCancel} disabled={cancelling}>
+              {cancelling ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              Cancel Subscription
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {usageData && (
         <GlassCard className="p-6">
@@ -253,6 +283,7 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
+  const [deleteOpen, setDeleteOpen] = useState(false)
 
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -367,7 +398,6 @@ export default function SettingsPage() {
   }
 
   const handleDeleteAccount = async () => {
-    if (!window.confirm("Delete your account and all of your ClientRegit data? This action cannot be undone.")) return
     setSaving(true)
     try {
       await api.delete("/auth/account")
@@ -377,6 +407,7 @@ export default function SettingsPage() {
       toast.error(err.message || "Failed to delete account.")
     } finally {
       setSaving(false)
+      setDeleteOpen(false)
     }
   }
 
@@ -603,13 +634,34 @@ export default function SettingsPage() {
                   <h3 className="text-base font-medium text-foreground">Delete Account</h3>
                   <p className="mt-1 text-sm text-muted-foreground">Permanently delete your account and all data you created.</p>
                 </div>
-                <Button variant="outline" onClick={handleDeleteAccount} disabled={saving} className="border-destructive/50 text-destructive hover:bg-destructive/10">
-                  <Trash2 className="mr-2 h-4 w-4" />
+<Button variant="outline" onClick={() => setDeleteOpen(true)} disabled={saving} className="border-destructive/50 text-destructive hover:bg-destructive/10">
+                  <Trash2 className="h-4 w-4 mr-2" />
                   Delete Account
                 </Button>
               </div>
             </div>
           </GlassCard>
+
+          <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+            <DialogContent className="bg-card border-border text-foreground">
+              <DialogHeader>
+                <DialogTitle>Delete Account</DialogTitle>
+                <DialogDescription className="text-muted-foreground">
+                  This will permanently delete your account and all associated data.
+                  This action cannot be undone.
+                </DialogDescription>
+              </DialogHeader>
+              <DialogFooter>
+                <Button variant="ghost" onClick={() => setDeleteOpen(false)} className="text-muted-foreground hover:text-foreground">
+                  Keep Account
+                </Button>
+                <Button variant="destructive" onClick={handleDeleteAccount} disabled={saving}>
+                  {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                  Delete Account
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </TabsContent>
 
         {/* ========== ACCOUNT TAB (Change Password) ========== */}

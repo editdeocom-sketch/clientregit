@@ -1,59 +1,87 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { Suspense, lazy } from 'react';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { Toaster } from 'sonner';
+import { PageLoader } from '@/components/ui/page-loader';
+import { PageProgress } from '@/components/ui/page-progress';
+import { PageTransition } from '@/components/ui/page-transition';
 
 import LoginPage from '@/pages/LoginPage';
 import SignupPage from '@/pages/SignupPage';
 import DashboardLayout from '@/layouts/DashboardLayout';
 import DashboardPage from '@/pages/DashboardPage';
 import ClientsPage from '@/pages/ClientsPage';
+import ClientDetailPage from '@/pages/ClientDetailPage';
 import ProjectsPage from '@/pages/ProjectsPage';
+import ProjectDetailPage from '@/pages/ProjectDetailPage';
 import TasksPage from '@/pages/TasksPage';
 import VideosPage from '@/pages/VideosPage';
 import VideoDetailPage from '@/pages/VideoDetailPage';
 import InvoicesPage from '@/pages/InvoicesPage';
 import SettingsPage from '@/pages/SettingsPage';
-import LandingPage from '@/pages/LandingPage';
-import PricingPage from '@/pages/PricingPage';
-import PaymentSuccessPage from '@/pages/PaymentSuccessPage';
-import CheckoutPage from '@/pages/CheckoutPage';
-import SharedVideoPage from '@/pages/SharedVideoPage';
-import RevisionsPage from '@/pages/RevisionsPage';
-import NotFoundPage from '@/pages/NotFoundPage';
-import ForbiddenPage from '@/pages/ForbiddenPage';
-import ServerErrorPage from '@/pages/ServerErrorPage';
-import UnauthorizedPage from '@/pages/UnauthorizedPage';
 import { PreferencesProvider } from '@/contexts/PreferencesContext';
 import { UpgradeModalProvider } from '@/contexts/UpgradeModalContext';
-import BlogPage from '@/pages/BlogPage';
-import BlogPostPage from '@/pages/BlogPostPage';
-import { AboutPage, ContactPage, PrivacyPage, TermsPage, CookiesPage, RefundPolicyPage, AcceptableUsePage, SecurityPage, AdvertisingPolicyPage } from '@/pages/MarketingContentPage';
 import { CookieConsent } from '@/components/marketing/CookieConsent';
-import AdminLayout from '@/pages/admin/AdminLayout';
-import AdminDashboardPage from '@/pages/admin/DashboardPage';
-import AdminUsersPage from '@/pages/admin/UsersPage';
-import AdminUserDetailPage from '@/pages/admin/UserDetailPage';
-import AdminSubscriptionsPage from '@/pages/admin/SubscriptionsPage';
-import AdminPaymentsPage from '@/pages/admin/PaymentsPage';
-import AdminPlansPage from '@/pages/admin/PlansPage';
-import AdminCouponsPage from '@/pages/admin/CouponsPage';
-import AdminStoragePage from '@/pages/admin/StoragePage';
-import AdminAuditLogsPage from '@/pages/admin/AuditLogsPage';
-import AdminSettingsPage from '@/pages/admin/SettingsPage';
-import AdminSeoPage from '@/pages/admin/SeoPage';
-import AdminAdsPage from '@/pages/admin/AdsPage';
-import AdminLegalPage from '@/pages/admin/LegalPage';
+
+const LandingPage = lazy(() => import('@/pages/LandingPage'));
+const PricingPage = lazy(() => import('@/pages/PricingPage'));
+const PaymentSuccessPage = lazy(() => import('@/pages/PaymentSuccessPage'));
+const CheckoutPage = lazy(() => import('@/pages/CheckoutPage'));
+const SharedVideoPage = lazy(() => import('@/pages/SharedVideoPage'));
+const RevisionsPage = lazy(() => import('@/pages/RevisionsPage'));
+const BlogPage = lazy(() => import('@/pages/BlogPage'));
+const BlogPostPage = lazy(() => import('@/pages/BlogPostPage'));
+const NotFoundPage = lazy(() => import('@/pages/NotFoundPage'));
+const ForbiddenPage = lazy(() => import('@/pages/ForbiddenPage'));
+const ServerErrorPage = lazy(() => import('@/pages/ServerErrorPage'));
+const UnauthorizedPage = lazy(() => import('@/pages/UnauthorizedPage'));
+const AboutPage = lazy(() => import('@/pages/MarketingContentPage').then((m) => ({ default: m.AboutPage })));
+const ContactPage = lazy(() => import('@/pages/MarketingContentPage').then((m) => ({ default: m.ContactPage })));
+const PrivacyPage = lazy(() => import('@/pages/MarketingContentPage').then((m) => ({ default: m.PrivacyPage })));
+const TermsPage = lazy(() => import('@/pages/MarketingContentPage').then((m) => ({ default: m.TermsPage })));
+const CookiesPage = lazy(() => import('@/pages/MarketingContentPage').then((m) => ({ default: m.CookiesPage })));
+const RefundPolicyPage = lazy(() => import('@/pages/MarketingContentPage').then((m) => ({ default: m.RefundPolicyPage })));
+const AcceptableUsePage = lazy(() => import('@/pages/MarketingContentPage').then((m) => ({ default: m.AcceptableUsePage })));
+const SecurityPage = lazy(() => import('@/pages/MarketingContentPage').then((m) => ({ default: m.SecurityPage })));
+const AdvertisingPolicyPage = lazy(() => import('@/pages/MarketingContentPage').then((m) => ({ default: m.AdvertisingPolicyPage })));
+const AdminLayout = lazy(() => import('@/pages/admin/AdminLayout'));
+const AdminDashboardPage = lazy(() => import('@/pages/admin/DashboardPage'));
+const AdminUsersPage = lazy(() => import('@/pages/admin/UsersPage'));
+const AdminUserDetailPage = lazy(() => import('@/pages/admin/UserDetailPage'));
+const AdminSubscriptionsPage = lazy(() => import('@/pages/admin/SubscriptionsPage'));
+const AdminPaymentsPage = lazy(() => import('@/pages/admin/PaymentsPage'));
+const AdminPlansPage = lazy(() => import('@/pages/admin/PlansPage'));
+const AdminCouponsPage = lazy(() => import('@/pages/admin/CouponsPage'));
+const AdminStoragePage = lazy(() => import('@/pages/admin/StoragePage'));
+const AdminAuditLogsPage = lazy(() => import('@/pages/admin/AuditLogsPage'));
+const AdminSettingsPage = lazy(() => import('@/pages/admin/SettingsPage'));
+const AdminSeoPage = lazy(() => import('@/pages/admin/SeoPage'));
+const AdminAdsPage = lazy(() => import('@/pages/admin/AdsPage'));
+const AdminLegalPage = lazy(() => import('@/pages/admin/LegalPage'));
+
+function pageFallback() {
+  return <PageLoader />
+}
+
+function PublicPage({ children }: { children: React.ReactNode }) {
+  const location = useLocation()
+  return (
+    <div key={location.pathname} className="animate-route-in">
+      {children}
+    </div>
+  )
+}
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
-  if (loading) return <div className="flex h-screen items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>;
+  if (loading) return <PageLoader />;
   if (!user) return <Navigate to="/login" replace />;
   return <>{children}</>;
 }
 
 function AdminRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
-  if (loading) return <div className="flex h-screen items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>;
+  if (loading) return <PageLoader />;
   if (!user) return <Navigate to="/login" replace />;
   if (user.role !== 'admin') return <Navigate to="/dashboard" replace />;
   return <>{children}</>;
@@ -61,31 +89,34 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
 
 function AppRoutes() {
   const { user, loading } = useAuth();
-  if (loading) return <div className="flex h-screen items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>;
+  if (loading) return <PageLoader />;
 
   return (
-    <Routes>
-      <Route path="/" element={<LandingPage />} />
-      <Route path="/pricing" element={<PricingPage />} />
-      <Route path="/checkout" element={<CheckoutPage />} />
-      <Route path="/payment-success" element={<PaymentSuccessPage />} />
-      <Route path="/blog" element={<BlogPage />} />
-      <Route path="/blog/:slug" element={<BlogPostPage />} />
-      <Route path="/about" element={<AboutPage />} />
-      <Route path="/contact" element={<ContactPage />} />
-      <Route path="/privacy" element={<PrivacyPage />} />
-      <Route path="/terms" element={<TermsPage />} />
-      <Route path="/cookies" element={<CookiesPage />} />
-      <Route path="/refund-policy" element={<RefundPolicyPage />} />
-      <Route path="/acceptable-use" element={<AcceptableUsePage />} />
-      <Route path="/security" element={<SecurityPage />} />
-      <Route path="/advertising-policy" element={<AdvertisingPolicyPage />} />
-      <Route path="/shared/videos/:token" element={<SharedVideoPage />} />
-      <Route path="/login" element={user ? <Navigate to={user.role === 'admin' ? '/admin' : '/dashboard'} replace /> : <LoginPage />} />
-      <Route path="/signup" element={user ? <Navigate to={user.role === 'admin' ? '/admin' : '/dashboard'} replace /> : <SignupPage />} />
+    <Suspense fallback={pageFallback()}>
+      <Routes>
+        <Route path="/" element={<PublicPage><LandingPage /></PublicPage>} />
+      <Route path="/pricing" element={<PublicPage><PricingPage /></PublicPage>} />
+      <Route path="/checkout" element={<PublicPage><CheckoutPage /></PublicPage>} />
+      <Route path="/payment-success" element={<PublicPage><PaymentSuccessPage /></PublicPage>} />
+      <Route path="/blog" element={<PublicPage><BlogPage /></PublicPage>} />
+      <Route path="/blog/:slug" element={<PublicPage><BlogPostPage /></PublicPage>} />
+      <Route path="/about" element={<PublicPage><AboutPage /></PublicPage>} />
+      <Route path="/contact" element={<PublicPage><ContactPage /></PublicPage>} />
+      <Route path="/privacy" element={<PublicPage><PrivacyPage /></PublicPage>} />
+      <Route path="/terms" element={<PublicPage><TermsPage /></PublicPage>} />
+      <Route path="/cookies" element={<PublicPage><CookiesPage /></PublicPage>} />
+      <Route path="/refund-policy" element={<PublicPage><RefundPolicyPage /></PublicPage>} />
+      <Route path="/acceptable-use" element={<PublicPage><AcceptableUsePage /></PublicPage>} />
+      <Route path="/security" element={<PublicPage><SecurityPage /></PublicPage>} />
+      <Route path="/advertising-policy" element={<PublicPage><AdvertisingPolicyPage /></PublicPage>} />
+      <Route path="/shared/videos/:token" element={<PublicPage><SharedVideoPage /></PublicPage>} />
+      <Route path="/login" element={user ? <Navigate to={user.role === 'admin' ? '/admin' : '/dashboard'} replace /> : <PublicPage><LoginPage /></PublicPage>} />
+      <Route path="/signup" element={user ? <Navigate to={user.role === 'admin' ? '/admin' : '/dashboard'} replace /> : <PublicPage><SignupPage /></PublicPage>} />
       <Route path="/dashboard" element={<ProtectedRoute><DashboardLayout><DashboardPage /></DashboardLayout></ProtectedRoute>} />
       <Route path="/clients" element={<ProtectedRoute><DashboardLayout><ClientsPage /></DashboardLayout></ProtectedRoute>} />
+      <Route path="/clients/:id" element={<ProtectedRoute><DashboardLayout><ClientDetailPage /></DashboardLayout></ProtectedRoute>} />
       <Route path="/projects" element={<ProtectedRoute><DashboardLayout><ProjectsPage /></DashboardLayout></ProtectedRoute>} />
+      <Route path="/projects/:id" element={<ProtectedRoute><DashboardLayout><ProjectDetailPage /></DashboardLayout></ProtectedRoute>} />
       <Route path="/tasks" element={<ProtectedRoute><DashboardLayout><TasksPage /></DashboardLayout></ProtectedRoute>} />
       <Route path="/videos" element={<ProtectedRoute><DashboardLayout><VideosPage /></DashboardLayout></ProtectedRoute>} />
       <Route path="/videos/:id" element={<ProtectedRoute><DashboardLayout><VideoDetailPage /></DashboardLayout></ProtectedRoute>} />
@@ -108,12 +139,13 @@ function AppRoutes() {
         <Route path="ads" element={<AdminAdsPage />} />
         <Route path="legal" element={<AdminLegalPage />} />
       </Route>
-      <Route path="/404" element={<NotFoundPage />} />
-      <Route path="/403" element={<ForbiddenPage />} />
-      <Route path="/500" element={<ServerErrorPage />} />
-      <Route path="/401" element={<UnauthorizedPage />} />
-      <Route path="*" element={<NotFoundPage />} />
-    </Routes>
+      <Route path="/404" element={<PublicPage><NotFoundPage /></PublicPage>} />
+      <Route path="/403" element={<PublicPage><ForbiddenPage /></PublicPage>} />
+      <Route path="/500" element={<PublicPage><ServerErrorPage /></PublicPage>} />
+      <Route path="/401" element={<PublicPage><UnauthorizedPage /></PublicPage>} />
+      <Route path="*" element={<PublicPage><NotFoundPage /></PublicPage>} />
+      </Routes>
+    </Suspense>
   );
 }
 
@@ -123,6 +155,7 @@ export default function App() {
       <AuthProvider>
         <PreferencesProvider>
           <UpgradeModalProvider>
+            <PageProgress />
             <AppRoutes />
             <CookieConsent />
             <Toaster />

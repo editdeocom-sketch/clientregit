@@ -18,6 +18,7 @@ import {
   Moon,
   Sun,
   Check,
+  AlertCircle,
 } from "lucide-react";
 import { GlassCard } from "@/components/layout/glass-card";
 import { Logo } from "@/components/layout/logo";
@@ -287,6 +288,121 @@ export default function LandingPage() {
                 See How It Works
               </Button>
             </a>
+          </div>
+        </div>
+      </section>
+
+      {/* Product preview */}
+      <section className="px-6 pb-16">
+        <div className="mx-auto max-w-6xl">
+          <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
+            <div className="flex items-center gap-1.5 border-b border-border px-4 py-3">
+              <span className="h-3 w-3 rounded-full bg-muted" />
+              <span className="h-3 w-3 rounded-full bg-muted" />
+              <span className="h-3 w-3 rounded-full bg-muted" />
+              <span className="ml-3 text-xs text-muted-foreground">
+                brxstudios.clientregit.app — Client Workspace
+              </span>
+            </div>
+            <div className="grid grid-cols-[60px_1fr] sm:grid-cols-[180px_1fr]">
+              <div className="hidden sm:flex flex-col gap-2 border-r border-border p-4">
+                {["Dashboard", "Projects", "Videos", "Invoices"].map((label, i) => (
+                  <div
+                    key={label}
+                    className={`flex items-center gap-2 rounded-md px-3 py-2 text-xs font-medium ${
+                      i === 0 ? "bg-primary/10 text-primary" : "text-muted-foreground"
+                    }`}
+                  >
+                    <span className="h-3 w-3 rounded bg-current opacity-60" />
+                    {label}
+                  </div>
+                ))}
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 p-4 sm:p-6">
+                <div className="md:col-span-2 space-y-3">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <div className="h-4 w-40 rounded bg-muted" />
+                      <div className="mt-1.5 h-2.5 w-52 rounded bg-muted/60" />
+                    </div>
+                    <div className="h-8 w-24 rounded-lg bg-primary/15" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3 pt-2">
+                    {[0, 1].map((row) =>
+                      [0, 1].map((col) => (
+                        <div
+                          key={`${row}-${col}`}
+                          className="rounded-lg border border-border/60 p-3"
+                        >
+                          <div className="h-2.5 w-16 rounded bg-muted/70" />
+                          <div className="mt-2 h-6 w-24 rounded bg-primary/10" />
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+                <div className="space-y-2 rounded-lg border border-border/60 p-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium text-muted-foreground">
+                      Review — Episode 42
+                    </span>
+                    <span className="rounded-full bg-green-500/15 px-2 py-0.5 text-[10px] font-medium text-green-400">
+                      Approved
+                    </span>
+                  </div>
+                  <div className="aspect-video rounded-md bg-muted/50" />
+                  <div className="h-2 w-full rounded bg-muted/70" />
+                  <div className="h-2 w-3/4 rounded bg-muted/50" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Problem → Solution */}
+      <section id="product" className="py-16 px-6">
+        <div className="mx-auto max-w-6xl">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <GlassCard className="p-6 h-full">
+              <Badge variant="secondary" className="mb-4">
+                The problem
+              </Badge>
+              <h2 className="text-2xl font-bold mb-4">Creative work is scattered</h2>
+              <ul className="space-y-4">
+                {[
+                  "Sending videos back and forth over email and chats, losing feedback.",
+                  "No single source of truth for which version is approved.",
+                  "Invoices chased across spreadsheets, DMs, and half-remembered promises.",
+                ].map((pain) => (
+                  <li key={pain} className="flex items-start gap-3 text-sm text-muted-foreground">
+                    <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0 text-destructive" />
+                    {pain}
+                  </li>
+                ))}
+              </ul>
+            </GlassCard>
+
+            <GlassCard variant="strong" className="p-6 h-full">
+              <Badge className="mb-4 bg-primary/15 text-primary border-0">
+                ClientRegit's solution
+              </Badge>
+              <h2 className="text-2xl font-bold mb-4">One calm, organized workspace</h2>
+              <ul className="space-y-4">
+                {[
+                  "Timestamped video reviews, so feedback lands exactly where it matters.",
+                  "Clear approval states and version history — everyone knows what's final.",
+                  "Invoices generated, shared, and tracked in minutes from the same dashboard.",
+                ].map((sol) => (
+                  <li key={sol} className="flex items-start gap-3 text-sm text-foreground">
+                    <span className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-primary/15">
+                      <Check className="h-3 w-3 text-primary" />
+                    </span>
+                    {sol}
+                  </li>
+                ))}
+              </ul>
+            </GlassCard>
           </div>
         </div>
       </section>

@@ -201,10 +201,9 @@ export default function PaymentsPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Plans</SelectItem>
-                  <SelectItem value="starter">Starter</SelectItem>
-                  <SelectItem value="pro">Pro</SelectItem>
-                  <SelectItem value="agency">Agency</SelectItem>
-                  <SelectItem value="lifetime">Lifetime</SelectItem>
+                  <SelectItem value="pro_monthly">Pro Monthly</SelectItem>
+                  <SelectItem value="pro_quarterly">Pro Quarterly</SelectItem>
+                  <SelectItem value="pro_yearly">Pro Yearly</SelectItem>
                 </SelectContent>
               </Select>
             </div>

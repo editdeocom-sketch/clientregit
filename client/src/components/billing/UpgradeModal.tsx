@@ -52,7 +52,6 @@ export function UpgradeModal({ open, onOpenChange, message }: UpgradeModalProps)
   }, [open])
 
   const proPlans = plans?.plans.filter((p) => p.recurring) || []
-  const lifetimePlan = plans?.plans.find((p) => p.slug === "lifetime")
 
   const handleSelectPlan = (plan: PlanDefinition) => {
     onOpenChange(false)
@@ -107,22 +106,7 @@ export function UpgradeModal({ open, onOpenChange, message }: UpgradeModalProps)
                   </Button>
                 </div>
               )
-            })}
-
-            {lifetimePlan && (() => {
-              const price = getPlanPrice(lifetimePlan, currency)
-              return (
-                <div className="flex items-center justify-between p-3 rounded-lg border border-primary/30 bg-primary/5">
-                  <div>
-                    <p className="font-medium text-foreground text-sm flex items-center gap-1.5">Lifetime <Badge variant="secondary" className="text-[10px]">Best Value</Badge></p>
-                    <p className="text-xs text-muted-foreground">{price !== null ? `${formatPrice(price, currency)} one-time` : "N/A"}</p>
-                  </div>
-                  <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90" onClick={() => handleSelectPlan(lifetimePlan)} disabled={price === null}>
-                    Choose
-                  </Button>
-                </div>
-              )
-            })()}
+})}
 
             <Link to="/pricing" className="block text-center">
               <Button variant="ghost" className="w-full text-sm text-muted-foreground hover:text-foreground" onClick={() => onOpenChange(false)}>

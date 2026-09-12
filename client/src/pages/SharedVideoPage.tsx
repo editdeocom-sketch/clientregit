@@ -9,6 +9,7 @@ import { GlassCard } from "@/components/layout/glass-card"
 import { Check, MessageSquare, Send, X } from "lucide-react"
 import { toast } from "sonner"
 import { formatDate, formatVideoTime } from "@/lib/utils"
+import { PageLoader } from "@/components/ui/page-loader"
 
 interface SharedVideo {
   id: number
@@ -102,7 +103,7 @@ export default function SharedVideoPage() {
     }
   }
 
-  if (loading) return <div className="min-h-screen bg-background flex items-center justify-center text-muted-foreground">Loading shared video...</div>
+  if (loading) return <PageLoader />
   if (!video) return <div className="min-h-screen bg-background flex items-center justify-center text-muted-foreground">This video link is unavailable.</div>
 
   return (

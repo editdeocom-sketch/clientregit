@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { Textarea } from "@/components/ui/textarea"
+import { Skeleton } from "@/components/ui/skeleton"
 import {
   Table,
   TableBody,
@@ -156,6 +157,7 @@ export default function InvoicesPage() {
   const [form, setForm] = useState(emptyForm)
   const [saving, setSaving] = useState(false)
   const [statusUpdating, setStatusUpdating] = useState<Record<string, boolean>>({})
+  const [loading, setLoading] = useState(true)
 
   const loadClients = useCallback(async () => {
     try {
@@ -197,6 +199,8 @@ export default function InvoicesPage() {
       }
     } catch {
       setInvoices([])
+    } finally {
+      setLoading(false)
     }
   }, [user])
 
@@ -411,7 +415,13 @@ export default function InvoicesPage() {
       </div>
 
       <GlassCard className="overflow-hidden">
-        {invoices.length === 0 ? (
+        {loading ? (
+          <div className="p-4 space-y-2">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <Skeleton key={i} className="h-12 w-full" />
+            ))}
+          </div>
+        ) : invoices.length === 0 ? (
           <div className="text-center py-16">
             <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
             <p className="text-muted-foreground mb-4">No invoices yet. Create your first invoice.</p>

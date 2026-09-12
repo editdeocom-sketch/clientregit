@@ -3,6 +3,7 @@ import api from "@/services/api"
 import { useAuth } from "@/contexts/AuthContext"
 import { GlassCard } from "@/components/layout/glass-card"
 import { Button } from "@/components/ui/button"
+import { Skeleton } from "@/components/ui/skeleton"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
@@ -22,8 +23,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { FolderKanban, Plus, Search, MoreHorizontal, Trash2, Pencil } from "lucide-react"
+import { FolderKanban, Plus, Search, MoreHorizontal, Trash2, Pencil, ExternalLink } from "lucide-react"
 import { formatDate } from "@/lib/utils"
+import { Link } from "react-router-dom"
 import { usePreferences } from "@/contexts/PreferencesContext"
 import { toast } from "sonner"
 import { useUpgradeModal } from "@/contexts/UpgradeModalContext"
@@ -92,6 +94,7 @@ export default function ProjectsPage() {
   const [savingProgress, setSavingProgress] = useState(false)
   const [clients, setClients] = useState<{ id: number; name: string }[]>([])
   const [showSuggestions, setShowSuggestions] = useState(false)
+  const [loading, setLoading] = useState(true)
 
   const matchingClients = form.client.trim()
     ? clients.filter((c) => c.name.toLowerCase().includes(form.client.trim().toLowerCase()) && c.name.toLowerCase() !== form.client.trim().toLowerCase())
@@ -159,6 +162,8 @@ export default function ProjectsPage() {
       }
     } catch (err) {
       setProjects([])
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -321,7 +326,13 @@ export default function ProjectsPage() {
       </div>
 
       <GlassCard className="overflow-hidden">
-        {filtered.length === 0 ? (
+        {loading ? (
+          <div className="p-4 space-y-2">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <Skeleton key={i} className="h-12 w-full" />
+            ))}
+          </div>
+        ) : filtered.length === 0 ? (
           <div className="text-center py-16">
             <FolderKanban className="h-12 w-12 text-muted-foreground mx-auto mb-3 opacity-40" />
             <p className="text-muted-foreground mb-4">
@@ -361,7 +372,10 @@ export default function ProjectsPage() {
                     className="border-b border-border last:border-0 hover:bg-muted/50 transition-colors"
                   >
                     <td className="py-4 px-5">
-                      <span className="font-medium text-foreground">{project.name}</span>
+                      <Link to={`/projects/${project.id}`} className="inline-flex items-center gap-1.5 font-medium text-foreground transition-colors hover:text-primary">
+                        {project.name}
+                        <ExternalLink className="h-3.5 w-3.5 opacity-60" />
+                      </Link>
                     </td>
                     <td className="py-4 px-5 text-muted-foreground">{project.client}</td>
                     <td className="py-4 px-5 text-muted-foreground">

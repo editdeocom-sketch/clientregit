@@ -24,7 +24,6 @@ interface DashboardData {
     newThisMonth: number;
     free: number;
     pro: number;
-    lifetime: number;
   };
   subscriptions: {
     active: number;
@@ -36,7 +35,6 @@ interface DashboardData {
   revenue: {
     total: number;
     monthly: number;
-    lifetime: number;
   };
   coupons: {
     total: number;
@@ -205,7 +203,7 @@ export default function DashboardPage() {
                 <p className="text-sm font-medium text-muted-foreground">Total Storage</p>
                 <p className="text-2xl font-bold mt-1">{formatBytes(data?.storage.totalBytes ?? 0)}</p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  {data?.users.free ?? 0} free · {data?.users.pro ?? 0} pro · {data?.users.lifetime ?? 0} lifetime
+                  {data?.users.free ?? 0} free · {data?.users.pro ?? 0} pro
                 </p>
               </div>
               <HardDrive className="h-8 w-8 text-orange-500" />

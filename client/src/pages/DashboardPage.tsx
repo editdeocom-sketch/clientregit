@@ -1,4 +1,5 @@
 ﻿import { useEffect, useState } from "react"
+import type { ComponentType } from "react"
 import { Link } from "react-router-dom"
 import { GlassCard } from "@/components/layout/glass-card"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
@@ -8,6 +9,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { useAuth } from "@/contexts/AuthContext"
 import api from "@/services/api"
+import { ErrorState } from "@/components/ui/feedback"
 
 interface DashboardStats {
   activeClients: number
@@ -63,6 +65,15 @@ const statusColor: Record<string, string> = {
   delivered: "bg-purple-500/20 text-purple-600 dark:text-purple-400",
 }
 
+interface StatCard {
+  label: string
+  value: string | number
+  icon: ComponentType<{ className?: string }>
+  color: string
+  to?: string
+  view?: "revenue" | "pending"
+}
+
 export default function DashboardPage() {
   const { user } = useAuth()
   const { formatAmount } = usePreferences()
@@ -80,63 +91,66 @@ export default function DashboardPage() {
   const [activities, setActivities] = useState<RecentActivity[]>([])
   const [userName, setUserName] = useState("there")
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState(false)
+
+  async function loadData() {
+    setLoading(true)
+    setLoadError(false)
+    try {
+      if (user?.name) {
+        setUserName(user.name.split(" ")[0])
+      }
+
+      const res = await api.get<{ success: boolean; data: any }>('/dashboard/stats')
+      if (res.success && res.data) {
+        const d = res.data
+        setStats({
+          activeClients: d.activeClients || 0,
+          activeProjects: d.activeProjects || 0,
+          pendingReviews: d.awaitingReviewVideos || 0,
+          pendingPayments: d.outstandingBalance || 0,
+          totalRevenue: d.totalRevenue || 0,
+          completedProjects: d.completedProjects || 0,
+          overdueTasks: d.pendingTasks || 0,
+          projectEarnings: d.projectEarnings || [],
+        })
+
+        if (d.recentProjects) {
+          setProjects(d.recentProjects.map((p: any) => ({
+            id: p.id,
+            name: p.name,
+            client: p.client_name || "Unknown",
+            status: p.status,
+            progress: p.progress || 0,
+            deadline: p.deadline,
+          })))
+        }
+
+        if (d.recentActivity) {
+          setActivities(d.recentActivity.map((a: any) => ({
+            id: a.id,
+            description: a.description,
+            time: new Date(a.created_at).toLocaleDateString(),
+          })))
+        }
+      }
+    } catch {
+      setLoadError(true)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   useEffect(() => {
-    async function loadData() {
-      try {
-        if (user?.name) {
-          setUserName(user.name.split(" ")[0])
-        }
-
-        const res = await api.get<{ success: boolean; data: any }>('/dashboard/stats')
-        if (res.success && res.data) {
-          const d = res.data
-          setStats({
-            activeClients: d.activeClients || 0,
-            activeProjects: d.activeProjects || 0,
-            pendingReviews: d.awaitingReviewVideos || 0,
-            pendingPayments: d.outstandingBalance || 0,
-            totalRevenue: d.totalRevenue || 0,
-            completedProjects: d.completedProjects || 0,
-            overdueTasks: d.pendingTasks || 0,
-            projectEarnings: d.projectEarnings || [],
-          })
-
-          if (d.recentProjects) {
-            setProjects(d.recentProjects.map((p: any) => ({
-              id: p.id,
-              name: p.name,
-              client: p.client_name || "Unknown",
-              status: p.status,
-              progress: p.progress || 0,
-              deadline: p.deadline,
-            })))
-          }
-
-          if (d.recentActivity) {
-            setActivities(d.recentActivity.map((a: any) => ({
-              id: a.id,
-              description: a.description,
-              time: new Date(a.created_at).toLocaleDateString(),
-            })))
-          }
-        }
-      } catch {
-        // Keep empty state
-      } finally {
-        setLoading(false)
-      }
-    }
-
     if (user) loadData()
   }, [user])
 
   const [financialView, setFinancialView] = useState<"revenue" | "pending" | null>(null)
 
-  const statCards = [
-    { label: "Active Clients", value: stats.activeClients, icon: Users, color: "bg-blue-500/20 text-blue-600 dark:text-blue-400" },
-    { label: "Active Projects", value: stats.activeProjects, icon: FolderKanban, color: "bg-green-500/20 text-green-600 dark:text-green-400" },
-    { label: "Pending Reviews", value: stats.pendingReviews, icon: Video, color: "bg-yellow-500/20 text-yellow-600 dark:text-yellow-400" },
+  const statCards: StatCard[] = [
+    { label: "Active Clients", value: stats.activeClients, icon: Users, color: "bg-blue-500/20 text-blue-600 dark:text-blue-400", to: "/clients" },
+    { label: "Active Projects", value: stats.activeProjects, icon: FolderKanban, color: "bg-green-500/20 text-green-600 dark:text-green-400", to: "/projects" },
+    { label: "Pending Reviews", value: stats.pendingReviews, icon: Video, color: "bg-yellow-500/20 text-yellow-600 dark:text-yellow-400", to: "/videos" },
     { label: "Total Revenue / Earnings", value: formatAmount(stats.totalRevenue), icon: TrendingUp, color: "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400", view: "revenue" as const },
     { label: "Pending Payments", value: formatAmount(stats.pendingPayments), icon: FileText, color: "bg-purple-500/20 text-purple-600 dark:text-purple-400", view: "pending" as const },
   ]
@@ -152,7 +166,7 @@ export default function DashboardPage() {
 
   return (
     <div className="p-6 space-y-6 animate-fade-in">
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex items-start justify-between gap-4 animate-stagger stagger-1">
         <div>
           <h1 className="text-2xl font-bold text-foreground">
             {getGreeting()}, {userName}
@@ -168,7 +182,7 @@ export default function DashboardPage() {
       </div>
 
       {!isEmpty && (
-        <div className="flex flex-wrap gap-3">
+        <div className="flex flex-wrap gap-3 animate-stagger stagger-2">
           {quickActions.map((action) => (
             <Link key={action.label} to={action.to}>
               <Button variant="outline" className="border-border text-foreground hover:bg-muted">
@@ -180,23 +194,38 @@ export default function DashboardPage() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-        {statCards.map((card) => (
-          <GlassCard key={card.label} className={`p-5 transition-colors hover:bg-muted/40 ${card.view ? "cursor-pointer" : ""}`} onClick={() => card.view && setFinancialView(card.view)}>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">{card.label}</p>
-                <p className="text-2xl font-bold text-foreground mt-1">{card.value}</p>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 animate-stagger stagger-3">
+        {statCards.map((card) => {
+          const inner = (
+            <GlassCard className={`p-5 transition-colors hover:bg-muted/40 ${card.view || card.to ? "cursor-pointer" : ""}`} onClick={() => card.view && setFinancialView(card.view)}>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">{card.label}</p>
+                  <p className="text-2xl font-bold text-foreground mt-1">{card.value}</p>
+                </div>
+                <div className={`h-12 w-12 rounded-xl flex items-center justify-center ${card.color}`}>
+                  <card.icon className="h-6 w-6" />
+                </div>
               </div>
-              <div className={`h-12 w-12 rounded-xl flex items-center justify-center ${card.color}`}>
-                <card.icon className="h-6 w-6" />
-              </div>
-            </div>
-          </GlassCard>
-        ))}
+            </GlassCard>
+          )
+          return card.to ? (
+            <Link key={card.label} to={card.to}>{inner}</Link>
+          ) : (
+            <div key={card.label}>{inner}</div>
+          )
+        })}
       </div>
 
-      {isEmpty ? (
+      {loadError && (
+        <ErrorState
+          title="Couldn't load your dashboard"
+          description="We couldn't reach the server. Check your connection and try again."
+          onRetry={loadData}
+        />
+      )}
+
+      {!loadError && (isEmpty ? (
         <GlassCard className="p-12 text-center">
           <FolderKanban className="h-16 w-16 text-muted-foreground/30 mx-auto mb-4" />
           <h2 className="text-xl font-semibold text-foreground mb-2">Welcome to ClientRegit</h2>
@@ -211,7 +240,7 @@ export default function DashboardPage() {
           </Link>
         </GlassCard>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-stagger stagger-4">
           <div className="lg:col-span-2">
             <GlassCard className="p-6">
               <div className="flex items-center justify-between mb-4">
@@ -237,8 +266,9 @@ export default function DashboardPage() {
               ) : (
                 <div className="space-y-3">
                   {projects.map((project) => (
-                    <div
+                    <Link
                       key={project.id}
+                      to={`/projects/${project.id}`}
                       className="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
                     >
                       <div className="flex-1 min-w-0">
@@ -265,7 +295,7 @@ export default function DashboardPage() {
                           {project.status}
                         </Badge>
                       </div>
-                    </div>
+                    </Link>
                   ))}
                 </div>
               )}
@@ -326,7 +356,7 @@ export default function DashboardPage() {
             </GlassCard>
           </div>
         </div>
-      )}
+      ))}
 
       <Dialog open={financialView !== null} onOpenChange={(open) => !open && setFinancialView(null)}>
         <DialogContent className="max-w-3xl bg-card border-border text-foreground">

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react"
 import { Link, useSearchParams, useNavigate } from "react-router-dom"
-import { ArrowLeft, Tag, X, Loader2, Shield, Check, CreditCard, Crown, Infinity, Zap, Lock } from "lucide-react"
+import { ArrowLeft, Tag, X, Loader2, Shield, Check, CreditCard, Crown, Zap, Lock } from "lucide-react"
+import { PageLoader } from "@/components/ui/page-loader"
 import { Logo } from "@/components/layout/logo"
 import { GlassCard } from "@/components/layout/glass-card"
 import { Button } from "@/components/ui/button"
@@ -45,7 +46,6 @@ const PLAN_FEATURES: Record<string, string[]> = {
   pro_monthly: ["Unlimited clients", "Unlimited projects", "Unlimited tasks", "15 GB video storage", "Professional invoices", "Custom branding", "Advanced dashboard", "Client portal"],
   pro_quarterly: ["Unlimited clients", "Unlimited projects", "Unlimited tasks", "15 GB video storage", "Professional invoices", "Custom branding", "Advanced dashboard", "Client portal"],
   pro_yearly: ["Everything in Pro Monthly", "15 GB video storage", "CSV export", "Shareable video links", "Multiple video versions", "Advanced reports", "Priority support"],
-  lifetime: ["Everything in Pro", "50 GB storage", "No recurring payments", "Lifetime updates", "All future features"],
 }
 
 const PLAN_INTERVALS: Record<string, string> = {
@@ -157,11 +157,7 @@ export default function CheckoutPage() {
   }, [user, plan, price, currency, scriptLoaded, plans, appliedCoupon, isRecurring, navigate])
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
-    )
+    return <PageLoader />
   }
 
   if (!plan || price === null) {
@@ -173,7 +169,7 @@ export default function CheckoutPage() {
     )
   }
 
-  const PlanIcon = planSlug === "lifetime" ? Infinity : Crown
+  const PlanIcon = Crown
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -234,10 +230,7 @@ export default function CheckoutPage() {
                       {planSlug === "pro_yearly" && <Badge className="bg-primary text-primary-foreground text-[10px]">Popular</Badge>}
                     </div>
                     <p className="text-sm text-muted-foreground mt-1">
-                      {isRecurring
-                        ? `Billed ${PLAN_INTERVALS[plan.interval || "monthly"]}`
-                        : "One-time payment, lifetime access"
-                      }
+                      Billed {PLAN_INTERVALS[plan.interval || "monthly"]}
                     </p>
                     <ul className="mt-3 space-y-1.5">
                       {features.slice(0, 5).map((f) => (
@@ -290,7 +283,7 @@ export default function CheckoutPage() {
                       )}
                     </div>
                     <p className="text-sm text-muted-foreground mt-1">
-                      {isRecurring ? `Billed ${PLAN_INTERVALS[plan.interval || "monthly"]}` : "One-time payment"}
+                      Billed {PLAN_INTERVALS[plan.interval || "monthly"]}
                     </p>
                   </div>
 

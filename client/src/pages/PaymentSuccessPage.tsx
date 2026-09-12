@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react"
 import { useSearchParams, Link } from "react-router-dom"
-import { CheckCircle, ArrowRight, Crown, Loader2, Infinity } from "lucide-react"
+import { CheckCircle, ArrowRight, Crown, Loader2 } from "lucide-react"
 import { GlassCard } from "@/components/layout/glass-card"
 import { Button } from "@/components/ui/button"
 import { Logo } from "@/components/layout/logo"
@@ -10,7 +10,6 @@ const PLAN_DISPLAY: Record<string, { name: string; icon: typeof CheckCircle }> =
   pro_monthly: { name: "Pro Monthly", icon: Crown },
   pro_quarterly: { name: "Pro Quarterly", icon: Crown },
   pro_yearly: { name: "Pro Yearly", icon: Crown },
-  lifetime: { name: "Lifetime", icon: Infinity },
 }
 
 export default function PaymentSuccessPage() {

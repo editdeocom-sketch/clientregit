@@ -111,10 +111,75 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
+/* === Route transitions === */
+.animate-route-in {
+  animation: routeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@keyframes routeIn {
+  from { opacity: 0; transform: translateY(14px) scale(0.995); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* === Staggered reveal === */
+.animate-stagger {
+  animation: routeIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.stagger-1 { animation-delay: 0.06s; }
+.stagger-2 { animation-delay: 0.12s; }
+.stagger-3 { animation-delay: 0.18s; }
+.stagger-4 { animation-delay: 0.24s; }
+.stagger-5 { animation-delay: 0.3s; }
+
+/* === Page progress bar === */
+@keyframes pageProgressRun {
+  0% { transform: scaleX(0); }
+  60% { transform: scaleX(0.9); }
+  100% { transform: scaleX(1); }
+}
+@keyframes pageProgressShimmer {
+  0% { background-position: 0% 0; }
+  100% { background-position: 200% 0; }
+}
+@keyframes pageProgressFade {
+  from { opacity: 1; }
+  to { opacity: 0; visibility: hidden; }
+}
+.page-progress-bar {
+  height: 3px;
+  width: 100%;
+  transform-origin: left;
+  border-radius: 9999px;
+  background: linear-gradient(90deg, var(--primary), #22d3ee, var(--primary));
+  background-size: 200% 100%;
+  box-shadow: 0 0 8px rgb(37 99 235 / 0.5);
+  animation:
+    pageProgressRun 0.7s cubic-bezier(0.16, 1, 0.3, 1) both,
+    pageProgressShimmer 1.2s linear infinite,
+    pageProgressFade 0.3s ease 0.85s both;
+}
+
+/* === Loader dots === */
+.loader-dots { display: inline-flex; gap: 3px; }
+.loader-dots span {
+  width: 3px;
+  height: 3px;
+  border-radius: 9999px;
+  background: currentColor;
+  animation: loaderDot 1s ease-in-out infinite;
+}
+.loader-dots span:nth-child(2) { animation-delay: 0.15s; }
+.loader-dots span:nth-child(3) { animation-delay: 0.3s; }
+@keyframes loaderDot {
+  0%, 60%, 100% { opacity: 0.25; transform: translateY(0); }
+  30% { opacity: 1; transform: translateY(-2px); }
+}
+
 /* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
   .animate-fade-in,
-  .animate-slide-up {
+  .animate-slide-up,
+  .animate-route-in,
+  .animate-stagger {
     animation: none !important;
   }
   * {

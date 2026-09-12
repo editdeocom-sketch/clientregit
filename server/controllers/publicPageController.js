@@ -291,7 +291,7 @@ If a recurring payment fails, we will attempt to retry the payment up to three t
 
 ### 7.1 Billing Cycles
 
-Paid subscriptions are billed on a monthly, quarterly, or yearly basis, depending on the plan you select. One-time lifetime purchases are also available. Your subscription begins on the date of your first payment and renews automatically at the end of each billing period.
+Paid subscriptions are billed on a monthly, quarterly, or yearly basis, depending on the plan you select. Your subscription begins on the date of your first payment and renews automatically at the end of each billing period.
 
 ### 7.2 Auto-Renewal
 
@@ -324,7 +324,7 @@ Due to the nature of digital services, subscription fees are generally non-refun
 
 ### 9.2 One-Time Purchase Refunds
 
-For any one-time purchases (such as lifetime plans), refunds may be requested within 7 days of purchase if you have not substantially used the Service. After 7 days or substantial use, refunds are not available.
+For any one-time purchases, refunds may be requested within 7 days of purchase if you have not substantially used the Service. After 7 days or substantial use, refunds are not available.
 
 ### 9.3 How to Request a Refund
 
@@ -576,7 +576,7 @@ If you have any questions about our use of cookies, please contact us:
 
 ## 1. Overview
 
-At ClientRegit, we are committed to providing a high-quality service for creative professionals. We understand that circumstances may arise where a refund is appropriate. This policy outlines when and how refunds are available for subscriptions, one-time purchases, and other payments made through the Service.
+At ClientRegit, we are committed to providing a high-quality service for creative professionals. We understand that circumstances may arise where a refund is appropriate. This policy outlines when and how refunds are available for subscriptions and other payments made through the Service.
 
 ## 2. Subscription Cancellation and Refunds
 
@@ -597,19 +597,13 @@ Due to the nature of digital services, we generally do not offer refunds for the
 
 If the Service is materially unavailable for a significant portion of your billing period due to issues on our end, you may request a pro-rated refund for that period. Contact us at support@clientregit.com with a description of the issue.
 
-## 3. One-Time Purchase Refunds (Lifetime Plans)
+## 3. One-Time Purchases
 
-### 3.1 Seven-Day Refund Window
+We no longer offer one-time purchases or lifetime plans. All paid plans are subscription-based and are billed on a monthly, quarterly, or yearly basis. Existing lifetime subscribers retain access to the features they purchased for the life of their account.
 
-If you purchase a lifetime plan or any one-time upgrade, you may request a full refund within 7 days of the purchase date, provided:
+### 3.1 Grandfathered Lifetime Subscribers
 
-- You have not substantially used the Service (defined as creating more than 10 clients or 5 projects)
-- The refund request is made directly by the account holder
-- The purchase was made through the official ClientRegit checkout
-
-### 3.2 After 7 Days
-
-Refunds for one-time purchases are not available after the 7-day window has passed, unless required by applicable consumer protection law.
+If you purchased a lifetime plan before it was discontinued, your access remains active and your plan continues to function exactly as it did at the time of purchase.
 
 ## 4. Duplicate Payments
 

@@ -3,6 +3,8 @@ import { Navigate, useLocation } from "react-router-dom"
 import { useAuth } from "@/contexts/AuthContext"
 import { Sidebar } from "@/components/layout/sidebar"
 import { Topbar } from "@/components/layout/topbar"
+import { CommandPalette } from "@/components/layout/command-palette"
+import { BottomNav } from "@/components/layout/bottom-nav"
 import { Skeleton } from "@/components/ui/skeleton"
 
 export default function DashboardLayout({
@@ -14,6 +16,7 @@ export default function DashboardLayout({
   const location = useLocation()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const [paletteOpen, setPaletteOpen] = useState(false)
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -69,11 +72,15 @@ export default function DashboardLayout({
             phone: user.phone || null,
           }}
           onMenuToggle={() => setSidebarOpen(!sidebarOpen)}
+          onSearchOpen={() => setPaletteOpen(true)}
         />
-        <main key={location.pathname} className="flex-1 overflow-y-auto animate-fade-in">
+        <main key={location.pathname} className="flex-1 overflow-y-auto animate-route-in pb-16 lg:pb-0">
           {children}
         </main>
       </div>
+
+      <BottomNav />
+      <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
     </div>
   )
 }

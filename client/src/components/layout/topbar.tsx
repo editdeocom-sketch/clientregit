@@ -18,16 +18,18 @@ interface TopbarProps {
     phone?: string | null
   }
   onMenuToggle?: () => void
+  onSearchOpen?: () => void
 }
 
-export function Topbar({ user, onMenuToggle }: TopbarProps) {
+export function Topbar({ user, onMenuToggle, onSearchOpen }: TopbarProps) {
   const navigate = useNavigate()
   const { logout } = useAuth()
   const [mounted, setMounted] = useState(false)
   const [searchFocused, setSearchFocused] = useState(false)
   const [dark, setDark] = useState(false)
   const [reviewCount, setReviewCount] = useState(0)
-  const [reviewItems, setReviewItems] = useState<{ id: number; description: string; created_at: string }[]>([])
+  const [reviewItems, setReviewItems] = useState<{ id: number; description: string; created_at: string; action?: string; entity_type?: string }[]>([])
+  const [notificationsError, setNotificationsError] = useState(false)
   const [planName, setPlanName] = useState<string | null>(null)
 
   useEffect(() => {
@@ -40,13 +42,13 @@ export function Topbar({ user, onMenuToggle }: TopbarProps) {
 
   useEffect(() => {
     let active = true
-    api.get<{ data: { awaitingReviewVideos: number; recentActivity: { id: number; description: string; created_at: string; entity_type: string }[] } }>("/dashboard/stats")
+    api.get<{ data: { awaitingReviewVideos: number; recentActivity: { id: number; description: string; created_at: string; action?: string; entity_type: string }[] } }>("/dashboard/stats")
       .then((response) => {
         if (!active) return
         setReviewCount(response.data.awaitingReviewVideos || 0)
-        setReviewItems((response.data.recentActivity || []).filter((item) => item.entity_type === "video").slice(0, 5))
+        setReviewItems((response.data.recentActivity || []).filter((item) => item.entity_type === "video").slice(0, 6))
       })
-      .catch(() => undefined)
+      .catch(() => { if (active) setNotificationsError(true) })
     return () => { active = false }
   }, [user.email])
 
@@ -83,18 +85,20 @@ export function Topbar({ user, onMenuToggle }: TopbarProps) {
           {/* Search */}
           <div className="relative hidden sm:block">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <input
-              type="search"
-              placeholder="Search clients, projects..."
+            <button
+              type="button"
+              onClick={onSearchOpen}
               className={cn(
-                "h-9 w-64 rounded-lg bg-muted px-10 py-2 text-sm text-foreground placeholder:text-muted-foreground",
+                "h-9 w-64 rounded-lg bg-muted px-10 py-2 text-left text-sm text-muted-foreground",
                 "focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent",
                 "border border-border transition-all duration-200",
                 searchFocused && "w-80 ring-2 ring-ring"
               )}
               onFocus={() => setSearchFocused(true)}
               onBlur={() => setSearchFocused(false)}
-            />
+            >
+              Search clients, projects...
+            </button>
             <kbd className="absolute right-3 top-1/2 -translate-y-1/2 hidden lg:inline-flex h-5 items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
               <Command className="h-3 w-3" />K
             </kbd>
@@ -126,25 +130,50 @@ export function Topbar({ user, onMenuToggle }: TopbarProps) {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-80 bg-card border-border">
-              <div className="px-3 py-2 border-b border-border">
+              <div className="px-3 py-2 border-b border-border flex items-center justify-between">
                 <p className="text-sm font-medium text-foreground">Notifications</p>
+                {reviewCount > 0 && (
+                  <Badge className="border-0 bg-primary/10 text-primary text-[10px] font-medium">
+                    {reviewCount} awaiting review
+                  </Badge>
+                )}
               </div>
-              <div className="px-3 py-6 text-center">
-                {reviewItems.length === 0 ? (
-                  <>
+              <div className="px-3 py-4">
+                {notificationsError ? (
+                  <p className="text-center text-sm text-muted-foreground py-4">
+                    Couldn't load notifications.
+                  </p>
+                ) : reviewItems.length === 0 ? (
+                  <div className="text-center py-4">
                     <Check className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-                    <p className="text-sm text-muted-foreground">No recent review activity</p>
-                  </>
+                    <p className="text-sm text-muted-foreground">You're all caught up</p>
+                  </div>
                 ) : (
-                  <div className="space-y-3 text-left">
+                  <div className="space-y-2.5 max-h-80 overflow-y-auto">
                     {reviewItems.map((item) => (
-                      <div key={item.id} className="rounded-md bg-muted/60 p-2">
-                        <p className="text-xs text-foreground">{item.description}</p>
-                        <p className="mt-1 text-[10px] text-muted-foreground">{new Date(item.created_at).toLocaleString()}</p>
+                      <div key={item.id} className="rounded-md bg-muted/60 p-2.5">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-primary">
+                            Video review
+                          </span>
+                          <span className="text-[10px] text-muted-foreground">
+                            {new Date(item.created_at).toLocaleDateString()}
+                          </span>
+                        </div>
+                        <p className="mt-1.5 text-xs text-foreground">{item.description}</p>
                       </div>
                     ))}
                   </div>
                 )}
+              </div>
+              <div className="border-t border-border px-3 py-2">
+                <button
+                  type="button"
+                  onClick={() => navigate("/revisions")}
+                  className="w-full rounded-md py-1.5 text-center text-xs font-medium text-primary transition-colors hover:bg-primary/10"
+                >
+                  View all revisions
+                </button>
               </div>
             </DropdownMenuContent>
           </DropdownMenu>

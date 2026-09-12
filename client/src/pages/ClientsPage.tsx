@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { Textarea } from "@/components/ui/textarea"
+import { Skeleton } from "@/components/ui/skeleton"
 import {
   Table,
   TableBody,
@@ -21,9 +22,10 @@ import {
   DialogFooter,
   DialogDescription,
 } from "@/components/ui/dialog"
-import { Users, Plus, Pencil, Trash2, Search } from "lucide-react"
+import { Users, Plus, Pencil, Trash2, Search, ExternalLink } from "lucide-react"
 import { toast } from "sonner"
 import api from "@/services/api"
+import { Link, useSearchParams } from "react-router-dom"
 import { useUpgradeModal } from "@/contexts/UpgradeModalContext"
 
 interface ClientData {
@@ -56,6 +58,7 @@ export default function ClientsPage() {
   const [deletingClient, setDeletingClient] = useState<ClientData | null>(null)
   const [form, setForm] = useState(emptyForm)
   const [saving, setSaving] = useState(false)
+  const [loading, setLoading] = useState(true)
 
   async function loadClients() {
     try {
@@ -65,12 +68,26 @@ export default function ClientsPage() {
       }
     } catch {
       setClients([])
+    } finally {
+      setLoading(false)
     }
   }
 
   useEffect(() => {
     loadClients()
   }, [])
+
+  const [searchParams, setSearchParams] = useSearchParams()
+
+  useEffect(() => {
+    const editId = searchParams.get("edit")
+    if (!editId) return
+    const target = clients.find((c) => String(c.id) === editId)
+    if (target) {
+      openEditDialog(target)
+      setSearchParams({}, { replace: true })
+    }
+  }, [searchParams, clients])
 
   useEffect(() => {
     if (!search) {
@@ -189,7 +206,13 @@ export default function ClientsPage() {
       </div>
 
       <GlassCard className="overflow-hidden">
-        {filteredClients.length === 0 ? (
+        {loading ? (
+          <div className="p-4 space-y-2">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <Skeleton key={i} className="h-12 w-full" />
+            ))}
+          </div>
+        ) : filteredClients.length === 0 ? (
           <div className="text-center py-16">
             <Users className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
             <p className="text-muted-foreground mb-4">
@@ -217,7 +240,12 @@ export default function ClientsPage() {
             <TableBody>
               {filteredClients.map((client) => (
                 <TableRow key={client.id} className="border-border hover:bg-muted">
-                  <TableCell className="font-medium text-foreground">{client.name}</TableCell>
+                  <TableCell className="font-medium text-foreground">
+                    <Link to={`/clients/${client.id}`} className="inline-flex items-center gap-1.5 transition-colors hover:text-primary">
+                      {client.name}
+                      <ExternalLink className="h-3.5 w-3.5 opacity-60" />
+                    </Link>
+                  </TableCell>
                   <TableCell className="text-muted-foreground">{client.email}</TableCell>
                   <TableCell className="text-muted-foreground">{client.company ?? "-"}</TableCell>
                   <TableCell className="text-muted-foreground">{client.phone ?? "-"}</TableCell>

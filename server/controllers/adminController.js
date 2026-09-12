@@ -41,8 +41,7 @@ exports.getDashboard = async (req, res) => {
     const newUsersThisMonth = queryOne("SELECT COUNT(*) as c FROM users WHERE created_at >= datetime('now', 'start of month')").c;
 
     const freeUsers = queryOne("SELECT COUNT(*) as c FROM users WHERE id NOT IN (SELECT DISTINCT user_id FROM subscriptions WHERE status IN ('active','pending'))").c;
-    const proUsers = queryOne("SELECT COUNT(DISTINCT s.user_id) as c FROM subscriptions s JOIN plans p ON s.plan_id = p.id WHERE s.status = 'active' AND p.slug != 'lifetime'").c;
-    const lifetimeUsers = queryOne("SELECT COUNT(DISTINCT s.user_id) as c FROM subscriptions s JOIN plans p ON s.plan_id = p.id WHERE s.status = 'active' AND p.slug = 'lifetime'").c;
+    const proUsers = queryOne("SELECT COUNT(DISTINCT s.user_id) as c FROM subscriptions s JOIN plans p ON s.plan_id = p.id WHERE s.status = 'active' AND p.slug != 'free'").c;
 
     const activeSubscriptions = queryOne("SELECT COUNT(*) as c FROM subscriptions WHERE status = 'active'").c;
     const pendingSubscriptions = queryOne("SELECT COUNT(*) as c FROM subscriptions WHERE status = 'pending'").c;
@@ -52,7 +51,6 @@ exports.getDashboard = async (req, res) => {
 
     const totalRevenue = queryOne("SELECT COALESCE(SUM(amount), 0) as c FROM billing_payments WHERE status IN ('captured','completed')").c;
     const monthlyRevenue = queryOne("SELECT COALESCE(SUM(amount), 0) as c FROM billing_payments WHERE status IN ('captured','completed') AND created_at >= datetime('now', 'start of month')").c;
-    const lifetimeRevenue = queryOne("SELECT COALESCE(SUM(amount), 0) as c FROM billing_payments WHERE status IN ('captured','completed') AND payment_type = 'lifetime'").c;
 
     const totalCoupons = queryOne('SELECT COUNT(*) as c FROM coupons').c;
     const usedCoupons = queryOne('SELECT COUNT(*) as c FROM coupons WHERE used_count > 0').c;
@@ -69,9 +67,9 @@ exports.getDashboard = async (req, res) => {
     res.json({
       success: true,
       data: {
-        users: { total: totalUsers, newToday: newUsersToday, newThisWeek: newUsersThisWeek, newThisMonth: newUsersThisMonth, free: freeUsers, pro: proUsers, lifetime: lifetimeUsers },
+        users: { total: totalUsers, newToday: newUsersToday, newThisWeek: newUsersThisWeek, newThisMonth: newUsersThisMonth, free: freeUsers, pro: proUsers },
         subscriptions: { active: activeSubscriptions, pending: pendingSubscriptions, cancelled: cancelledSubscriptions, expired: expiredSubscriptions, failed: failedSubscriptions },
-        revenue: { total: totalRevenue, monthly: monthlyRevenue, lifetime: lifetimeRevenue },
+        revenue: { total: totalRevenue, monthly: monthlyRevenue },
         coupons: { total: totalCoupons, used: usedCoupons },
         storage: { totalBytes: totalStorage },
         projects: totalProjects,

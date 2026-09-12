@@ -21,7 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Video as VideoIcon, Play, ExternalLink, Plus, Upload, X, AlertCircle, CheckCircle, Trash2, Share2 } from "lucide-react"
+import { Video as VideoIcon, Play, ExternalLink, Plus, Upload, X, AlertCircle, CheckCircle, Trash2, Share2, Search } from "lucide-react"
 import { formatDate } from "@/lib/utils"
 import { Link } from "react-router-dom"
 import { toast } from "sonner"
@@ -58,9 +58,13 @@ export default function VideosPage() {
   const { showUpgrade } = useUpgradeModal()
   const [videos, setVideos] = useState<VideoData[]>([])
   const [loading, setLoading] = useState(true)
+  const [search, setSearch] = useState("")
+  const [statusFilter, setStatusFilter] = useState<string>("all")
   const [projects, setProjects] = useState<ProjectData[]>([])
   const [uploadOpen, setUploadOpen] = useState(false)
   const [uploading, setUploading] = useState(false)
+  const [deleteTarget, setDeleteTarget] = useState<VideoData | null>(null)
+  const [deleting, setDeleting] = useState(false)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [fileError, setFileError] = useState<string | null>(null)
   const [uploadForm, setUploadForm] = useState({
@@ -174,16 +178,18 @@ export default function VideosPage() {
     }
   }
 
-  const handleDelete = async (event: React.MouseEvent, video: VideoData) => {
-    event.preventDefault()
-    event.stopPropagation()
-    if (!window.confirm(`Delete ${video.title}? This cannot be undone.`)) return
+  const handleDelete = async () => {
+    if (!deleteTarget) return
+    setDeleting(true)
     try {
-      await api.delete(`/videos/${video.id}`)
-      setVideos((items) => items.filter((item) => item.id !== video.id))
+      await api.delete(`/videos/${deleteTarget.id}`)
+      setVideos((items) => items.filter((item) => item.id !== deleteTarget.id))
       toast.success("Video deleted")
+      setDeleteTarget(null)
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Unable to delete video")
+    } finally {
+      setDeleting(false)
     }
   }
 
@@ -210,6 +216,29 @@ export default function VideosPage() {
     }
   }
 
+  const filteredVideos = videos.filter((video) => {
+    if (statusFilter !== "all" && video.status !== statusFilter) return false
+    if (!search.trim()) return true
+    const q = search.trim().toLowerCase()
+    return (
+      video.title.toLowerCase().includes(q) ||
+      video.project.toLowerCase().includes(q)
+    )
+  })
+
+  const statusCounts = videos.reduce<Record<string, number>>((acc, video) => {
+    acc[video.status] = (acc[video.status] || 0) + 1
+    return acc
+  }, {})
+
+  const statusFilters = [
+    { key: "all", label: "All", count: videos.length },
+    { key: "awaiting_review", label: "Awaiting Review", count: statusCounts.awaiting_review || 0 },
+    { key: "revision_requested", label: "Revision Requested", count: statusCounts.revision_requested || 0 },
+    { key: "approved", label: "Approved", count: statusCounts.approved || 0 },
+    { key: "draft", label: "Draft", count: statusCounts.draft || 0 },
+  ]
+
   return (
     <div className="p-6 space-y-6 animate-fade-in">
       <div className="flex items-center justify-between">
@@ -226,6 +255,36 @@ export default function VideosPage() {
           Upload Video
         </Button>
       </div>
+
+      {!loading && videos.length > 0 && (
+        <div className="space-y-3">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Search videos by title or project..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-10 bg-muted border-border text-foreground placeholder:text-muted-foreground"
+            />
+          </div>
+          <div className="flex gap-1 overflow-x-auto p-1 rounded-lg bg-muted border border-border scrollbar-none">
+            {statusFilters.map((filter) => (
+              <button
+                key={filter.key}
+                onClick={() => setStatusFilter(filter.key)}
+                className={`flex-shrink-0 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                  statusFilter === filter.key
+                    ? "bg-background text-foreground"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {filter.label}
+                <span className="ml-1.5 opacity-60">{filter.count}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -251,9 +310,14 @@ export default function VideosPage() {
             </p>
           )}
         </GlassCard>
+      ) : filteredVideos.length === 0 ? (
+        <GlassCard className="p-12 text-center">
+          <VideoIcon className="h-10 w-10 text-muted-foreground/30 mx-auto mb-3" />
+          <p className="text-sm text-muted-foreground">No videos match your filters.</p>
+        </GlassCard>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {videos.map((video) => (
+          {filteredVideos.map((video) => (
             <Link key={video.id} to={`/videos/${video.id}`}>
               <GlassCard className="p-5 hover:bg-muted transition-all cursor-pointer group h-full">
                 <div className="flex items-start gap-4">
@@ -267,7 +331,7 @@ export default function VideosPage() {
                         <button type="button" title="Copy client review link" onClick={(event) => handleShare(event, video)} className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground">
                           <Share2 className="h-4 w-4" />
                         </button>
-                        <button type="button" title="Delete video" onClick={(event) => handleDelete(event, video)} className="rounded p-1 text-muted-foreground hover:bg-destructive/20 hover:text-destructive">
+                        <button type="button" title="Delete video" onClick={(event) => { event.preventDefault(); event.stopPropagation(); setDeleteTarget(video) }} className="rounded p-1 text-muted-foreground hover:bg-destructive/20 hover:text-destructive">
                           <Trash2 className="h-4 w-4" />
                         </button>
                         <ExternalLink className="h-4 w-4 text-muted-foreground/30 group-hover:text-muted-foreground transition-colors" />
@@ -417,6 +481,45 @@ export default function VideosPage() {
                 <>
                   <Upload className="h-4 w-4 mr-2" />
                   Upload
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={deleteTarget !== null} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <DialogContent className="bg-card border-border text-foreground">
+          <DialogHeader>
+            <DialogTitle>Delete Video</DialogTitle>
+            <DialogDescription className="text-muted-foreground">
+              Are you sure you want to delete{" "}
+              <span className="text-foreground font-medium">{deleteTarget?.title}</span>?
+              This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="ghost"
+              onClick={() => setDeleteTarget(null)}
+              className="text-muted-foreground hover:text-foreground"
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDelete}
+              disabled={deleting}
+            >
+              {deleting ? (
+                <>
+                  <div className="h-4 w-4 border-2 border-destructive-foreground/30 border-t-destructive-foreground rounded-full animate-spin mr-2" />
+                  Deleting...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete
                 </>
               )}
             </Button>

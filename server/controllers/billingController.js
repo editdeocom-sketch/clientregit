@@ -143,7 +143,7 @@ exports.createSubscription = async (req, res, next) => {
   try {
     const checkout = validateCheckout(req);
     if (checkout.error) return res.status(400).json({ success: false, message: checkout.error });
-    if (!checkout.plan.recurring) return res.status(400).json({ success: false, message: 'Use order checkout for lifetime plans' });
+    if (!checkout.plan.recurring) return res.status(400).json({ success: false, message: 'One-time purchases are no longer available' });
     if (req.body.coupon_code) return res.status(400).json({ success: false, message: 'Coupons are currently available for one-time purchases only.' });
     const existingActive = queryOne("SELECT id FROM subscriptions WHERE user_id = ? AND status IN ('active','authenticated','pending')", [req.user.id]);
     if (existingActive) return res.status(400).json({ success: false, message: 'You already have an active subscription. Cancel it before subscribing to a new plan.' });
