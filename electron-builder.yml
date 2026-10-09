@@ -1,0 +1,63 @@
+appId: com.clientregit.desktop
+productName: ClientRegit
+copyright: Copyright © 2026 ClientRegit
+
+directories:
+  buildResources: build
+  output: dist
+
+files:
+  - out/**/*
+  - package.json
+
+asarUnpack:
+  - node_modules/better-sqlite3/**/*
+
+npmRebuild: true
+nodeGypRebuild: false
+
+publish:
+  provider: github
+  owner: editdeocom-sketch
+  repo: clientregit
+  releaseType: release
+
+win:
+  icon: build/icon.ico
+  target:
+    - target: nsis
+      arch:
+        - x64
+    - target: portable
+      arch:
+        - x64
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: ClientRegit
+  artifactName: ClientRegit-Setup.exe
+
+portable:
+  artifactName: ClientRegit-Portable.exe
+
+mac:
+  icon: build/icon.png
+  identity: null
+  category: public.app-category.business
+  target:
+    - target: dmg
+      arch:
+        - universal
+    - target: zip
+      arch:
+        - universal
+
+dmg:
+  artifactName: ClientRegit.dmg
+
+zip:
+  artifactName: ClientRegit-mac.zip

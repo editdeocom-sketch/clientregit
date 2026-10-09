@@ -1,0 +1,133 @@
+@import 'tailwindcss';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme inline {
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-line: var(--line);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-gold: var(--gold);
+  --color-gold-strong: var(--gold-strong);
+  --color-gold-soft: var(--gold-soft);
+
+  --color-success: var(--success);
+  --color-success-bg: var(--success-bg);
+  --color-warn: var(--warn);
+  --color-warn-bg: var(--warn-bg);
+  --color-danger: var(--danger);
+  --color-danger-bg: var(--danger-bg);
+  --color-info: var(--info);
+  --color-info-bg: var(--info-bg);
+  --color-teal: var(--teal);
+  --color-teal-bg: var(--teal-bg);
+
+  --font-sans: 'Segoe UI', system-ui, -apple-system, 'Helvetica Neue', sans-serif;
+}
+
+:root {
+  --canvas: #fcfcf7;
+  --surface: #ffffff;
+  --surface-2: #f7f0de;
+  --line: #ecdcab;
+  --ink: #3e3112;
+  --muted: #8a7a52;
+  --gold: #bf932a;
+  --gold-strong: #9e6200;
+  --gold-soft: #dfc57b;
+
+  --success: #3f6b2f;
+  --success-bg: #e9f0dc;
+  --warn: #9e6200;
+  --warn-bg: #f5ead0;
+  --danger: #9e2b20;
+  --danger-bg: #f7e3dc;
+  --info: #4a5b7a;
+  --info-bg: #e6e9f2;
+  --teal: #2f7a72;
+  --teal-bg: #ddede8;
+}
+
+.dark {
+  --canvas: #17110a;
+  --surface: #221a0d;
+  --surface-2: #2e2413;
+  --line: #3d3119;
+  --ink: #fcfcf7;
+  --muted: #b5a277;
+  --gold: #dfc57b;
+  --gold-strong: #bf932a;
+  --gold-soft: #9e6200;
+
+  --success: #a8d08d;
+  --success-bg: #23301b;
+  --warn: #dfc57b;
+  --warn-bg: #35290f;
+  --danger: #e8a093;
+  --danger-bg: #3a1e18;
+  --info: #a9bce0;
+  --info-bg: #1e2536;
+  --teal: #7fc4bc;
+  --teal-bg: #1b2b29;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--canvas);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--line);
+  border-radius: 6px;
+  border: 2px solid var(--canvas);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--muted);
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.16s ease-out;
+}
+
+@keyframes status-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
+}
+
+.animate-status-blink {
+  animation: status-blink 1.3s ease-in-out infinite;
+}
