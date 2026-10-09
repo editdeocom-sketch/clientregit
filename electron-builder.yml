@@ -55,8 +55,6 @@ mac:
     - target: zip
       arch:
         - universal
-  zip:
-    artifactName: ClientRegit-mac.zip
 
 dmg:
   artifactName: ClientRegit.dmg
