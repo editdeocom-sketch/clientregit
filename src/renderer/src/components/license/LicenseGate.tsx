@@ -36,5 +36,13 @@ export function LicenseGate({ children }: { children: ReactNode }): ReactNode {
     return children
   }
 
-  return <ActivationScreen state={state} onActivated={() => reload()} />
+  return (
+    <ActivationScreen
+      state={state}
+      onActivated={() => reload()}
+      onRetry={() => {
+        reload()
+      }}
+    />
+  )
 }

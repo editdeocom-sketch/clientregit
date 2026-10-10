@@ -2,6 +2,7 @@ import { app, BrowserWindow, shell } from 'electron'
 import { join } from 'node:path'
 import { closeDatabase, openDatabase } from './db/database'
 import { registerApi } from './ipc/api'
+import { startSyncLoop } from './sync/service'
 import { initUpdater } from './updater'
 
 function createWindow(): void {
@@ -45,12 +46,17 @@ function createWindow(): void {
   }
 }
 
+// Dev/showcase affordances: override the data dir or open a CDP port when set.
+if (process.env.CR_DATA_DIR) app.setPath('userData', process.env.CR_DATA_DIR)
+if (process.env.CR_CDP_PORT) app.commandLine.appendSwitch('remote-debugging-port', process.env.CR_CDP_PORT)
+
 app.whenReady().then(() => {
   const dbPath = join(app.getPath('userData'), 'clientregit.db')
   openDatabase(dbPath)
   registerApi()
   createWindow()
   initUpdater()
+  startSyncLoop()
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()

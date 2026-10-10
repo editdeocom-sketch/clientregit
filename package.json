@@ -1,7 +1,7 @@
 {
   "name": "clientregit",
   "productName": "ClientRegit",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "Client management desktop app for video editors",
   "author": "ClientRegit",
   "main": "out/main/index.js",

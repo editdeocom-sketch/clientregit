@@ -1,5 +1,6 @@
 import { getDb, newId, now, round2 } from '../database'
 import { getSettings } from './settings'
+import { markTombstone } from '../tombstones'
 import type {
   Invoice,
   InvoiceInput,
@@ -275,6 +276,7 @@ export function setInvoiceStatus(id: string, status: InvoiceStatus): void {
 
 export function deleteInvoice(id: string): void {
   getDb().prepare('DELETE FROM invoices WHERE id = ?').run(id)
+  markTombstone('invoices', id)
 }
 
 export function addPayment(invoiceId: string, input: PaymentInput): Invoice {
@@ -298,6 +300,7 @@ export function addPayment(invoiceId: string, input: PaymentInput): Invoice {
   )
   if (invoice.status === 'draft') setInvoiceStatus(invoiceId, 'sent')
   syncStatus(invoiceId)
+  getDb().prepare('UPDATE invoices SET updated_at = ? WHERE id = ?').run(now(), invoiceId)
   return getInvoice(invoiceId)!
 }
 
@@ -309,5 +312,6 @@ export function removePayment(paymentId: string): Invoice | null {
   if (!row) return null
   db.prepare('DELETE FROM payments WHERE id = ?').run(paymentId)
   syncStatus(row.invoice_id)
+  db.prepare('UPDATE invoices SET updated_at = ? WHERE id = ?').run(now(), row.invoice_id)
   return getInvoice(row.invoice_id)
 }

@@ -10,7 +10,9 @@ import {
   type AppSettings,
   type BackupTable,
   type LicenseState,
-  type SettingsPatch
+  type SettingsPatch,
+  type TeamMember,
+  type TeamStatus
 } from '@/lib/api'
 import { useApi } from '@/lib/hooks'
 import { toast, useUi } from '@/store/ui'
@@ -399,11 +401,23 @@ export function SettingsPage(): ReactNode {
                   </Badge>
                 )}
                 {license.status === 'license_expired' && <Badge tone="danger">Expired</Badge>}
+                {license.status === 'team_online_required' && (
+                  <Badge tone="danger">Team check required</Badge>
+                )}
+                {license.status === 'seat_unavailable' && <Badge tone="danger">No free seat</Badge>}
               </div>
               <div className="flex items-center justify-between gap-3">
                 <span className="text-muted">Account</span>
                 <span className="truncate font-medium text-ink">{license.email ?? '—'}</span>
               </div>
+              {license.is_team && (
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-muted">Seats</span>
+                  <span className="font-medium text-ink">
+                    {license.seats_used ?? 0} of {license.seats ?? '?'} used
+                  </span>
+                </div>
+              )}
               {license.license_key && (
                 <div className="flex items-center justify-between gap-3">
                   <span className="text-muted">License key</span>
@@ -482,6 +496,8 @@ export function SettingsPage(): ReactNode {
         )}
       </Card>
 
+      <TeamCard />
+
       <Card className="mt-5">
         <CardHeader title="About" />
         <div className="flex items-center gap-3 px-5 py-4 text-sm text-muted">
@@ -489,8 +505,11 @@ export function SettingsPage(): ReactNode {
             C
           </div>
           <div>
-            <p className="font-semibold text-ink">ClientRegit 1.0.0</p>
-            <p>Client management for video editors — data stays on this computer.</p>
+            <p className="font-semibold text-ink">ClientRegit 1.1.0</p>
+            <p>
+              Client management for video editors — data stays on this computer unless you join a
+              team workspace.
+            </p>
           </div>
         </div>
       </Card>
@@ -508,5 +527,97 @@ export function SettingsPage(): ReactNode {
         }}
       />
     </div>
+  )
+}
+
+function TeamCard(): ReactNode {
+  const { data: status, loading, reload } = useApi<TeamStatus>(() => api.team.status(), [])
+  const [members, setMembers] = useState<TeamMember[]>([])
+  const [busy, setBusy] = useState(false)
+
+  useEffect(() => {
+    if (status?.inTeam) {
+      api.team
+        .roster()
+        .then(setMembers)
+        .catch(() => setMembers([]))
+    }
+  }, [status?.inTeam])
+
+  if (loading || !status?.inTeam) return null
+
+  const syncNow = async (): Promise<void> => {
+    setBusy(true)
+    try {
+      await api.team.syncNow()
+      reload()
+      toast.success('Sync complete')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : String(err))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <Card className="mt-5">
+      <CardHeader
+        title="Team workspace"
+        subtitle={status.teamName ?? 'Shared workspace'}
+        action={
+          <div className="flex items-center gap-2">
+            <Badge tone={status.lastError ? 'danger' : 'success'}>
+              {status.lastError ? 'Sync error' : 'Syncing on'}
+            </Badge>
+            <Button size="sm" variant="secondary" disabled={busy} onClick={() => void syncNow()}>
+              {busy ? 'Syncing…' : 'Sync now'}
+            </Button>
+          </div>
+        }
+      />
+      <div className="space-y-2.5 px-5 py-4 text-sm">
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-muted">Role</span>
+          <span className="font-medium text-ink">
+            {status.role === 'leader' ? 'Leader' : 'Member'} · {status.memberCount} member
+            {status.memberCount === 1 ? '' : 's'}
+          </span>
+        </div>
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-muted">Last synced</span>
+          <span className="font-medium text-ink">
+            {status.lastSyncAt ? new Date(status.lastSyncAt).toLocaleString('en-GB') : 'never'}
+          </span>
+        </div>
+        {members.length > 0 && (
+          <div className="border-t border-line pt-3">
+            <p className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-muted">
+              Members
+            </p>
+            <ul className="space-y-1">
+              {members.map((member) => (
+                <li key={member.user_id} className="flex items-center justify-between gap-2">
+                  <span className="truncate">{member.email ?? member.user_id}</span>
+                  {member.role === 'leader' && (
+                    <span className="rounded-full border border-gold/40 bg-gold/10 px-2 py-0.5 text-[11px] font-semibold text-gold-strong">
+                      Leader
+                    </span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+        <p className="border-t border-line pt-3 text-xs text-muted">
+          Clients, projects, tasks and invoices sync with your team automatically. Manage
+          invites and seats on the website → Account → Team.
+        </p>
+        {status.lastError && (
+          <div className="rounded-lg border border-danger/30 bg-danger-bg px-3 py-2 text-sm text-danger">
+            {status.lastError}
+          </div>
+        )}
+      </div>
+    </Card>
   )
 }

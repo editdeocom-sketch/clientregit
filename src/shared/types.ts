@@ -140,6 +140,7 @@ export interface Task {
   done: boolean
   due_date: string | null
   position: number
+  assignee_id: string | null
   created_at: string
   updated_at: string
 }
@@ -147,12 +148,14 @@ export interface Task {
 export interface TaskInput {
   title: string
   due_date?: string | null
+  assignee_id?: string | null
 }
 
 export interface TaskPatch {
   title?: string
   done?: boolean
   due_date?: string | null
+  assignee_id?: string | null
 }
 
 export interface ProjectFileInput {
@@ -333,7 +336,13 @@ export interface ExportResult {
 
 export type InvoicePrintFormat = 'print' | 'pdf'
 
-export type LicenseStatus = 'trial' | 'trial_expired' | 'activated' | 'license_expired'
+export type LicenseStatus =
+  | 'trial'
+  | 'trial_expired'
+  | 'activated'
+  | 'license_expired'
+  | 'team_online_required'
+  | 'seat_unavailable'
 
 export type LicenseType = 'perpetual' | 'subscription'
 
@@ -347,6 +356,9 @@ export interface LicenseState {
   license_expires_at: string | null
   last_validated_at: string | null
   site_url: string
+  is_team: boolean
+  seats: number | null
+  seats_used: number | null
 }
 
 export interface LicenseSignInInput {
@@ -358,6 +370,22 @@ export interface LicenseActivateInput {
   email?: string
   password?: string
   licenseKey: string
+}
+
+export interface TeamMember {
+  user_id: string
+  email: string | null
+  role: 'leader' | 'member'
+}
+
+export interface TeamStatus {
+  inTeam: boolean
+  teamName: string | null
+  role: 'leader' | 'member' | null
+  memberCount: number
+  lastSyncAt: string | null
+  syncing: boolean
+  lastError: string | null
 }
 
 export interface Api {
@@ -404,6 +432,12 @@ export interface Api {
     signIn(input: LicenseSignInInput): Promise<{ email: string }>
     activate(input: LicenseActivateInput): Promise<LicenseState>
     deactivate(): Promise<LicenseState>
+  }
+  team: {
+    status(): Promise<TeamStatus>
+    roster(): Promise<TeamMember[]>
+    syncNow(): Promise<TeamStatus>
+    onSynced(cb: () => void): () => void
   }
   settings: {
     get(): Promise<AppSettings>

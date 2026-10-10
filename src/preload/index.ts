@@ -50,6 +50,16 @@ const api: Api = {
     activate: (input) => invoke('license', 'activate', input),
     deactivate: () => invoke('license', 'deactivate')
   },
+  team: {
+    status: () => invoke('team', 'status'),
+    roster: () => invoke('team', 'roster'),
+    syncNow: () => invoke('team', 'syncNow'),
+    onSynced: (cb) => {
+      const listener = (): void => cb()
+      ipcRenderer.on('team:synced', listener)
+      return () => ipcRenderer.removeListener('team:synced', listener)
+    }
+  },
   settings: {
     get: () => invoke('settings', 'get'),
     patch: (patch) => invoke('settings', 'patch', patch)

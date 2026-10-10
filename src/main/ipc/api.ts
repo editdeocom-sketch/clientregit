@@ -14,6 +14,8 @@ import {
   getLicenseState,
   signInLicense
 } from '../license/service'
+import { authClient } from '../license/service'
+import { getStatus, scheduleSync, syncNow } from '../sync/service'
 import type {
   CalendarEvent,
   Currency,
@@ -64,6 +66,17 @@ const domains: Record<string, Record<string, Handler>> = {
     signIn: (input: LicenseSignInInput) => signInLicense(input),
     activate: (input: LicenseActivateInput) => activateLicense(input),
     deactivate: () => deactivateLicense()
+  },
+  team: {
+    status: () => getStatus(),
+    roster: async () => {
+      const { data, error } = await authClient().rpc('team_roster')
+      if (error) throw new Error(error.message)
+      const payload = data as { ok?: boolean; members?: unknown[] } | null
+      if (!payload?.ok) throw new Error('Join a team on the website to see members.')
+      return payload.members ?? []
+    },
+    syncNow: () => syncNow()
   },
   invoices: {
     list: invoices.listInvoices,
@@ -122,12 +135,31 @@ const domains: Record<string, Record<string, Handler>> = {
   }
 }
 
+const SYNC_MUTATIONS: Record<string, Set<string>> = {
+  clients: new Set(['create', 'update', 'setArchived', 'remove']),
+  projects: new Set(['create', 'update', 'remove']),
+  tasks: new Set(['create', 'update', 'remove']),
+  invoices: new Set(['create', 'update', 'setStatus', 'remove', 'addPayment', 'removePayment']),
+  backup: new Set(['importJson'])
+}
+
+function afterMutation(domain: string, method: string, result: unknown): void {
+  if (!SYNC_MUTATIONS[domain]?.has(method)) return
+  if (result instanceof Promise) {
+    result.then(() => scheduleSync()).catch(() => scheduleSync())
+  } else {
+    scheduleSync()
+  }
+}
+
 export function registerApi(): void {
   ipcMain.handle('api', (_event, domain: string, method: string, ...args: unknown[]) => {
     const handler = domains[domain]?.[method]
     if (!handler) throw new Error(`Unknown API method: ${domain}.${method}`)
     try {
-      return handler(...args)
+      const result = handler(...args)
+      afterMutation(domain, method, result)
+      return result
     } catch (err) {
       throw new Error(err instanceof Error ? err.message : String(err))
     }

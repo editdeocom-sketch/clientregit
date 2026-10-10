@@ -1,6 +1,7 @@
 import { existsSync, statSync } from 'node:fs'
 import { extname } from 'node:path'
 import { getDb, newId, now, round2 } from '../database'
+import { markTombstone, markTombstones } from '../tombstones'
 import type {
   FileKind,
   Project,
@@ -135,7 +136,16 @@ export function updateProject(id: string, input: ProjectInput): Project {
 }
 
 export function deleteProject(id: string): void {
-  getDb().prepare('DELETE FROM projects WHERE id = ?').run(id)
+  const db = getDb()
+  const taskIds = (
+    db.prepare('SELECT id FROM tasks WHERE project_id = ?').all(id) as Array<{ id: string }>
+  ).map((row) => row.id)
+  db.prepare(
+    'UPDATE invoices SET project_id = NULL, updated_at = ? WHERE project_id = ?'
+  ).run(now(), id)
+  db.prepare('DELETE FROM projects WHERE id = ?').run(id)
+  markTombstone('projects', id)
+  markTombstones('tasks', taskIds)
 }
 
 export function detectFileKind(path: string): FileKind {

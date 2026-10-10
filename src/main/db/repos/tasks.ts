@@ -1,4 +1,5 @@
 import { getDb, newId, now } from '../database'
+import { markTombstone } from '../tombstones'
 import type { Task, TaskInput, TaskPatch } from '../../../shared/types'
 
 interface TaskRow {
@@ -8,6 +9,7 @@ interface TaskRow {
   done: number
   due_date: string | null
   position: number
+  assignee_id: string | null
   created_at: string
   updated_at: string
 }
@@ -36,9 +38,18 @@ export function createTask(projectId: string, input: TaskInput): Task {
   const id = newId()
   const ts = now()
   db.prepare(
-    `INSERT INTO tasks (id, project_id, title, done, due_date, position, created_at, updated_at)
-     VALUES (?, ?, ?, 0, ?, ?, ?, ?)`
-  ).run(id, projectId, title, input.due_date ?? null, maxRow.p + 1, ts, ts)
+    `INSERT INTO tasks (id, project_id, title, done, due_date, assignee_id, position, created_at, updated_at)
+     VALUES (?, ?, ?, 0, ?, ?, ?, ?, ?)`
+  ).run(
+    id,
+    projectId,
+    title,
+    input.due_date ?? null,
+    input.assignee_id ?? null,
+    maxRow.p + 1,
+    ts,
+    ts
+  )
   const row = db.prepare('SELECT * FROM tasks WHERE id = ?').get(id) as TaskRow
   return rowToTask(row)
 }
@@ -48,11 +59,12 @@ export function updateTask(id: string, patch: TaskPatch): Task {
   const existing = db.prepare('SELECT * FROM tasks WHERE id = ?').get(id) as TaskRow | undefined
   if (!existing) throw new Error('Task not found')
   db.prepare(
-    'UPDATE tasks SET title = ?, done = ?, due_date = ?, updated_at = ? WHERE id = ?'
+    'UPDATE tasks SET title = ?, done = ?, due_date = ?, assignee_id = ?, updated_at = ? WHERE id = ?'
   ).run(
     patch.title !== undefined ? patch.title.trim() : existing.title,
     patch.done !== undefined ? (patch.done ? 1 : 0) : existing.done,
     patch.due_date !== undefined ? patch.due_date : existing.due_date,
+    patch.assignee_id !== undefined ? patch.assignee_id : existing.assignee_id,
     now(),
     id
   )
@@ -62,4 +74,5 @@ export function updateTask(id: string, patch: TaskPatch): Task {
 
 export function deleteTask(id: string): void {
   getDb().prepare('DELETE FROM tasks WHERE id = ?').run(id)
+  markTombstone('tasks', id)
 }

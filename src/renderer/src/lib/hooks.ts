@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { toast } from '@/store/ui'
+import { api } from './api'
 
 export function useApi<T>(fn: () => Promise<T>, deps: unknown[]): {
   data: T | undefined
@@ -38,6 +39,11 @@ export function useApi<T>(fn: () => Promise<T>, deps: unknown[]): {
   }, [...deps, tick])
 
   const reload = useCallback(() => setTick((t) => t + 1), [])
+
+  useEffect(() => {
+    return api.team.onSynced(() => setTick((t) => t + 1))
+  }, [])
+
   return { data, loading, error, reload }
 }
 

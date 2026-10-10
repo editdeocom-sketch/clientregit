@@ -2,14 +2,28 @@ import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import { Button } from '@/components/ui/Button'
 import { Icon } from '@/components/ui/Icon'
 import { Input } from '@/components/ui/Field'
-import { api, fmtDate, isOverdue, type Task } from '@/lib/api'
+import {
+  api,
+  fmtDate,
+  isOverdue,
+  type Task,
+  type TeamMember,
+  type TeamStatus
+} from '@/lib/api'
 import { toast } from '@/store/ui'
+
+function shortName(email: string | null): string {
+  if (!email) return 'Member'
+  return email.split('@')[0]
+}
 
 export function TasksTab({ projectId }: { projectId: string }): ReactNode {
   const [tasks, setTasks] = useState<Task[] | null>(null)
   const [title, setTitle] = useState('')
   const [dueDate, setDueDate] = useState('')
   const [busy, setBusy] = useState(false)
+  const [team, setTeam] = useState<TeamStatus | null>(null)
+  const [members, setMembers] = useState<TeamMember[]>([])
 
   const load = useCallback(() => {
     api.tasks
@@ -22,6 +36,21 @@ export function TasksTab({ projectId }: { projectId: string }): ReactNode {
     setTasks(null)
     load()
   }, [load])
+
+  useEffect(() => {
+    api.team
+      .status()
+      .then(setTeam)
+      .catch(() => setTeam(null))
+  }, [])
+
+  useEffect(() => {
+    if (!team?.inTeam) return
+    api.team
+      .roster()
+      .then(setMembers)
+      .catch(() => setMembers([]))
+  }, [team?.inTeam])
 
   const add = async (): Promise<void> => {
     if (!title.trim()) return
@@ -47,6 +76,15 @@ export function TasksTab({ projectId }: { projectId: string }): ReactNode {
     }
   }
 
+  const assign = async (task: Task, assigneeId: string | null): Promise<void> => {
+    try {
+      await api.tasks.update(task.id, { assignee_id: assigneeId })
+      load()
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : String(err))
+    }
+  }
+
   const remove = async (task: Task): Promise<void> => {
     try {
       await api.tasks.remove(task.id)
@@ -59,6 +97,12 @@ export function TasksTab({ projectId }: { projectId: string }): ReactNode {
   const doneCount = (tasks ?? []).filter((task) => task.done).length
   const total = (tasks ?? []).length
   const progress = total > 0 ? Math.round((doneCount / total) * 100) : 0
+  const isLeader = team?.role === 'leader'
+  const inTeam = Boolean(team?.inTeam)
+  const assigneeName = (id: string): string => {
+    const member = members.find((m) => m.user_id === id)
+    return member ? shortName(member.email) : 'Member'
+  }
 
   return (
     <div className="rounded-xl border border-line bg-surface">
@@ -137,6 +181,26 @@ export function TasksTab({ projectId }: { projectId: string }): ReactNode {
                   {task.title}
                 </span>
               </div>
+              {inTeam &&
+                (isLeader ? (
+                  <select
+                    value={task.assignee_id ?? ''}
+                    onChange={(event) => void assign(task, event.target.value || null)}
+                    className="cursor-pointer rounded-md border border-line bg-surface px-2 py-1 text-xs text-muted hover:border-gold hover:text-gold-strong"
+                    aria-label="Assign to"
+                  >
+                    <option value="">Unassigned</option>
+                    {members.map((member) => (
+                      <option key={member.user_id} value={member.user_id}>
+                        {shortName(member.email)}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <span className="max-w-28 truncate text-xs text-muted">
+                    {task.assignee_id ? assigneeName(task.assignee_id) : 'Unassigned'}
+                  </span>
+                ))}
               {task.due_date && (
                 <span
                   className={`text-xs ${

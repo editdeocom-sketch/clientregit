@@ -6,6 +6,7 @@ import { api, type LicenseState } from '@/lib/api'
 interface ActivationScreenProps {
   state: LicenseState
   onActivated: (state: LicenseState) => void
+  onRetry?: () => void
 }
 
 const COPY: Record<string, { title: string; subtitle: string }> = {
@@ -18,10 +19,24 @@ const COPY: Record<string, { title: string; subtitle: string }> = {
     title: 'Your license has expired',
     subtitle:
       'Sign in again to activate a renewed license, or open the website to buy a new plan.'
+  },
+  team_online_required: {
+    title: 'Team plan — internet required',
+    subtitle:
+      'Team plans verify seats online every time the app opens. Check your connection, then try again.'
+  },
+  seat_unavailable: {
+    title: 'No free seat for this computer',
+    subtitle:
+      'All seats on this team license are in use. Deactivate a seat from another computer, or add more seats on the website.'
   }
 }
 
-export function ActivationScreen({ state, onActivated }: ActivationScreenProps): ReactNode {
+export function ActivationScreen({
+  state,
+  onActivated,
+  onRetry
+}: ActivationScreenProps): ReactNode {
   const [step, setStep] = useState<'signin' | 'key'>('signin')
   const [email, setEmail] = useState(state.email ?? '')
   const [password, setPassword] = useState('')
@@ -34,6 +49,7 @@ export function ActivationScreen({ state, onActivated }: ActivationScreenProps):
     title: 'Activate ClientRegit',
     subtitle: 'Sign in with your account, then enter your license key.'
   }
+  const seatStatus = state.status === 'team_online_required' || state.status === 'seat_unavailable'
 
   const submitSignIn = async (): Promise<void> => {
     setBusy(true)
@@ -78,13 +94,29 @@ export function ActivationScreen({ state, onActivated }: ActivationScreenProps):
           <p className="mt-2 text-sm text-muted">{copy.subtitle}</p>
         </div>
 
-        <form
-          className="space-y-4"
-          onSubmit={(event) => {
-            event.preventDefault()
-            void (step === 'signin' ? submitSignIn() : submitKey())
-          }}
-        >
+        {seatStatus ? (
+          <div className="space-y-3">
+            <Button variant="primary" className="w-full" disabled={busy} onClick={() => onRetry?.()}>
+              Try again
+            </Button>
+            {state.site_url && (
+              <Button
+                variant="secondary"
+                className="w-full"
+                onClick={() => void api.files.openExternal(`${state.site_url}/#/account`)}
+              >
+                Manage seats on the website
+              </Button>
+            )}
+          </div>
+        ) : (
+          <form
+            className="space-y-4"
+            onSubmit={(event) => {
+              event.preventDefault()
+              void (step === 'signin' ? submitSignIn() : submitKey())
+            }}
+          >
           {step === 'signin' ? (
             <>
               <Field label="Email" required>
@@ -145,7 +177,8 @@ export function ActivationScreen({ state, onActivated }: ActivationScreenProps):
                 ? 'Verifying…'
                 : 'Verify & unlock'}
           </Button>
-        </form>
+          </form>
+        )}
 
         {state.site_url && (
           <div className="mt-5 space-y-2 border-t border-line pt-5">

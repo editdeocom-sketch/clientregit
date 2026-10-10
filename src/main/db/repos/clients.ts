@@ -1,4 +1,5 @@
 import { getDb, newId, now } from '../database'
+import { markTombstone } from '../tombstones'
 import type { Client, ClientInput, ClientListOptions } from '../../../shared/types'
 
 interface ClientRow {
@@ -133,6 +134,7 @@ export function deleteClient(id: string): void {
     )
   }
   db.prepare('DELETE FROM clients WHERE id = ?').run(id)
+  markTombstone('clients', id)
 }
 
 export function clientTotals(

@@ -117,5 +117,18 @@ export const migrations: Migration[] = [
       );
       CREATE INDEX idx_tasks_project ON tasks(project_id);
     `
+  },
+  {
+    version: 3,
+    sql: `
+      ALTER TABLE tasks ADD COLUMN assignee_id TEXT;
+
+      CREATE TABLE tombstones (
+        entity TEXT NOT NULL,
+        row_id TEXT NOT NULL,
+        deleted_at TEXT NOT NULL,
+        PRIMARY KEY (entity, row_id)
+      );
+    `
   }
 ]
