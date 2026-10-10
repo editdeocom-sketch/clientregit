@@ -30,6 +30,7 @@ jobs:
 
   build-mac:
     runs-on: macos-latest
+    needs: build-win
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
