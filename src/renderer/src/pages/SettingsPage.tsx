@@ -498,6 +498,8 @@ export function SettingsPage(): ReactNode {
 
       <TeamCard />
 
+      <NotificationsCard />
+
       <Card className="mt-5">
         <CardHeader title="About" />
         <div className="flex items-center gap-3 px-5 py-4 text-sm text-muted">
@@ -527,6 +529,103 @@ export function SettingsPage(): ReactNode {
         }}
       />
     </div>
+  )
+}
+
+function NotificationsCard(): ReactNode {
+  const { data: settings, loading, reload } = useApi(() => api.settings.get(), [])
+  const [draft, setDraft] = useState<AppSettings | null>(null)
+  const [busy, setBusy] = useState(false)
+
+  useEffect(() => {
+    if (settings) setDraft({ ...settings })
+  }, [settings])
+
+  if (loading || !settings || !draft) {
+    return (
+      <Card className="mt-5">
+        <CardHeader title="Notifications" />
+        <div className="px-5 py-4 text-sm text-muted">Loading…</div>
+      </Card>
+    )
+  }
+
+  const rows: Array<{ key: keyof AppSettings; label: string; hint: string }> = [
+    { key: 'notify_enabled', label: 'Desktop notifications', hint: 'Master switch for all notifications' },
+    { key: 'notify_meeting_invites', label: 'Meeting invites', hint: 'When someone invites you to a meeting' },
+    { key: 'notify_meeting_reminders', label: 'Meeting reminders & live alerts', hint: '10 minutes before start, when a meeting goes live' },
+    { key: 'notify_direct_messages', label: 'Direct messages', hint: 'New messages from your team' },
+    { key: 'notify_tasks', label: 'Tasks', hint: 'Assignments and due/overdue dates' },
+    { key: 'notify_team', label: 'Team events', hint: 'When a teammate joins your workspace' },
+    { key: 'tray_on_close', label: 'Keep running in the tray', hint: 'Closing the window hides to the tray so notifications keep arriving' }
+  ]
+
+  const save = async (): Promise<void> => {
+    setBusy(true)
+    try {
+      const patch: SettingsPatch = {}
+      for (const row of rows) {
+        patch[row.key] = draft[row.key] as never
+      }
+      await api.settings.patch(patch)
+      toast.success('Notification settings saved')
+      reload()
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : String(err))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const permission =
+    typeof Notification !== 'undefined' ? Notification.permission : 'unsupported'
+
+  return (
+    <Card className="mt-5">
+      <CardHeader
+        title="Notifications"
+        subtitle="Desktop alerts for meetings, messages, tasks and team events"
+        action={
+          <Button variant="primary" size="sm" disabled={busy} onClick={() => void save()}>
+            {busy ? 'Saving…' : 'Save'}
+          </Button>
+        }
+      />
+      <div className="divide-y divide-line/60 px-5 py-1">
+        {rows.map((row) => {
+          const value = Boolean(draft[row.key])
+          return (
+            <div key={String(row.key)} className="flex items-center justify-between gap-4 py-3">
+              <div className="min-w-0">
+                <div className="text-sm font-medium">{row.label}</div>
+                <div className="text-xs text-muted">{row.hint}</div>
+              </div>
+              <button
+                role="switch"
+                aria-checked={value}
+                disabled={row.key !== 'notify_enabled' && !draft.notify_enabled}
+                onClick={() => setDraft({ ...draft, [row.key]: !value } as AppSettings)}
+                className={`relative h-6 w-11 shrink-0 rounded-full transition-colors disabled:opacity-40 cursor-pointer ${
+                  value ? 'bg-gold' : 'bg-surface-2 border border-line'
+                }`}
+              >
+                <span
+                  className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all ${
+                    value ? 'left-[22px]' : 'left-0.5'
+                  }`}
+                />
+              </button>
+            </div>
+          )
+        })}
+      </div>
+      <div className="border-t border-line px-5 py-3 text-xs text-muted">
+        Permission: <span className="font-medium text-ink">{permission}</span>
+        {permission !== 'granted' && (
+          <> — allow notifications when your system asks, to receive alerts.</>
+        )}
+      </div>
+    </Card>
   )
 }
 

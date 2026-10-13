@@ -6,6 +6,8 @@ import { Card, CardHeader, PageHeader } from '@/components/ui/Layout'
 import { Icon } from '@/components/ui/Icon'
 import { api, fmtDate, type CalendarEvent } from '@/lib/api'
 import { useApi } from '@/lib/hooks'
+import { listMeetings } from '@/lib/meetings'
+import type { Meeting } from '@shared/types'
 
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 
@@ -39,6 +41,8 @@ export function CalendarPage(): ReactNode {
     return api.calendar.range(iso(startOfWeek(first)), iso(endOfWeek(last)))
   }, [year, month])
 
+  const { data: meetings } = useApi<Meeting[]>(() => listMeetings(), [])
+
   const weeks = useMemo(() => {
     const first = new Date(year, month, 1)
     const last = new Date(year, month + 1, 0)
@@ -62,8 +66,34 @@ export function CalendarPage(): ReactNode {
       list.push(event)
       map.set(event.date, list)
     }
+    const today = iso(new Date())
+    for (const meeting of meetings ?? []) {
+      if (meeting.status === 'ended' || meeting.status === 'cancelled') continue
+      const date =
+        meeting.status === 'live' || !meeting.scheduled_at
+          ? today
+          : meeting.scheduled_at.slice(0, 10)
+      const time = meeting.scheduled_at
+        ? new Date(meeting.scheduled_at).toLocaleTimeString('en-GB', {
+            hour: '2-digit',
+            minute: '2-digit'
+          })
+        : 'any time'
+      const item: CalendarEvent = {
+        date,
+        kind: 'meeting',
+        id: meeting.id,
+        title: meeting.title,
+        subtitle: meeting.status === 'live' ? 'Live now' : time,
+        status: meeting.status,
+        route: '/meetings'
+      }
+      const list = map.get(date) ?? []
+      list.push(item)
+      map.set(date, list)
+    }
     return map
-  }, [events])
+  }, [events, meetings])
 
   const monthLabel = new Date(year, month, 1).toLocaleDateString('en-GB', {
     month: 'long',
@@ -84,7 +114,7 @@ export function CalendarPage(): ReactNode {
     <div>
       <PageHeader
         title="Calendar"
-        subtitle="Project deadlines and invoice due dates"
+        subtitle="Project deadlines, invoice due dates, and meetings"
         actions={
           <div className="flex items-center gap-2">
             <Button variant="ghost" icon={<Icon name="chevron-left" size={15} />} onClick={() => step(-1)} />
@@ -150,7 +180,9 @@ export function CalendarPage(): ReactNode {
                               className={`truncate rounded px-1.5 py-0.5 text-[10px] font-medium ${
                                 event.kind === 'deadline'
                                   ? 'bg-gold/20 text-gold-strong dark:text-gold'
-                                  : 'bg-info-bg text-info'
+                                  : event.kind === 'meeting'
+                                    ? 'bg-teal-bg text-teal'
+                                    : 'bg-info-bg text-info'
                               }`}
                             >
                               {event.title}
@@ -189,8 +221,20 @@ export function CalendarPage(): ReactNode {
                         <div className="truncate text-sm font-medium">{event.title}</div>
                         <div className="truncate text-xs text-muted">{event.subtitle}</div>
                       </div>
-                      <Badge tone={event.kind === 'deadline' ? 'gold' : 'info'}>
-                        {event.kind === 'deadline' ? 'deadline' : 'invoice'}
+                      <Badge
+                        tone={
+                          event.kind === 'deadline'
+                            ? 'gold'
+                            : event.kind === 'meeting'
+                              ? 'teal'
+                              : 'info'
+                        }
+                      >
+                        {event.kind === 'deadline'
+                          ? 'deadline'
+                          : event.kind === 'meeting'
+                            ? 'meeting'
+                            : 'invoice'}
                       </Badge>
                     </button>
                   ))}
@@ -207,6 +251,9 @@ export function CalendarPage(): ReactNode {
               </div>
               <div className="flex items-center gap-2">
                 <span className="h-3 w-3 rounded-sm bg-info-bg" /> Invoice due date
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="h-3 w-3 rounded-sm bg-teal-bg" /> Meeting
               </div>
               <div className="flex items-center gap-2">
                 <span className="h-3 w-3 rounded-full bg-gold" /> Today

@@ -136,7 +136,8 @@ function computeState(): LicenseState {
     site_url: siteUrl(),
     is_team: team,
     seats: team ? record.seats : null,
-    seats_used: team ? record.seats_used : null
+    seats_used: team ? record.seats_used : null,
+    signed_out: record.signed_out
   }
 }
 
@@ -149,7 +150,8 @@ function deactivateLocal(): void {
     last_validated_at: null,
     seats: null,
     seats_used: null,
-    team_state: null
+    team_state: null,
+    signed_out: true
   })
 }
 
@@ -278,6 +280,7 @@ export async function signInLicense(input: LicenseSignInInput): Promise<{ email:
       throw new Error('Confirm your email first — check your inbox for the link.')
     throw new Error(result.error.message)
   }
+  saveLicense({ signed_out: false })
   return { email: result.data.user?.email ?? email }
 }
 
@@ -372,7 +375,8 @@ export async function activateLicense(input: LicenseActivateInput): Promise<Lice
     last_validated_at: new Date().toISOString(),
     seats: seats > 1 ? seats : null,
     seats_used: seats > 1 ? seatsUsed : null,
-    team_state: teamState
+    team_state: teamState,
+    signed_out: false
   })
   validatedThisSession = true
   return computeState()

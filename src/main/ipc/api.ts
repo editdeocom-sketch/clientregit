@@ -1,4 +1,4 @@
-import { app, dialog, ipcMain, shell } from 'electron'
+import { app, BrowserWindow, dialog, ipcMain, shell } from 'electron'
 import { existsSync } from 'node:fs'
 import * as clients from '../db/repos/clients'
 import * as projects from '../db/repos/projects'
@@ -16,6 +16,7 @@ import {
 } from '../license/service'
 import { authClient } from '../license/service'
 import { getStatus, scheduleSync, syncNow } from '../sync/service'
+import type { User } from '@supabase/supabase-js'
 import type {
   CalendarEvent,
   Currency,
@@ -24,7 +25,8 @@ import type {
   LicenseSignInInput,
   SettingsPatch,
   TaskInput,
-  TaskPatch
+  TaskPatch,
+  UserProfile
 } from '../../shared/types'
 
 type Handler = (...args: any[]) => any
@@ -33,6 +35,18 @@ function isoDate(offsetDays = 0): string {
   const d = new Date()
   d.setDate(d.getDate() + offsetDays)
   return d.toISOString().slice(0, 10)
+}
+
+function toUserProfile(user: User): UserProfile {
+  const meta = (user.user_metadata ?? {}) as Record<string, unknown>
+  return {
+    id: user.id,
+    email: user.email ?? null,
+    created_at: user.created_at,
+    email_confirmed: Boolean(user.email_confirmed_at),
+    full_name: typeof meta.full_name === 'string' ? meta.full_name : '',
+    phone: typeof meta.phone === 'string' ? meta.phone : (user.phone ?? '')
+  }
 }
 
 const domains: Record<string, Record<string, Handler>> = {
@@ -77,6 +91,48 @@ const domains: Record<string, Record<string, Handler>> = {
       return payload.members ?? []
     },
     syncNow: () => syncNow()
+  },
+  user: {
+    get: async () => {
+      const { data, error } = await authClient().auth.getUser()
+      if (error || !data.user) return null
+      return toUserProfile(data.user)
+    },
+    updateProfile: async (input: { full_name: string; phone: string }) => {
+      const { data: current, error: readError } = await authClient().auth.getUser()
+      if (readError || !current.user) throw new Error('Sign in to update your profile.')
+      const meta = (current.user.user_metadata ?? {}) as Record<string, unknown>
+      const { data, error } = await authClient().auth.updateUser({
+        data: { ...meta, full_name: input.full_name.trim(), phone: input.phone.trim() }
+      })
+      if (error) throw new Error(error.message)
+      return toUserProfile(data.user)
+    },
+    changePassword: async (password: string) => {
+      if (password.length < 8) throw new Error('Password must be at least 8 characters.')
+      const { error } = await authClient().auth.updateUser({ password })
+      if (error) throw new Error(error.message)
+    },
+    session: async () => {
+      const { data, error } = await authClient().auth.getSession()
+      if (error || !data.session) return null
+      const s = data.session
+      return {
+        access_token: s.access_token,
+        refresh_token: s.refresh_token,
+        expires_at: s.expires_at ?? null
+      }
+    }
+  },
+  app: {
+    showWindow: () => {
+      for (const win of BrowserWindow.getAllWindows()) {
+        if (win.isMinimized()) win.restore()
+        win.show()
+        win.focus()
+      }
+      return true
+    }
   },
   invoices: {
     list: invoices.listInvoices,
@@ -149,6 +205,12 @@ function afterMutation(domain: string, method: string, result: unknown): void {
     result.then(() => scheduleSync()).catch(() => scheduleSync())
   } else {
     scheduleSync()
+  }
+}
+
+export function sendToWindows(channel: string, ...args: unknown[]): void {
+  for (const win of BrowserWindow.getAllWindows()) {
+    if (!win.isDestroyed()) win.webContents.send(channel, ...args)
   }
 }
 

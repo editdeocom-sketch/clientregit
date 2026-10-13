@@ -60,6 +60,22 @@ const api: Api = {
       return () => ipcRenderer.removeListener('team:synced', listener)
     }
   },
+  user: {
+    get: () => invoke('user', 'get'),
+    updateProfile: (input) => invoke('user', 'updateProfile', input),
+    changePassword: (password) => invoke('user', 'changePassword', password),
+    session: () => invoke('user', 'session')
+  },
+  app: {
+    showWindow: () => invoke('app', 'showWindow')
+  },
+  nav: {
+    onNavigate: (cb) => {
+      const listener = (_event: unknown, route: string): void => cb(route)
+      ipcRenderer.on('nav:to', listener)
+      return () => ipcRenderer.removeListener('nav:to', listener)
+    }
+  },
   settings: {
     get: () => invoke('settings', 'get'),
     patch: (patch) => invoke('settings', 'patch', patch)

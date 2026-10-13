@@ -89,7 +89,7 @@ export function ActivationScreen({
     <div className="flex min-h-screen items-center justify-center p-6">
       <div className="w-full max-w-md rounded-xl border border-line bg-surface p-8 shadow-sm">
         <div className="mb-6 flex flex-col items-center text-center">
-          <img src="/logo-emblem.png" alt="ClientRegit" className="mb-3 h-14 w-14 object-contain" />
+          <img src="logo-emblem.png" alt="ClientRegit" className="mb-3 h-14 w-14 object-contain" />
           <h1 className="text-lg font-semibold tracking-tight">{copy.title}</h1>
           <p className="mt-2 text-sm text-muted">{copy.subtitle}</p>
         </div>

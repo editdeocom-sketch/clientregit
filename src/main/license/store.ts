@@ -13,6 +13,7 @@ export interface LicenseRecord {
   seats: number | null
   seats_used: number | null
   team_state: string | null
+  signed_out: boolean
 }
 
 const K = {
@@ -26,7 +27,8 @@ const K = {
   deviceId: 'license.device_id',
   seats: 'license.seats',
   seatsUsed: 'license.seats_used',
-  teamState: 'license.team_state'
+  teamState: 'license.team_state',
+  signedOut: 'license.signed_out'
 } as const
 
 function readRows(): Map<string, string> {
@@ -52,7 +54,8 @@ export function getLicenseRecord(): LicenseRecord {
     device_id: rows.get(K.deviceId) ?? null,
     seats: seatsRaw !== undefined ? Number(seatsRaw) : null,
     seats_used: seatsUsedRaw !== undefined ? Number(seatsUsedRaw) : null,
-    team_state: rows.get(K.teamState) ?? null
+    team_state: rows.get(K.teamState) ?? null,
+    signed_out: rows.get(K.signedOut) === '1'
   }
 }
 
@@ -73,6 +76,7 @@ export function saveLicense(patch: Partial<LicenseRecord>): LicenseRecord {
   if (patch.seats !== undefined) map.push([K.seats, patch.seats])
   if (patch.seats_used !== undefined) map.push([K.seatsUsed, patch.seats_used])
   if (patch.team_state !== undefined) map.push([K.teamState, patch.team_state])
+  if (patch.signed_out !== undefined) map.push([K.signedOut, patch.signed_out ? '1' : '0'])
   const run = db.transaction(() => {
     for (const [key, value] of map) {
       if (value === null) {

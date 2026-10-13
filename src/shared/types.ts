@@ -248,6 +248,13 @@ export interface AppSettings {
   invoice_next: number
   invoice_terms: string
   theme: 'light' | 'dark'
+  notify_enabled: boolean
+  notify_meeting_invites: boolean
+  notify_meeting_reminders: boolean
+  notify_direct_messages: boolean
+  notify_tasks: boolean
+  notify_team: boolean
+  tray_on_close: boolean
 }
 
 export type SettingsPatch = Partial<AppSettings>
@@ -279,7 +286,7 @@ export interface StatusCount {
 
 export interface CalendarEvent {
   date: string
-  kind: 'deadline' | 'invoice_due'
+  kind: 'deadline' | 'invoice_due' | 'meeting'
   id: string
   title: string
   subtitle: string
@@ -359,6 +366,7 @@ export interface LicenseState {
   is_team: boolean
   seats: number | null
   seats_used: number | null
+  signed_out: boolean
 }
 
 export interface LicenseSignInInput {
@@ -378,6 +386,15 @@ export interface TeamMember {
   role: 'leader' | 'member'
 }
 
+export interface UserProfile {
+  id: string
+  email: string | null
+  created_at: string
+  email_confirmed: boolean
+  full_name: string
+  phone: string
+}
+
 export interface TeamStatus {
   inTeam: boolean
   teamName: string | null
@@ -386,6 +403,105 @@ export interface TeamStatus {
   lastSyncAt: string | null
   syncing: boolean
   lastError: string | null
+}
+
+// --- Meetings / video calling (Supabase-backed, read via renderer client) ---
+
+export type MeetingStatus = 'scheduled' | 'live' | 'ended' | 'cancelled'
+
+export interface Meeting {
+  id: string
+  code: string
+  host_user_id: string
+  team_id: string | null
+  title: string
+  description: string | null
+  scheduled_at: string | null
+  duration_min: number | null
+  status: MeetingStatus
+  lobby_enabled: boolean
+  started_at: string | null
+  ended_at: string | null
+  created_at: string
+}
+
+export interface MeetingMember {
+  meeting_id: string
+  user_id: string
+  invite_status: 'invited' | 'accepted' | 'declined'
+  created_at: string
+}
+
+export interface MeetingGuest {
+  id: string
+  meeting_id: string
+  name: string
+  email: string | null
+  created_at: string
+}
+
+export interface MeetingMessage {
+  id: string
+  meeting_id: string
+  sender_kind: 'user' | 'guest'
+  sender_id: string
+  sender_name: string
+  body: string
+  created_at: string
+}
+
+export interface CallSession {
+  id: string
+  meeting_id: string
+  started_at: string
+  ended_at: string | null
+}
+
+export interface CallParticipant {
+  id: string
+  session_id: string
+  meeting_id: string
+  participant_kind: 'user' | 'guest'
+  participant_id: string
+  name: string
+  joined_at: string
+  left_at: string | null
+}
+
+export interface Conversation {
+  id: string
+  user_a: string
+  user_b: string
+  last_message_at: string
+  created_at: string
+}
+
+export interface DirectMessage {
+  id: string
+  conversation_id: string
+  sender_id: string
+  body: string
+  created_at: string
+  read_at: string | null
+}
+
+export interface AuthSessionInfo {
+  access_token: string
+  refresh_token: string
+  expires_at: number | null
+}
+
+export interface MeetingByCode {
+  ok: boolean
+  code?: string
+  id?: string
+  title?: string
+  description?: string | null
+  status?: MeetingStatus
+  lobby_enabled?: boolean
+  scheduled_at?: string | null
+  duration_min?: number | null
+  host_name?: string
 }
 
 export interface Api {
@@ -438,6 +554,18 @@ export interface Api {
     roster(): Promise<TeamMember[]>
     syncNow(): Promise<TeamStatus>
     onSynced(cb: () => void): () => void
+  }
+  user: {
+    get(): Promise<UserProfile | null>
+    updateProfile(input: { full_name: string; phone: string }): Promise<UserProfile>
+    changePassword(password: string): Promise<void>
+    session(): Promise<AuthSessionInfo | null>
+  }
+  app: {
+    showWindow(): Promise<boolean>
+  }
+  nav: {
+    onNavigate(cb: (route: string) => void): () => void
   }
   settings: {
     get(): Promise<AppSettings>

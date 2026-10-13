@@ -13,13 +13,31 @@ const DEFAULTS: AppSettings = {
   invoice_prefix: 'INV-',
   invoice_next: 1,
   invoice_terms: 'Thank you for your business!',
-  theme: 'light'
+  theme: 'light',
+  notify_enabled: true,
+  notify_meeting_invites: true,
+  notify_meeting_reminders: true,
+  notify_direct_messages: true,
+  notify_tasks: true,
+  notify_team: true,
+  tray_on_close: true
 }
+
+const BOOLEAN_KEYS = new Set<string>([
+  'notify_enabled',
+  'notify_meeting_invites',
+  'notify_meeting_reminders',
+  'notify_direct_messages',
+  'notify_tasks',
+  'notify_team',
+  'tray_on_close'
+])
 
 function coerce(key: keyof AppSettings, raw: string): AppSettings[keyof AppSettings] {
   if (key === 'tax_percent' || key === 'invoice_next') return Number(raw) || 0
   if (key === 'currency') return raw === 'USD' ? 'USD' : 'INR'
   if (key === 'theme') return raw === 'dark' ? 'dark' : 'light'
+  if (BOOLEAN_KEYS.has(key)) return raw === 'true' || raw === '1'
   return raw
 }
 
