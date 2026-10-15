@@ -15,9 +15,6 @@ const DEFAULTS: AppSettings = {
   invoice_terms: 'Thank you for your business!',
   theme: 'light',
   notify_enabled: true,
-  notify_meeting_invites: true,
-  notify_meeting_reminders: true,
-  notify_direct_messages: true,
   notify_tasks: true,
   notify_team: true,
   tray_on_close: true
@@ -25,9 +22,6 @@ const DEFAULTS: AppSettings = {
 
 const BOOLEAN_KEYS = new Set<string>([
   'notify_enabled',
-  'notify_meeting_invites',
-  'notify_meeting_reminders',
-  'notify_direct_messages',
   'notify_tasks',
   'notify_team',
   'tray_on_close'

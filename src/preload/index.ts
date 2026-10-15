@@ -69,12 +69,12 @@ const api: Api = {
   app: {
     showWindow: () => invoke('app', 'showWindow')
   },
-  nav: {
-    onNavigate: (cb) => {
-      const listener = (_event: unknown, route: string): void => cb(route)
-      ipcRenderer.on('nav:to', listener)
-      return () => ipcRenderer.removeListener('nav:to', listener)
-    }
+  google: {
+    status: () => invoke('google', 'status'),
+    link: () => invoke('google', 'link'),
+    unlink: () => invoke('google', 'unlink'),
+    createMeeting: (input) => invoke('google', 'createMeeting', input),
+    upcoming: (days) => invoke('google', 'upcoming', days)
   },
   settings: {
     get: () => invoke('settings', 'get'),

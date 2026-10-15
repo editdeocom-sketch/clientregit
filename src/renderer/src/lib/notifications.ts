@@ -1,21 +1,12 @@
-import type { AppSettings, DirectMessage, Meeting, MeetingMember, TeamMember, UserProfile } from '@shared/types'
+import type { AppSettings, TeamMember, UserProfile } from '@shared/types'
 import { api } from './api'
-import {
-  listMeetings,
-  pendingMeetingInvites,
-  unreadDirectMessages,
-  watchDirectMessages,
-  watchMeetings
-} from './meetings'
-import { sb } from './supabase'
 
-type Category = 'meeting_invites' | 'meeting_reminders' | 'direct_messages' | 'tasks' | 'team'
+type Category = 'tasks' | 'team'
 
 const SEEN_KEY = 'cr.notify.seen'
 const ROSTER_KEY = 'cr.notify.roster'
 const TASKS_KEY = 'cr.notify.tasks'
 const TICK_MS = 45_000
-const REMINDER_MS = 10 * 60_000
 
 function readSeen(): string[] {
   try {
@@ -43,12 +34,6 @@ function markSeen(tag: string): void {
 
 function categoryEnabled(settings: AppSettings, category: Category): boolean {
   switch (category) {
-    case 'meeting_invites':
-      return settings.notify_meeting_invites
-    case 'meeting_reminders':
-      return settings.notify_meeting_reminders
-    case 'direct_messages':
-      return settings.notify_direct_messages
     case 'tasks':
       return settings.notify_tasks
     case 'team':
@@ -155,117 +140,6 @@ export function startNotificationEngine(): () => void {
     }
   }
 
-  const emailOf = (userId: string): string =>
-    rosterCache.find((member) => member.user_id === userId)?.email ?? 'A teammate'
-
-  const checkDirectMessages = async (): Promise<void> => {
-    const settings = cachedSettings
-    if (!settings?.notify_enabled || !settings.notify_direct_messages) return
-    let messages: DirectMessage[]
-    try {
-      messages = await unreadDirectMessages()
-    } catch {
-      return
-    }
-    for (const message of messages) {
-      if (user && message.sender_id === user.id) continue
-      const onPage =
-        document.visibilityState === 'visible' && window.location.hash.startsWith('#/messages')
-      if (onPage) {
-        if (!hasSeen(`dm-${message.id}`)) markSeen(`dm-${message.id}`)
-        continue
-      }
-      const sender = emailOf(message.sender_id)
-      notify(
-        `Message from ${sender}`,
-        message.body.slice(0, 120),
-        `dm-${message.id}`,
-        '/messages',
-        'direct_messages'
-      )
-    }
-  }
-
-  const checkInvitesAndMeetings = async (): Promise<void> => {
-    const settings = cachedSettings
-    if (!settings?.notify_enabled) return
-    let meetings: Meeting[]
-    let invites: MeetingMember[]
-    try {
-      ;[meetings, invites] = await Promise.all([listMeetings(), pendingMeetingInvites()])
-    } catch {
-      return
-    }
-    const byId = new Map(meetings.map((meeting) => [meeting.id, meeting]))
-    const now = Date.now()
-
-    if (settings.notify_meeting_invites) {
-      for (const invite of invites) {
-        const meeting = byId.get(invite.meeting_id)
-        notify(
-          `Meeting invite: ${meeting?.title ?? 'New meeting'}`,
-          meeting?.scheduled_at
-            ? `Scheduled for ${new Date(meeting.scheduled_at).toLocaleString('en-GB')}`
-            : 'Open ClientRegit to respond.',
-          `invite-${invite.meeting_id}`,
-          '/meetings',
-          'meeting_invites'
-        )
-      }
-    }
-
-    if (!settings.notify_meeting_reminders) return
-
-    let declined: string[] = []
-    try {
-      const client = await sb()
-      const { data } = await client
-        .from('meeting_members')
-        .select('meeting_id')
-        .eq('invite_status', 'declined')
-      declined = ((data ?? []) as Array<{ meeting_id: string }>).map((row) => row.meeting_id)
-    } catch {
-      declined = []
-    }
-
-    for (const meeting of meetings) {
-      if (meeting.status === 'ended' || meeting.status === 'cancelled') continue
-      if (declined.includes(meeting.id)) continue
-
-      if (meeting.status === 'live') {
-        const hostIsMe = user && meeting.host_user_id === user.id
-        const inRoom = window.location.hash.includes(meeting.code)
-        if (!hostIsMe && !inRoom) {
-          notify(
-            `Meeting started: ${meeting.title}`,
-            'The host is live now — join from the Meetings page.',
-            `live-${meeting.id}`,
-            `/meetings/room/${meeting.code}`,
-            'meeting_reminders'
-          )
-        }
-        continue
-      }
-
-      if (!meeting.scheduled_at) continue
-      const startsAt = new Date(meeting.scheduled_at).getTime()
-      const inReminderWindow = now >= startsAt - REMINDER_MS && now < startsAt + 5 * 60_000
-      if (!inReminderWindow) continue
-      const minutes = Math.max(0, Math.round((startsAt - now) / 60_000))
-      const whenText =
-        minutes >= 1
-          ? `Starts in ${minutes} minute${minutes === 1 ? '' : 's'}`
-          : 'Starting now'
-      notify(
-        `Meeting reminder: ${meeting.title}`,
-        `${whenText} · ${new Date(meeting.scheduled_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`,
-        `rem-${meeting.id}`,
-        `/meetings/room/${meeting.code}`,
-        'meeting_reminders'
-      )
-    }
-  }
-
   const checkRoster = async (): Promise<void> => {
     const settings = cachedSettings
     if (!settings?.notify_enabled || !settings.notify_team) return
@@ -365,53 +239,16 @@ export function startNotificationEngine(): () => void {
     tick += 1
     await refreshSettings()
     if (!cachedSettings?.notify_enabled) return
-    await checkInvitesAndMeetings()
-    await checkDirectMessages()
     if (tick % 4 === 1) await checkRoster()
     if (tick % 6 === 3) await checkTasks()
   }
 
-  const seedDirectMessageBaseline = async (): Promise<void> => {
-    try {
-      const messages = await unreadDirectMessages()
-      for (const message of messages) markSeen(`dm-${message.id}`)
-    } catch {
-      // not signed in yet
-    }
-  }
-
   void refreshSettings()
-  void seedDirectMessageBaseline()
   void runTick()
   const interval = setInterval(() => void runTick(), TICK_MS)
-
-  const offDm = watchDirectMessages((message) => {
-    if (disposed) return
-    if (user && message.sender_id === user.id) return
-    const onPage =
-      document.visibilityState === 'visible' && window.location.hash.startsWith('#/messages')
-    if (onPage) {
-      if (!hasSeen(`dm-${message.id}`)) markSeen(`dm-${message.id}`)
-      return
-    }
-    const sender = emailOf(message.sender_id)
-    notify(
-      `Message from ${sender}`,
-      message.body.slice(0, 120),
-      `dm-${message.id}`,
-      '/messages',
-      'direct_messages'
-    )
-  })
-
-  const offMeet = watchMeetings(() => {
-    void checkInvitesAndMeetings()
-  })
 
   return () => {
     disposed = true
     clearInterval(interval)
-    offDm()
-    offMeet()
   }
 }

@@ -16,6 +16,13 @@ import {
 } from '../license/service'
 import { authClient } from '../license/service'
 import { getStatus, scheduleSync, syncNow } from '../sync/service'
+import {
+  googleStatus,
+  googleLink,
+  googleUnlink,
+  googleCreateMeeting,
+  googleUpcoming
+} from '../google/service'
 import type { User } from '@supabase/supabase-js'
 import type {
   CalendarEvent,
@@ -133,6 +140,13 @@ const domains: Record<string, Record<string, Handler>> = {
       }
       return true
     }
+  },
+  google: {
+    status: () => googleStatus(),
+    link: () => googleLink(),
+    unlink: () => googleUnlink(),
+    createMeeting: (input: { title: string; durationMin?: number }) => googleCreateMeeting(input),
+    upcoming: (days?: number) => googleUpcoming(days)
   },
   invoices: {
     list: invoices.listInvoices,

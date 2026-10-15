@@ -4,14 +4,12 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { Icon, type IconName } from '@/components/ui/Icon'
 import { api, type LicenseState } from '@/lib/api'
 import { useApi } from '@/lib/hooks'
-import { useMeetBadges } from '@/lib/useBadges'
 import { useUi } from '@/store/ui'
 
 interface NavItem {
   to: string
   label: string
   icon: IconName
-  badge?: 'invites' | 'unread'
 }
 
 const navItems: NavItem[] = [
@@ -20,8 +18,7 @@ const navItems: NavItem[] = [
   { to: '/projects', label: 'Projects', icon: 'film' },
   { to: '/invoices', label: 'Invoices', icon: 'file-text' },
   { to: '/calendar', label: 'Calendar', icon: 'calendar' },
-  { to: '/meetings', label: 'Meetings', icon: 'video', badge: 'invites' },
-  { to: '/messages', label: 'Messages', icon: 'message', badge: 'unread' },
+  { to: '/meetings', label: 'Meetings', icon: 'video' },
   { to: '/reports', label: 'Reports', icon: 'chart' },
   { to: '/profile', label: 'Profile', icon: 'user' },
   { to: '/settings', label: 'Settings', icon: 'settings' }
@@ -32,7 +29,6 @@ export function Sidebar(): ReactNode {
   const theme = useUi((state) => state.theme)
   const setTheme = useUi((state) => state.setTheme)
   const { data: license } = useApi<LicenseState>(() => api.license.getState(), [])
-  const badges = useMeetBadges()
   const [confirmOut, setConfirmOut] = useState(false)
   const [loggingOut, setLoggingOut] = useState(false)
 
@@ -72,12 +68,6 @@ export function Sidebar(): ReactNode {
             item.to === '/'
               ? location.pathname === '/'
               : location.pathname.startsWith(item.to)
-          const badgeCount =
-            item.badge === 'invites'
-              ? badges.invites
-              : item.badge === 'unread'
-                ? badges.unread
-                : 0
           return (
             <NavLink
               key={item.to}
@@ -90,12 +80,7 @@ export function Sidebar(): ReactNode {
             >
               <Icon name={item.icon} size={18} />
               {item.label}
-              {badgeCount > 0 && (
-                <span className="ml-auto rounded-full bg-gold px-1.5 py-0.5 text-[10px] font-bold leading-none text-white">
-                  {badgeCount > 99 ? '99+' : badgeCount}
-                </span>
-              )}
-              {active && badgeCount === 0 && (
+              {active && (
                 <span className="ml-auto h-1.5 w-1.5 rounded-full bg-gold" />
               )}
             </NavLink>

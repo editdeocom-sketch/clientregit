@@ -249,9 +249,6 @@ export interface AppSettings {
   invoice_terms: string
   theme: 'light' | 'dark'
   notify_enabled: boolean
-  notify_meeting_invites: boolean
-  notify_meeting_reminders: boolean
-  notify_direct_messages: boolean
   notify_tasks: boolean
   notify_team: boolean
   tray_on_close: boolean
@@ -286,7 +283,7 @@ export interface StatusCount {
 
 export interface CalendarEvent {
   date: string
-  kind: 'deadline' | 'invoice_due' | 'meeting'
+  kind: 'deadline' | 'invoice_due'
   id: string
   title: string
   subtitle: string
@@ -405,103 +402,33 @@ export interface TeamStatus {
   lastError: string | null
 }
 
-// --- Meetings / video calling (Supabase-backed, read via renderer client) ---
-
-export type MeetingStatus = 'scheduled' | 'live' | 'ended' | 'cancelled'
-
-export interface Meeting {
-  id: string
-  code: string
-  host_user_id: string
-  team_id: string | null
-  title: string
-  description: string | null
-  scheduled_at: string | null
-  duration_min: number | null
-  status: MeetingStatus
-  lobby_enabled: boolean
-  started_at: string | null
-  ended_at: string | null
-  created_at: string
-}
-
-export interface MeetingMember {
-  meeting_id: string
-  user_id: string
-  invite_status: 'invited' | 'accepted' | 'declined'
-  created_at: string
-}
-
-export interface MeetingGuest {
-  id: string
-  meeting_id: string
-  name: string
-  email: string | null
-  created_at: string
-}
-
-export interface MeetingMessage {
-  id: string
-  meeting_id: string
-  sender_kind: 'user' | 'guest'
-  sender_id: string
-  sender_name: string
-  body: string
-  created_at: string
-}
-
-export interface CallSession {
-  id: string
-  meeting_id: string
-  started_at: string
-  ended_at: string | null
-}
-
-export interface CallParticipant {
-  id: string
-  session_id: string
-  meeting_id: string
-  participant_kind: 'user' | 'guest'
-  participant_id: string
-  name: string
-  joined_at: string
-  left_at: string | null
-}
-
-export interface Conversation {
-  id: string
-  user_a: string
-  user_b: string
-  last_message_at: string
-  created_at: string
-}
-
-export interface DirectMessage {
-  id: string
-  conversation_id: string
-  sender_id: string
-  body: string
-  created_at: string
-  read_at: string | null
-}
-
 export interface AuthSessionInfo {
   access_token: string
   refresh_token: string
   expires_at: number | null
 }
 
-export interface MeetingByCode {
-  ok: boolean
-  code?: string
-  id?: string
-  title?: string
-  description?: string | null
-  status?: MeetingStatus
-  lobby_enabled?: boolean
-  scheduled_at?: string | null
-  duration_min?: number | null
-  host_name?: string
+export interface GoogleAccountInfo {
+  email: string
+  name: string | null
+  picture: string | null
+}
+
+export interface GoogleMeeting {
+  id: string
+  title: string
+  start: string
+  end: string
+  meetLink: string
+  status: 'confirmed' | 'tentative' | 'cancelled'
+}
+
+export interface GoogleCreatedMeeting {
+  title: string
+  meetLink: string
+  start: string
+  end: string
+  htmlLink: string
 }
 
 export interface Api {
@@ -564,8 +491,12 @@ export interface Api {
   app: {
     showWindow(): Promise<boolean>
   }
-  nav: {
-    onNavigate(cb: (route: string) => void): () => void
+  google: {
+    status(): Promise<GoogleAccountInfo | null>
+    link(): Promise<GoogleAccountInfo>
+    unlink(): Promise<void>
+    createMeeting(input: { title: string; durationMin?: number }): Promise<GoogleCreatedMeeting>
+    upcoming(days?: number): Promise<GoogleMeeting[]>
   }
   settings: {
     get(): Promise<AppSettings>

@@ -1,12 +1,11 @@
-import { app, BrowserWindow, desktopCapturer, dialog, session, shell } from 'electron'
-import { join, resolve } from 'node:path'
+import { app, BrowserWindow, session, shell } from 'electron'
+import { join } from 'node:path'
 import { closeDatabase, openDatabase } from './db/database'
-import { registerApi, sendToWindows } from './ipc/api'
+import { registerApi } from './ipc/api'
 import { startSyncLoop } from './sync/service'
 import { markQuitting, onWindowClose, setupTray } from './tray'
 import { initUpdater } from './updater'
 
-const PROTOCOL = 'clientregit'
 const APP_USER_MODEL_ID = 'com.clientregit.desktop'
 
 if (process.platform === 'win32') app.setAppUserModelId(APP_USER_MODEL_ID)
@@ -70,39 +69,9 @@ function showMainWindow(): void {
   }
 }
 
-/** clientregit://join/<CODE> → renderer route */
-let pendingNav: string | null = null
-
-function flushPendingNav(win: BrowserWindow): void {
-  if (pendingNav) {
-    sendToWindows('nav:to', pendingNav)
-    pendingNav = null
-  }
-}
-
-function handleDeepLink(url: string): void {
-  const match = /^clientregit:\/\/join\/([A-Za-z0-9]+)/.exec(url)
-  if (!match) return
-  const code = match[1].toUpperCase()
-  const route = `/meetings/room/${code}`
-  showMainWindow()
-  if (mainWindow && !mainWindow.isDestroyed() && mainWindow.webContents.isLoadingMainFrame()) {
-    pendingNav = route
-    mainWindow.webContents.once('did-finish-load', () => flushPendingNav(mainWindow!))
-  } else {
-    sendToWindows('nav:to', route)
-  }
-}
-
-function deepLinkFromArgv(argv: string[]): string | null {
-  return argv.find((a) => a.startsWith(`${PROTOCOL}://`)) ?? null
-}
-
 function setupPermissions(): void {
   session.defaultSession.setPermissionRequestHandler((_wc, permission, callback) => {
     const allowed = new Set([
-      'media',
-      'mediaKeySystem',
       'notifications',
       'fullscreen',
       'pointerLock',
@@ -113,83 +82,16 @@ function setupPermissions(): void {
   })
 }
 
-function setupScreenPicker(): void {
-  session.defaultSession.setDisplayMediaRequestHandler(
-    async (_request, callback) => {
-      try {
-        const sources = await desktopCapturer.getSources({ types: ['screen', 'window'] })
-        const screens = sources.filter((s) => s.id.startsWith('screen:'))
-        const windows = sources.filter(
-          (s) =>
-            s.id.startsWith('window:') &&
-            !s.name.includes('ClientRegit')
-        )
-        const options = [
-          ...screens.map((s) => `Screen: ${s.name || 'Entire screen'}`),
-          ...windows.slice(0, 8).map((s) => `Window: ${s.name}`),
-          'Cancel'
-        ]
-        const choice = await dialog.showMessageBox({
-          type: 'question',
-          title: 'Share screen',
-          message: 'Choose what to share',
-          buttons: options,
-          defaultId: 0,
-          cancelId: options.length - 1,
-          noLink: true
-        })
-        const picked =
-          choice.response < screens.length
-            ? screens[choice.response]
-            : choice.response < screens.length + windows.slice(0, 8).length
-              ? windows[choice.response - screens.length]
-              : null
-        if (!picked) {
-          callback({})
-          return
-        }
-        if (process.platform === 'win32') {
-          callback({ video: picked, audio: 'loopback' })
-        } else {
-          callback({ video: picked })
-        }
-      } catch {
-        callback({})
-      }
-    },
-    { useSystemPicker: true }
-  )
-}
-
-function setupProtocol(): void {
-  if (process.defaultApp && process.argv.length >= 2) {
-    app.setAsDefaultProtocolClient(PROTOCOL, process.execPath, [resolve(process.argv[1])])
-  } else {
-    app.setAsDefaultProtocolClient(PROTOCOL)
-  }
-}
-
-// Dev/showcase affordances: override the data dir or open a CDP port when set.
+// Dev affordances: override the data dir or open a CDP port when set.
 if (process.env.CR_DATA_DIR) app.setPath('userData', process.env.CR_DATA_DIR)
 if (process.env.CR_CDP_PORT) app.commandLine.appendSwitch('remote-debugging-port', process.env.CR_CDP_PORT)
-if (process.env.CR_FAKE_MEDIA) {
-  app.commandLine.appendSwitch('use-fake-device-for-media-stream')
-  app.commandLine.appendSwitch('use-fake-ui-for-media-stream')
-}
 
 const gotLock = app.requestSingleInstanceLock()
 if (!gotLock) {
   app.quit()
 } else {
-  app.on('second-instance', (_event, argv) => {
-    const url = deepLinkFromArgv(argv)
-    if (url) handleDeepLink(url)
-    else showMainWindow()
-  })
-
-  app.on('open-url', (event, url) => {
-    event.preventDefault()
-    handleDeepLink(url)
+  app.on('second-instance', () => {
+    showMainWindow()
   })
 
   app.whenReady().then(() => {
@@ -197,15 +99,10 @@ if (!gotLock) {
     openDatabase(dbPath)
     registerApi()
     setupPermissions()
-    setupScreenPicker()
-    setupProtocol()
     createWindow()
     setupTray(() => showMainWindow())
     initUpdater()
     startSyncLoop()
-
-    const coldLink = deepLinkFromArgv(process.argv)
-    if (coldLink) handleDeepLink(coldLink)
 
     app.on('activate', () => {
       if (BrowserWindow.getAllWindows().length === 0) createWindow()

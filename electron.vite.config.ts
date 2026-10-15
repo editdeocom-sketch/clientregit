@@ -20,7 +20,9 @@ const env = loadSimpleEnv()
 const licenseDefine = {
   __SUPABASE_URL__: JSON.stringify(env.VITE_SUPABASE_URL ?? ''),
   __SUPABASE_ANON_KEY__: JSON.stringify(env.VITE_SUPABASE_ANON_KEY ?? ''),
-  __SITE_URL__: JSON.stringify(env.VITE_SITE_URL ?? '')
+  __SITE_URL__: JSON.stringify(env.VITE_SITE_URL ?? ''),
+  __GOOGLE_CLIENT_ID__: JSON.stringify(env.GOOGLE_CLIENT_ID ?? ''),
+  __GOOGLE_CLIENT_SECRET__: JSON.stringify(env.GOOGLE_CLIENT_SECRET ?? '')
 }
 
 export default defineConfig({

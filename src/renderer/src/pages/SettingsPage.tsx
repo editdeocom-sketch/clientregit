@@ -552,9 +552,6 @@ function NotificationsCard(): ReactNode {
 
   const rows: Array<{ key: keyof AppSettings; label: string; hint: string }> = [
     { key: 'notify_enabled', label: 'Desktop notifications', hint: 'Master switch for all notifications' },
-    { key: 'notify_meeting_invites', label: 'Meeting invites', hint: 'When someone invites you to a meeting' },
-    { key: 'notify_meeting_reminders', label: 'Meeting reminders & live alerts', hint: '10 minutes before start, when a meeting goes live' },
-    { key: 'notify_direct_messages', label: 'Direct messages', hint: 'New messages from your team' },
     { key: 'notify_tasks', label: 'Tasks', hint: 'Assignments and due/overdue dates' },
     { key: 'notify_team', label: 'Team events', hint: 'When a teammate joins your workspace' },
     { key: 'tray_on_close', label: 'Keep running in the tray', hint: 'Closing the window hides to the tray so notifications keep arriving' }
@@ -584,7 +581,7 @@ function NotificationsCard(): ReactNode {
     <Card className="mt-5">
       <CardHeader
         title="Notifications"
-        subtitle="Desktop alerts for meetings, messages, tasks and team events"
+        subtitle="Desktop alerts for tasks and team events"
         action={
           <Button variant="primary" size="sm" disabled={busy} onClick={() => void save()}>
             {busy ? 'Saving…' : 'Save'}
