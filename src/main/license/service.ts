@@ -3,6 +3,12 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { ensureTrialStarted, getLicenseRecord, saveLicense } from './store'
+import {
+  assertSignInAllowed,
+  recordSignInFailure,
+  recordSignInSuccess,
+  signInLockRemainingSec
+} from './backoff'
 import { getDeviceId } from './device'
 import type {
   LicenseActivateInput,
@@ -266,6 +272,7 @@ export async function signInLicense(input: LicenseSignInInput): Promise<{ email:
   if (!isActivationConfigured()) {
     throw new Error('Activation service is not configured yet. Please contact support.')
   }
+  assertSignInAllowed()
 
   const email = input.email.trim()
   const password = input.password
@@ -275,11 +282,20 @@ export async function signInLicense(input: LicenseSignInInput): Promise<{ email:
   const result = await withTimeout(supa.auth.signInWithPassword({ email, password }), 8000)
   if (result.error) {
     const message = result.error.message.toLowerCase()
-    if (message.includes('invalid login credentials')) throw new Error('Incorrect email or password.')
+    if (message.includes('invalid login credentials')) {
+      recordSignInFailure()
+      const remaining = signInLockRemainingSec()
+      throw new Error(
+        remaining > 0
+          ? `Incorrect email or password. Too many failed attempts — locked for ${remaining} seconds.`
+          : 'Incorrect email or password.'
+      )
+    }
     if (message.includes('email not confirmed'))
       throw new Error('Confirm your email first — check your inbox for the link.')
     throw new Error(result.error.message)
   }
+  recordSignInSuccess()
   saveLicense({ signed_out: false })
   return { email: result.data.user?.email ?? email }
 }
@@ -292,6 +308,7 @@ export async function activateLicense(input: LicenseActivateInput): Promise<Lice
 
   const key = input.licenseKey.trim().toUpperCase()
   if (!key) throw new Error('Enter your license key.')
+  assertSignInAllowed()
 
   const supa = getClient()
 
@@ -303,12 +320,20 @@ export async function activateLicense(input: LicenseActivateInput): Promise<Lice
     )
     if (signIn.error) {
       const message = signIn.error.message.toLowerCase()
-      if (message.includes('invalid login credentials'))
-        throw new Error('Incorrect email or password.')
+      if (message.includes('invalid login credentials')) {
+        recordSignInFailure()
+        const remaining = signInLockRemainingSec()
+        throw new Error(
+          remaining > 0
+            ? `Incorrect email or password. Too many failed attempts — locked for ${remaining} seconds.`
+            : 'Incorrect email or password.'
+        )
+      }
       if (message.includes('email not confirmed'))
         throw new Error('Confirm your email first — check your inbox for the link.')
       throw new Error(signIn.error.message)
     }
+    recordSignInSuccess()
     signedInEmail = signIn.data.user?.email ?? input.email.trim()
   } else {
     const { data: auth, error: authError } = await withTimeout(supa.auth.getUser(), 8000)
