@@ -47,8 +47,13 @@ jobs:
       - name: Build & publish (sign + notarize when Apple secrets are configured)
         shell: bash
         run: |
+          # Unset empty secret-derived vars: electron-builder treats an empty
+          # CSC_LINK as a certificate path and fails. Absent = previous behavior.
+          for v in CSC_LINK CSC_KEY_PASSWORD APPLE_ID APPLE_APP_SPECIFIC_PASSWORD APPLE_TEAM_ID; do
+            if [ -z "${!v}" ]; then unset "$v"; fi
+          done
           FLAGS=""
-          if [ -n "${{ secrets.APPLE_TEAM_ID }}" ] && [ -n "${{ secrets.MAC_CSC_LINK }}" ]; then
+          if [ -n "${APPLE_TEAM_ID:-}" ] && [ -n "${CSC_LINK:-}" ]; then
             FLAGS="-c.mac.notarize=true"
           fi
           npx electron-builder --mac --publish always $FLAGS
