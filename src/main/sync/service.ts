@@ -61,11 +61,14 @@ function clearSetting(key: string): void {
   getDb().prepare('DELETE FROM settings WHERE key = ?').run(key)
 }
 
-function isTeamLicensed(): boolean {
+// Sync runs for every activated signed-in user. Team licenses sync into the
+// shared team workspace; individual licenses sync into the user's own cloud
+// store so their data follows their account to any computer.
+function canSync(): boolean {
   const record = getLicenseRecord()
-  return (
-    record.activated && (record.seats ?? 1) > 1 && record.team_state !== 'offline' && record.team_state !== 'no_seat'
-  )
+  if (!record.activated || record.signed_out) return false
+  if ((record.seats ?? 1) > 1 && (record.team_state === 'offline' || record.team_state === 'no_seat')) return false
+  return true
 }
 
 function tableColumns(entity: string): Set<string> {
@@ -143,12 +146,15 @@ function collectPushRows(): SyncRowInput[] {
   return rows
 }
 
-async function push(supa: SupabaseClient): Promise<void> {
+type PushRpc = 'sync_push' | 'sync_push_user'
+type PullRpc = 'sync_pull' | 'sync_pull_user'
+
+async function push(supa: SupabaseClient, rpc: PushRpc): Promise<void> {
   const rows = collectPushRows()
   if (rows.length === 0) return
   for (let i = 0; i < rows.length; i += PUSH_CHUNK) {
     const chunk = rows.slice(i, i + PUSH_CHUNK)
-    const { error } = await supa.rpc('sync_push', { p_rows: chunk })
+    const { error } = await supa.rpc(rpc, { p_rows: chunk })
     if (error) throw new Error(`Sync push failed: ${error.message}`)
   }
   let maxTs = readSetting('sync.last_push_at') ?? ''
@@ -265,12 +271,12 @@ function applyPulledRows(pulled: PulledRow[]): { applied: number; failedAt: stri
   return { applied, failedAt }
 }
 
-async function pull(supa: SupabaseClient): Promise<number> {
+async function pull(supa: SupabaseClient, rpc: PullRpc): Promise<number> {
   let cursor = readSetting('sync.last_pull_at')
   let applied = 0
   let failedAt: string | null = null
   for (;;) {
-    const { data, error } = await supa.rpc('sync_pull', {
+    const { data, error } = await supa.rpc(rpc, {
       p_since: cursor,
       p_limit: PULL_PAGE
     })
@@ -329,7 +335,13 @@ async function loadTeamInfo(supa: SupabaseClient): Promise<CachedTeam | null> {
 }
 
 async function buildStatus(): Promise<TeamStatus> {
+  const mode: TeamStatus['mode'] = !canSync()
+    ? 'off'
+    : cachedTeam
+      ? 'team'
+      : 'user'
   return {
+    mode,
     inTeam: cachedTeam !== null,
     teamName: cachedTeam?.teamName ?? null,
     role: cachedTeam?.role ?? null,
@@ -346,7 +358,7 @@ export function getStatus(): Promise<TeamStatus> {
 
 export async function syncNow(): Promise<TeamStatus> {
   if (syncing) return buildStatus()
-  if (!isActivationConfigured() || !isTeamLicensed()) {
+  if (!isActivationConfigured() || !canSync()) {
     cachedTeam = null
     return buildStatus()
   }
@@ -355,17 +367,23 @@ export async function syncNow(): Promise<TeamStatus> {
   lastError = null
   try {
     const supa = authClient()
+    const { data: auth } = await supa.auth.getUser()
+    if (!auth.user) throw new Error('Not signed in — open Settings to sign in again.')
     const team = await loadTeamInfo(supa)
     cachedTeam = team
-    if (!team) {
-      // Not (or no longer) a team member — reset cursors so a future join
-      // performs a full push/pull.
+
+    // Cursors are scoped per workspace (team X vs the user's own store). If the
+    // workspace changed — joined/left a team, or first-ever sync — reset them so
+    // we do a full push + pull against the new store instead of skipping rows.
+    const workspace = team ? `team:${team.teamId}` : `user:${auth.user.id}`
+    if (readSetting('sync.workspace') !== workspace) {
       clearSetting('sync.last_push_at')
       clearSetting('sync.last_pull_at')
-      return buildStatus()
+      writeSetting('sync.workspace', workspace)
     }
-    await push(supa)
-    const applied = await pull(supa)
+
+    await push(supa, team ? 'sync_push' : 'sync_push_user')
+    const applied = await pull(supa, team ? 'sync_pull' : 'sync_pull_user')
     lastSyncAt = now()
     if (applied > 0) notifyRenderer()
   } catch (err) {

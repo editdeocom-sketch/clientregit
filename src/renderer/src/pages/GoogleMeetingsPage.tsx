@@ -36,15 +36,20 @@ export function GoogleMeetingsPage(): ReactNode {
   const [title, setTitle] = useState('')
   const [created, setCreated] = useState<GoogleCreatedMeeting | null>(null)
   const [confirmUnlink, setConfirmUnlink] = useState(false)
+  const [flash, setFlash] = useState<{ kind: 'success' | 'error'; text: string } | null>(null)
 
   const link = async (): Promise<void> => {
     setLinking(true)
+    setFlash(null)
     try {
       const info = await api.google.link()
+      setFlash({ kind: 'success', text: `Google account linked — ${info.email}` })
       toast.success(`Linked ${info.email}`)
       reloadStatus()
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : String(err))
+      const message = err instanceof Error ? err.message : String(err)
+      setFlash({ kind: 'error', text: `Could not link Google account: ${message}` })
+      toast.error(message)
     } finally {
       setLinking(false)
     }
@@ -52,15 +57,19 @@ export function GoogleMeetingsPage(): ReactNode {
 
   const create = async (openAfter: boolean): Promise<void> => {
     setCreating(true)
+    setFlash(null)
     try {
       const meeting = await api.google.createMeeting({ title, durationMin: 30 })
       setCreated(meeting)
       setTitle('')
+      setFlash({ kind: 'success', text: `Meeting created — ${meeting.meetLink}` })
       toast.success('Meeting created in your Google Calendar')
       if (openAfter) void api.files.openExternal(meeting.meetLink)
       reloadUpcoming()
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : String(err))
+      const message = err instanceof Error ? err.message : String(err)
+      setFlash({ kind: 'error', text: `Could not create the meeting: ${message}` })
+      toast.error(message)
     } finally {
       setCreating(false)
     }
@@ -93,6 +102,28 @@ export function GoogleMeetingsPage(): ReactNode {
         title="Meetings"
         subtitle="Create and join Google Meet sessions with your linked Google account"
       />
+
+      {flash && (
+        <div
+          className={`mb-5 flex items-start justify-between gap-3 rounded-lg border px-4 py-3 text-sm ${
+            flash.kind === 'success'
+              ? 'border-success/30 bg-success-bg text-success'
+              : 'border-danger/30 bg-danger-bg text-danger'
+          }`}
+        >
+          <div className="flex items-start gap-2">
+            <Icon name={flash.kind === 'success' ? 'check' : 'alert'} size={16} className="mt-0.5 shrink-0" />
+            <span className="break-all">{flash.text}</span>
+          </div>
+          <button
+            onClick={() => setFlash(null)}
+            className="shrink-0 cursor-pointer opacity-70 hover:opacity-100"
+            aria-label="Dismiss"
+          >
+            <Icon name="x" size={14} />
+          </button>
+        </div>
+      )}
 
       <div className="space-y-5">
         <Card>

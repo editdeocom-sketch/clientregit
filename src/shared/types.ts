@@ -393,6 +393,7 @@ export interface UserProfile {
 }
 
 export interface TeamStatus {
+  mode: 'team' | 'user' | 'off'
   inTeam: boolean
   teamName: string | null
   role: 'leader' | 'member' | null

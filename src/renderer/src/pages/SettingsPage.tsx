@@ -640,7 +640,9 @@ function TeamCard(): ReactNode {
     }
   }, [status?.inTeam])
 
-  if (loading || !status?.inTeam) return null
+  if (loading || !status || status.mode === 'off') return null
+
+  const solo = status.mode === 'user'
 
   const syncNow = async (): Promise<void> => {
     setBusy(true)
@@ -658,8 +660,8 @@ function TeamCard(): ReactNode {
   return (
     <Card className="mt-5">
       <CardHeader
-        title="Team workspace"
-        subtitle={status.teamName ?? 'Shared workspace'}
+        title={solo ? 'Cloud sync' : 'Team workspace'}
+        subtitle={solo ? 'Your data follows your account' : (status.teamName ?? 'Shared workspace')}
         action={
           <div className="flex items-center gap-2">
             <Badge tone={status.lastError ? 'danger' : 'success'}>
@@ -672,20 +674,22 @@ function TeamCard(): ReactNode {
         }
       />
       <div className="space-y-2.5 px-5 py-4 text-sm">
-        <div className="flex items-center justify-between gap-3">
-          <span className="text-muted">Role</span>
-          <span className="font-medium text-ink">
-            {status.role === 'leader' ? 'Leader' : 'Member'} · {status.memberCount} member
-            {status.memberCount === 1 ? '' : 's'}
-          </span>
-        </div>
+        {!solo && (
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-muted">Role</span>
+            <span className="font-medium text-ink">
+              {status.role === 'leader' ? 'Leader' : 'Member'} · {status.memberCount} member
+              {status.memberCount === 1 ? '' : 's'}
+            </span>
+          </div>
+        )}
         <div className="flex items-center justify-between gap-3">
           <span className="text-muted">Last synced</span>
           <span className="font-medium text-ink">
             {status.lastSyncAt ? new Date(status.lastSyncAt).toLocaleString('en-GB') : 'never'}
           </span>
         </div>
-        {members.length > 0 && (
+        {!solo && members.length > 0 && (
           <div className="border-t border-line pt-3">
             <p className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-muted">
               Members
@@ -705,8 +709,9 @@ function TeamCard(): ReactNode {
           </div>
         )}
         <p className="border-t border-line pt-3 text-xs text-muted">
-          Clients, projects, tasks and invoices sync with your team automatically. Manage
-          invites and seats on the website → Account → Team.
+          {solo
+            ? 'Clients, projects, tasks and invoices sync to your account automatically. Sign in on another computer and your data appears there.'
+            : 'Clients, projects, tasks and invoices sync with your team automatically. Manage invites and seats on the website → Account → Team.'}
         </p>
         {status.lastError && (
           <div className="rounded-lg border border-danger/30 bg-danger-bg px-3 py-2 text-sm text-danger">
