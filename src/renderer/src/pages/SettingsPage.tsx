@@ -233,7 +233,7 @@ export function SettingsPage(): ReactNode {
                 onChange={(event) => setProfile({ ...profile, business_phone: event.target.value })}
               />
             </Field>
-            <Field label="Tax ID / GSTIN">
+            <Field label="Tax ID">
               <Input
                 value={profile.business_tax_id}
                 onChange={(event) => setProfile({ ...profile, business_tax_id: event.target.value })}
@@ -268,7 +268,7 @@ export function SettingsPage(): ReactNode {
                 <option value="USD">USD ($)</option>
               </Select>
             </Field>
-            <Field label="Tax % (GST / VAT)">
+            <Field label="Tax %">
               <Input
                 type="number"
                 min="0"

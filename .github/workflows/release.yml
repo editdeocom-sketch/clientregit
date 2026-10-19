@@ -44,7 +44,19 @@ jobs:
           echo "VITE_SITE_URL=${{ secrets.VITE_SITE_URL }}" >> .env
       - run: npm ci
       - run: npm run build
-      - run: npx electron-builder --mac --publish always
+      - name: Build & publish (sign + notarize when Apple secrets are configured)
+        shell: bash
+        run: |
+          FLAGS=""
+          if [ -n "${{ secrets.APPLE_TEAM_ID }}" ] && [ -n "${{ secrets.MAC_CSC_LINK }}" ]; then
+            FLAGS="-c.mac.notarize=true"
+          fi
+          npx electron-builder --mac --publish always $FLAGS
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+          CSC_LINK: ${{ secrets.MAC_CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.MAC_CSC_KEY_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}

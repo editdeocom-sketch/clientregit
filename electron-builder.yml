@@ -50,8 +50,15 @@ portable:
 
 mac:
   icon: build/icon.png
-  identity: null
   category: public.app-category.business
+  # Signing + notarization activate automatically when CSC_LINK/CSC_KEY_PASSWORD
+  # and APPLE_ID/APPLE_APP_SPECIFIC_PASSWORD/APPLE_TEAM_ID are provided (CI).
+  # Without them the build stays unsigned, as before.
+  hardenedRuntime: true
+  gatekeeperAssess: false
+  entitlements: build/entitlements.mac.plist
+  entitlementsInherit: build/entitlements.mac.inherit.plist
+  notarize: false
   target:
     - target: dmg
       arch:
