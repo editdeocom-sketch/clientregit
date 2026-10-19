@@ -2,6 +2,8 @@ import { app, BrowserWindow, session, shell } from 'electron'
 import { join } from 'node:path'
 import { closeDatabase, openDatabase } from './db/database'
 import { registerApi } from './ipc/api'
+import { installErrorLogging, log, logsDir } from './logger'
+import { startAutoBackupScheduler } from './services/autobackup'
 import { startSyncLoop } from './sync/service'
 import { markQuitting, onWindowClose, setupTray } from './tray'
 import { initUpdater } from './updater'
@@ -9,6 +11,7 @@ import { initUpdater } from './updater'
 const APP_USER_MODEL_ID = 'com.clientregit.desktop'
 
 if (process.platform === 'win32') app.setAppUserModelId(APP_USER_MODEL_ID)
+installErrorLogging()
 
 let mainWindow: BrowserWindow | null = null
 
@@ -42,7 +45,9 @@ function createWindow(): BrowserWindow {
     const level = details.level as unknown
     const high = level === 'error' || level === 'warning' || (typeof level === 'number' && level >= 2)
     if (high) {
-      console.error(`[renderer:${level}] ${details.message}`)
+      const text = `[renderer:${level}] ${details.message}`
+      console.error(text)
+      log(level === 'error' ? 'error' : 'warn', text)
     }
   })
 
@@ -97,12 +102,17 @@ if (!gotLock) {
   app.whenReady().then(() => {
     const dbPath = join(app.getPath('userData'), 'clientregit.db')
     openDatabase(dbPath)
+    log('info', `database opened at ${dbPath}`)
+    app.on('render-process-gone', (_event, webContents, details) => {
+      log('error', `render-process-gone: ${details.reason} (exitCode=${details.exitCode})`)
+    })
     registerApi()
     setupPermissions()
     createWindow()
     setupTray(() => showMainWindow())
     initUpdater()
     startSyncLoop()
+    startAutoBackupScheduler()
 
     app.on('activate', () => {
       if (BrowserWindow.getAllWindows().length === 0) createWindow()
@@ -114,6 +124,7 @@ if (!gotLock) {
   })
 
   app.on('window-all-closed', () => {
+    log('info', 'all windows closed')
     closeDatabase()
     if (process.platform !== 'darwin') app.quit()
   })

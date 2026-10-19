@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useState, type ChangeEvent, type ReactNode } from 'react'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
@@ -36,6 +36,9 @@ export function SettingsPage(): ReactNode {
 
   const [profile, setProfile] = useState<AppSettings | null>(null)
   const [invoicing, setInvoicing] = useState<AppSettings | null>(null)
+  const [autoInterval, setAutoInterval] = useState<AppSettings['auto_backup_interval']>('off')
+  const [autoDir, setAutoDir] = useState('')
+  const [autoLast, setAutoLast] = useState('')
   const [confirmRestore, setConfirmRestore] = useState(false)
   const [showActivate, setShowActivate] = useState(false)
   const [actEmail, setActEmail] = useState('')
@@ -48,6 +51,9 @@ export function SettingsPage(): ReactNode {
     if (settings) {
       setProfile({ ...settings })
       setInvoicing({ ...settings })
+      setAutoInterval(settings.auto_backup_interval)
+      setAutoDir(settings.auto_backup_dir)
+      setAutoLast(settings.auto_backup_last)
     }
   }, [settings])
 
@@ -115,6 +121,45 @@ export function SettingsPage(): ReactNode {
     try {
       const result = await api.backup.exportCsv(table)
       if (result.path) toast.success(`Saved to ${result.path}`)
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : String(err))
+    }
+  }
+
+  const saveAutoInterval = async (
+    event: ChangeEvent<HTMLSelectElement>
+  ): Promise<void> => {
+    const value = event.target.value as AppSettings['auto_backup_interval']
+    try {
+      const updated = await api.settings.patch({ auto_backup_interval: value })
+      setAutoInterval(updated.auto_backup_interval)
+      toast.success(
+        value === 'off'
+          ? 'Automatic backups turned off'
+          : `Automatic backups: ${value === 'daily' ? 'every day' : 'every week'}`
+      )
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : String(err))
+    }
+  }
+
+  const changeBackupDir = async (): Promise<void> => {
+    try {
+      const dir = await api.backup.chooseAutoBackupDir()
+      if (dir) {
+        setAutoDir(dir)
+        toast.success(`Auto-backup folder: ${dir}`)
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : String(err))
+    }
+  }
+
+  const backupNow = async (): Promise<void> => {
+    try {
+      const file = await api.backup.autoBackupNow()
+      setAutoLast(new Date().toISOString())
+      toast.success(`Backup saved to ${file}`)
     } catch (err) {
       toast.error(err instanceof Error ? err.message : String(err))
     }
@@ -326,6 +371,46 @@ export function SettingsPage(): ReactNode {
               >
                 Restore (replace all)
               </Button>
+            </div>
+            <div className="border-t border-line pt-4">
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted">
+                Automatic backups
+              </p>
+              <div className="flex flex-wrap items-center gap-3">
+                <Select
+                  value={autoInterval}
+                  onChange={(event) => void saveAutoInterval(event)}
+                  className="w-40"
+                >
+                  <option value="off">Off</option>
+                  <option value="daily">Every day</option>
+                  <option value="weekly">Every week</option>
+                </Select>
+                <span className="text-xs text-muted">
+                  {autoDir || 'Saved in the app data folder'}
+                </span>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  icon={<Icon name="folder" size={14} />}
+                  onClick={() => void changeBackupDir()}
+                >
+                  Change folder
+                </Button>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  icon={<Icon name="download" size={14} />}
+                  onClick={() => void backupNow()}
+                >
+                  Back up now
+                </Button>
+              </div>
+              <p className="mt-2 text-xs text-muted">
+                {autoLast
+                  ? `Last automatic backup: ${new Date(autoLast).toLocaleString()}`
+                  : 'Keeps the 7 most recent automatic backups.'}
+              </p>
             </div>
             <div className="border-t border-line pt-4">
               <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted">

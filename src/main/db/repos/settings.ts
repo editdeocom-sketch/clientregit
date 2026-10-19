@@ -17,7 +17,10 @@ const DEFAULTS: AppSettings = {
   notify_enabled: true,
   notify_tasks: true,
   notify_team: true,
-  tray_on_close: true
+  tray_on_close: true,
+  auto_backup_interval: 'off',
+  auto_backup_dir: '',
+  auto_backup_last: ''
 }
 
 const BOOLEAN_KEYS = new Set<string>([
@@ -31,6 +34,9 @@ function coerce(key: keyof AppSettings, raw: string): AppSettings[keyof AppSetti
   if (key === 'tax_percent' || key === 'invoice_next') return Number(raw) || 0
   if (key === 'currency') return raw === 'USD' ? 'USD' : 'INR'
   if (key === 'theme') return raw === 'dark' ? 'dark' : 'light'
+  if (key === 'auto_backup_interval') {
+    return raw === 'daily' || raw === 'weekly' ? raw : 'off'
+  }
   if (BOOLEAN_KEYS.has(key)) return raw === 'true' || raw === '1'
   return raw
 }

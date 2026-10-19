@@ -37,7 +37,12 @@ export function Clients(): ReactNode {
         title="Clients"
         subtitle="Everyone you work with"
         actions={
-          <Button variant="primary" icon={<Icon name="plus" size={15} />} onClick={() => setFormOpen(true)}>
+          <Button
+            variant="primary"
+            icon={<Icon name="plus" size={15} />}
+            data-new-button
+            onClick={() => setFormOpen(true)}
+          >
             New client
           </Button>
         }
@@ -53,6 +58,7 @@ export function Clients(): ReactNode {
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Search name, company, email…"
             className="pl-9"
+            data-search-input
           />
         </div>
         <button

@@ -94,7 +94,9 @@ const api: Api = {
     exportJson: () => invoke('backup', 'exportJson'),
     importJson: (mode) => invoke('backup', 'importJson', mode),
     exportCsv: (table) => invoke('backup', 'exportCsv', table),
-    openDataFolder: () => invoke('backup', 'openDataFolder')
+    openDataFolder: () => invoke('backup', 'openDataFolder'),
+    autoBackupNow: () => invoke('backup', 'autoBackupNow'),
+    chooseAutoBackupDir: () => invoke('backup', 'chooseAutoBackupDir')
   },
   files: {
     pick: (properties) => invoke('files', 'pick', properties),

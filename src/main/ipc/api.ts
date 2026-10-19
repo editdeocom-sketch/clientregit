@@ -7,6 +7,7 @@ import * as settingsRepo from '../db/repos/settings'
 import * as stats from '../db/repos/stats'
 import * as tasks from '../db/repos/tasks'
 import * as backup from '../services/backup'
+import * as autobackup from '../services/autobackup'
 import { previewInvoice, printInvoice } from '../services/print'
 import {
   activateLicense,
@@ -183,7 +184,9 @@ const domains: Record<string, Record<string, Handler>> = {
     exportCsv: backup.exportCsv,
     openDataFolder: async () => {
       await shell.openPath(app.getPath('userData'))
-    }
+    },
+    autoBackupNow: autobackup.runAutoBackup,
+    chooseAutoBackupDir: autobackup.chooseAutoBackupDir
   },
   files: {
     pick: async (properties: Array<'openFile' | 'openDirectory'>) => {

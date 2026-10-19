@@ -78,7 +78,12 @@ export function Projects(): ReactNode {
         title="Projects"
         subtitle="Video jobs in motion"
         actions={
-          <Button variant="primary" icon={<Icon name="plus" size={15} />} onClick={() => setFormOpen(true)}>
+          <Button
+            variant="primary"
+            icon={<Icon name="plus" size={15} />}
+            data-new-button
+            onClick={() => setFormOpen(true)}
+          >
             New project
           </Button>
         }
@@ -94,6 +99,7 @@ export function Projects(): ReactNode {
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Search projects…"
             className="pl-9"
+            data-search-input
           />
         </div>
         <button

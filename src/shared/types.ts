@@ -252,6 +252,9 @@ export interface AppSettings {
   notify_tasks: boolean
   notify_team: boolean
   tray_on_close: boolean
+  auto_backup_interval: 'off' | 'daily' | 'weekly'
+  auto_backup_dir: string
+  auto_backup_last: string
 }
 
 export type SettingsPatch = Partial<AppSettings>
@@ -518,6 +521,8 @@ export interface Api {
     importJson(mode: 'replace' | 'merge'): Promise<BackupImportResult | null>
     exportCsv(table: BackupTable): Promise<ExportResult>
     openDataFolder(): Promise<void>
+    autoBackupNow(): Promise<string>
+    chooseAutoBackupDir(): Promise<string | null>
   }
   files: {
     pick(properties: Array<'openFile' | 'openDirectory'>): Promise<string[]>

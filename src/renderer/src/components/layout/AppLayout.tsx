@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { Outlet } from 'react-router-dom'
+import { Shortcuts } from '../Shortcuts'
 import { Sidebar } from './Sidebar'
 
 export function AppLayout(): ReactNode {
@@ -11,6 +12,7 @@ export function AppLayout(): ReactNode {
           <Outlet />
         </div>
       </main>
+      <Shortcuts />
     </div>
   )
 }

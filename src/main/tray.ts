@@ -1,7 +1,8 @@
-import { app, BrowserWindow, Menu, Tray, nativeImage } from 'electron'
+import { app, BrowserWindow, Menu, Tray, nativeImage, shell } from 'electron'
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { getSettings } from './db/repos/settings'
+import { logsDir } from './logger'
 
 let tray: Tray | null = null
 let isQuitting = false
@@ -33,6 +34,10 @@ export function setupTray(showWindow: () => void): void {
   const menu = Menu.buildFromTemplate([
     { label: 'Open ClientRegit', click: () => showWindow() },
     { type: 'separator' },
+    {
+      label: 'Open Logs Folder',
+      click: () => void shell.openPath(logsDir())
+    },
     {
       label: 'Quit ClientRegit',
       click: () => {

@@ -85,7 +85,7 @@ function dateStamp(): string {
   return new Date().toISOString().slice(0, 10)
 }
 
-export async function exportJson(): Promise<ExportResult> {
+export function buildBackupPayload(): BackupPayload {
   const db = getDb()
   const payload: BackupPayload = {
     app: 'clientregit',
@@ -102,6 +102,11 @@ export async function exportJson(): Promise<ExportResult> {
   for (const table of TABLES) {
     payload[table] = db.prepare(`SELECT * FROM ${table}`).all() as never
   }
+  return payload
+}
+
+export async function exportJson(): Promise<ExportResult> {
+  const payload = buildBackupPayload()
 
   const result = await dialog.showSaveDialog({
     title: 'Export backup',

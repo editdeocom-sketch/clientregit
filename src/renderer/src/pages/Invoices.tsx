@@ -74,6 +74,7 @@ export function Invoices(): ReactNode {
           <Button
             variant="primary"
             icon={<Icon name="plus" size={15} />}
+            data-new-button
             onClick={() => navigate('/invoices/new')}
           >
             New invoice
@@ -91,6 +92,7 @@ export function Invoices(): ReactNode {
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Search number, client…"
             className="pl-9"
+            data-search-input
           />
         </div>
       </div>
